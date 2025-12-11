@@ -27,42 +27,26 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 "use client";
 
 import { usePathname } from "next/navigation";
-import Topbar from "@/components/layout/topbar";
-import BottomNav from "@/components/layout/BottomNav";
+import Topbar from "components/layout/topbar";
+import BottomNav from "components/layout/BottomNav";
 
-export const metadata = { title: "Kisaan Saathi Admin" };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname() || "/";
 
-  // Show Topbar ONLY on homepage (/)
+export default function MainLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+
   const showTopbar = pathname === "/";
 
   return (
-    <html lang="en">
-      <body className="h-screen overflow-hidden">
+    <div className="flex h-full flex-col">
 
-        <div className="flex h-full flex-col">
+      {showTopbar && <Topbar />}
 
-          {/* TOPBAR only on page.tsx (/) */}
-          {showTopbar && (
-            <div>
-              <Topbar />
-            </div>
-          )}
+      <main className="flex-1 overflow-auto bg-[#F3F7F6] p-6 pb-[140px]">
+        {children}
+      </main>
 
-          {/* MAIN PAGE CONTENT */}
-          <main className="flex-1 overflow-auto bg-[#F3F7F6] p-6 pb-[140px]">
-            {children}
-          </main>
-
-        </div>
-
-        {/* FIXED BOTTOM NAV */}
-        <BottomNav />
-
-      </body>
-    </html>
+      <BottomNav />
+    </div>
   );
 }
-
