@@ -1,28 +1,62 @@
 "use client";
 
-
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import axios from "axios";
 
 export default function Signup() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  // const [otp, setOtp] = useState("");
+  const [mobile, setMobile] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const router = useRouter();
 
-  const handleSignup = (e: any) => {
+  const handleSignup = async (e: any) => {
+    setLoading(true);
     e.preventDefault();
-    router.push("/login");
+
+    if (password !== confirmPassword) return alert("Passwords do not match");
+    try {
+      const res = await axios.post("http://localhost:4000/api/v1/auth/signup", {
+        email,
+        password,
+        confirm_password: confirmPassword,
+        full_name: name,
+        phone_no: mobile,
+      });
+      if (res.data.statusCode == 200) {
+        alert(res.data.message);
+        router.push("/login");
+      } else {
+        alert(res.data.message);
+      }
+    } catch (err: any) {
+      console.log("Signup error", err);
+      alert(`${err.message}`);
+    } finally {
+      setName("");
+      setEmail("");
+      setMobile("");
+      setPassword("");
+      setConfirmPassword("");
+      setLoading(false);
+    }
   };
 
   return (
     <div className="login-body">
       <div className="container-fluid h-100">
         <div className="row no-gutter h-100">
-
           {/* LEFT SIDE */}
           <div className="col-md-6 bg-light">
             <div className="login d-flex align-items-center h-100">
               <div className="container">
                 <div className="row">
-
                   <div className="text-center pb-3">
                     <Image
                       src="/images/GenXAILatest.png"
@@ -38,75 +72,108 @@ export default function Signup() {
 
                     <form onSubmit={handleSignup}>
                       <div className="form-floating mb-3 floating-custom-label">
-                        <input className="form-control" required />
+                        <input
+                          className="form-control"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          required
+                        />
                         <label>Name</label>
                       </div>
 
-{/* === EMAIL + SEND OTP === */}
-<div className="d-flex align-items-center mb-3 gap-2">
-  
-  {/* Floating Email Input */}
-  <div className="form-floating flex-grow-1 floating-custom-label">
-    <input
-      type="email"
-      className="form-control"
-      placeholder="Email"
-      required
-    />
-    <label>Email</label>
-  </div>
+                      {/* === EMAIL + SEND OTP === */}
+                      <div className="d-flex align-items-center mb-3 gap-2">
+                        {/* Floating Email Input */}
+                        <div className="form-floating flex-grow-1 floating-custom-label">
+                          <input
+                            type="email"
+                            className="form-control"
+                            placeholder="Email"
+                            required
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                          />
+                          <label>Email</label>
+                        </div>
 
-  {/* SEND OTP button */}
-  <button className="btn btn-outline-primary h-100 px-3" style={{ whiteSpace: "nowrap" }}>
-    Send OTP
-  </button>
-</div>
+                        {/* SEND OTP button */}
+                        <button
+                          className="btn btn-outline-primary h-100 px-3"
+                          style={{ whiteSpace: "nowrap" }}
+                        >
+                          Send OTP
+                        </button>
+                      </div>
 
+                      {/* === OTP INPUT + VERIFY === */}
+                      <div className="d-flex align-items-center mb-3 gap-2">
+                        {/* Floating OTP Input */}
+                        <div className="form-floating flex-grow-1 floating-custom-label">
+                          <input
+                            type="text"
+                            className="form-control"
+                            placeholder="Enter OTP"
+                          />
+                          <label>OTP</label>
+                        </div>
 
-{/* === OTP INPUT + VERIFY === */}
-<div className="d-flex align-items-center mb-3 gap-2">
-  
-  {/* Floating OTP Input */}
-  <div className="form-floating flex-grow-1 floating-custom-label">
-    <input
-      type="text"
-      className="form-control"
-      placeholder="Enter OTP"
-      required
-    />
-    <label>OTP</label>
-  </div>
-
-  {/* VERIFY button */}
-  <button className="btn btn-success h-100 px-3" style={{ whiteSpace: "nowrap" }}>
-    Verify
-  </button>
-</div>
-
+                        {/* VERIFY button */}
+                        <button
+                          className="btn btn-success h-100 px-3"
+                          style={{ whiteSpace: "nowrap" }}
+                        >
+                          Verify
+                        </button>
+                      </div>
 
                       <div className="form-floating mb-3 floating-custom-label">
-                        <input className="form-control" required />
+                        <input
+                          className="form-control"
+                          required
+                          value={mobile}
+                          onChange={(e) => setMobile(e.target.value)}
+                        />
                         <label>Mobile (As Per Aadhaar) </label>
                       </div>
 
                       <div className="form-floating mb-3 floating-custom-label">
-                        <input type="password" className="form-control" required />
+                        <input
+                          type="password"
+                          className="form-control"
+                          required
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                        />
                         <label>Password</label>
                       </div>
 
                       <div className="form-floating mb3 floating-custom-label">
-                        <input type="password" className="form-control" required />
+                        <input
+                          type="password"
+                          className="form-control"
+                          required
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                        />
                         <label>Confirm Password</label>
                       </div>
 
                       <div className="d-flex justify-content-between align-items-center my-3">
                         <button className="btn btn-success text-uppercase rounded shadow-sm">
-                          Sign up
+                          {loading ? (
+                            <div
+                              className="spinner-border text-light"
+                              role="status"
+                            >
+                              <span className="sr-only">Loading...</span>
+                            </div>
+                          ) : (
+                            "Sign up"
+                          )}
                         </button>
                       </div>
                     </form>
                   </div>
-
                 </div>
               </div>
             </div>
@@ -114,7 +181,6 @@ export default function Signup() {
 
           {/* RIGHT SIDE IMAGE */}
           <div className="col-md-6 d-none d-md-flex bg-image"></div>
-
         </div>
       </div>
 
