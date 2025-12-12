@@ -1,10 +1,10 @@
 "use client";
- 
+
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import axios from "axios";
- 
+
 export default function Signup() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -13,46 +13,41 @@ export default function Signup() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
- 
+
   const router = useRouter();
- 
+
   const handleSignup = async (e: any) => {
     setLoading(true);
     e.preventDefault();
-   
+
     if (password !== confirmPassword) return alert("Passwords do not match");
     try {
-      console.log("Signup data--------------------", {
+      const res = await axios.post("http://localhost:4000/api/v1/auth/signup", {
         email,
         password,
+        confirm_password: confirmPassword,
+        full_name: name,
+        phone_no: mobile,
       });
- const res = await axios.post("http://localhost:4000/api/v1/auth/signup", {
-  email,
-  password,
-  confirm_password: confirmPassword,
-  full_name: name,
-  phone_no: mobile,
-});
- 
-      //const data = await res.json();
-      console.log("data--------------------",res);
-      setLoading(false);
- 
-      // if (res.ok) {
-      //   alert("Signup Successful!");
- 
-      //   e.preventDefault();
-      //   router.push("/login");
-      // } else {
-      //   alert(data.message || "Signup failed");
-      // }
-    } catch (err) {
-      console.log(`Server error---------------------: ${err}`);
+      if (res.data.statusCode == 200) {
+        alert(res.data.message);
+        router.push("/login");
+      } else {
+        alert(res.data.message);
+      }
+    } catch (err: any) {
+      console.log("Signup error", err);
+      alert(`${err.message}`);
     } finally {
+      setName("");
+      setEmail("");
+      setMobile("");
+      setPassword("");
+      setConfirmPassword("");
       setLoading(false);
     }
   };
- 
+
   return (
     <div className="login-body">
       <div className="container-fluid h-100">
@@ -71,10 +66,10 @@ export default function Signup() {
                       priority
                     />
                   </div>
- 
+
                   <div className="col-lg-10 col-xl-7 mx-auto">
                     <h3 className="display-7 text-center my-3">Sign up</h3>
- 
+
                     <form onSubmit={handleSignup}>
                       <div className="form-floating mb-3 floating-custom-label">
                         <input
@@ -85,7 +80,7 @@ export default function Signup() {
                         />
                         <label>Name</label>
                       </div>
- 
+
                       {/* === EMAIL + SEND OTP === */}
                       <div className="d-flex align-items-center mb-3 gap-2">
                         {/* Floating Email Input */}
@@ -100,7 +95,7 @@ export default function Signup() {
                           />
                           <label>Email</label>
                         </div>
- 
+
                         {/* SEND OTP button */}
                         <button
                           className="btn btn-outline-primary h-100 px-3"
@@ -109,7 +104,7 @@ export default function Signup() {
                           Send OTP
                         </button>
                       </div>
- 
+
                       {/* === OTP INPUT + VERIFY === */}
                       <div className="d-flex align-items-center mb-3 gap-2">
                         {/* Floating OTP Input */}
@@ -121,7 +116,7 @@ export default function Signup() {
                           />
                           <label>OTP</label>
                         </div>
- 
+
                         {/* VERIFY button */}
                         <button
                           className="btn btn-success h-100 px-3"
@@ -130,7 +125,7 @@ export default function Signup() {
                           Verify
                         </button>
                       </div>
- 
+
                       <div className="form-floating mb-3 floating-custom-label">
                         <input
                           className="form-control"
@@ -140,7 +135,7 @@ export default function Signup() {
                         />
                         <label>Mobile (As Per Aadhaar) </label>
                       </div>
- 
+
                       <div className="form-floating mb-3 floating-custom-label">
                         <input
                           type="password"
@@ -151,7 +146,7 @@ export default function Signup() {
                         />
                         <label>Password</label>
                       </div>
- 
+
                       <div className="form-floating mb3 floating-custom-label">
                         <input
                           type="password"
@@ -162,10 +157,19 @@ export default function Signup() {
                         />
                         <label>Confirm Password</label>
                       </div>
- 
+
                       <div className="d-flex justify-content-between align-items-center my-3">
                         <button className="btn btn-success text-uppercase rounded shadow-sm">
-                          Sign up
+                          {loading ? (
+                            <div
+                              className="spinner-border text-light"
+                              role="status"
+                            >
+                              <span className="sr-only">Loading...</span>
+                            </div>
+                          ) : (
+                            "Sign up"
+                          )}
                         </button>
                       </div>
                     </form>
@@ -174,12 +178,12 @@ export default function Signup() {
               </div>
             </div>
           </div>
- 
+
           {/* RIGHT SIDE IMAGE */}
           <div className="col-md-6 d-none d-md-flex bg-image"></div>
         </div>
       </div>
- 
+
       <footer className="bg-dark login-footer text-white py-2 text-center">
         <p className="m-0">
           Developed and Maintained By
@@ -191,8 +195,3 @@ export default function Signup() {
     </div>
   );
 }
- 
- 
- 
- 
- 
