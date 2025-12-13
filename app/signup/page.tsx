@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 export default function Signup() {
   const [name, setName] = useState("");
@@ -20,24 +21,36 @@ export default function Signup() {
     setLoading(true);
     e.preventDefault();
 
-    if (password !== confirmPassword) return alert("Passwords do not match");
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match");
+      setLoading(false);
+      return;
+    };
     try {
-      const res = await axios.post("http://localhost:4000/api/v1/auth/signup", {
-        email,
-        password,
-        confirm_password: confirmPassword,
-        full_name: name,
-        phone_no: mobile,
-      });
+      const res = await axios.post(
+        "http://localhost:4000/api/v1/auth/signup",
+        {
+          email,
+          password,
+          confirm_password: confirmPassword,
+          full_name: name,
+          phone_no: mobile,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
       if (res.data.statusCode == 200) {
-        alert(res.data.message);
+        toast.success(res.data.message);
         router.push("/login");
       } else {
-        alert(res.data.message);
+        toast.error(res.data.message);
       }
     } catch (err: any) {
       console.log("Signup error", err);
-      alert(`${err.message}`);
+      toast.error(`${err.message}`);
     } finally {
       setName("");
       setEmail("");

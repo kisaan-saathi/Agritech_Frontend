@@ -3,7 +3,9 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "react-toastify";
 import axios from "axios";
+
 export default function Login() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -13,23 +15,34 @@ export default function Login() {
     setLoading(true);
     e.preventDefault();
     try {
-      const res = await axios.post("http://localhost:4000/api/v1/auth/login", {
-        email,
-        password,
-      });
+      const res = await axios.post(
+        "http://localhost:4000/api/v1/auth/login",
+        {
+          email,
+          password,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
       if (res.data.statusCode == 200) {
         localStorage.setItem("refreshToken", res.data.data.refreshToken);
         localStorage.setItem("accessToken", res.data.data.accessToken);
-        alert(res.data.message);
+        toast.success(res.data.message);
+        setPassword("");
+        setLoading(false);
         router.push("/dashboard");
       } else {
-        alert(res.data.message);
+        console.log("Login failed");
+        setPassword("");
+        setLoading(false);
+        toast.error(res.data.message);
       }
     } catch (err: any) {
       console.log("Login error", err);
-      alert(`${err.message}`);
-    } finally {
-      setEmail("");
+      toast.error(`${err.message}`);
       setPassword("");
       setLoading(false);
     }
