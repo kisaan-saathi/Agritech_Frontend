@@ -9,17 +9,84 @@ import { toast } from "react-toastify";
 export default function Signup() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  // const [otp, setOtp] = useState("");
+  const [otp, setOtp] = useState("");
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
   const router = useRouter();
+
+  const handleSendOTP = async () => {
+    if (!email || !name) {
+      toast.error("Please enter email and name");
+      return;
+    }
+    try {
+      const res = await axios.post(
+        "http://localhost:4000/api/v1/auth/send-verification-mail",
+        {
+          email,
+          name,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (res.data.statusCode == 200) {
+        toast.success(res.data.message);
+        setOtpSent(true);
+      } else {
+        toast.error(res.data.message);
+      }
+    } catch (err: any) {
+      console.log("Send OTP error", err);
+      toast.error(`${err.message}`);
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    if (!email || !otp) {
+      toast.error("Please enter email and OTP");
+      return;
+    }
+    try {
+      const res = await axios.post(
+        "http://localhost:4000/api/v1/auth/verify-otp",
+        {
+          email,
+          otp,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (res.data.statusCode == 200) {
+        toast.success(res.data.message);
+        setOtpVerified(true);
+      } else {
+        toast.error(res.data.message);
+      }
+    } catch (err: any) {
+      console.log("Verify OTP error", err);
+      toast.error(`${err.message}`);
+    }
+  };
 
   const handleSignup = async (e: any) => {
     setLoading(true);
     e.preventDefault();
+
+    if (!otpVerified) {
+      toast.error("Please verify your OTP first");
+      setLoading(false);
+      return;
+    };
 
     if (password !== confirmPassword) {
       toast.error("Passwords do not match");
@@ -33,7 +100,7 @@ export default function Signup() {
           email,
           password,
           confirm_password: confirmPassword,
-          full_name: name,
+          name: name,
           phone_no: mobile,
         },
         {
@@ -54,6 +121,9 @@ export default function Signup() {
     } finally {
       setName("");
       setEmail("");
+      setOtp("");
+      setOtpSent(false);
+      setOtpVerified(false);
       setMobile("");
       setPassword("");
       setConfirmPassword("");
@@ -111,10 +181,12 @@ export default function Signup() {
 
                         {/* SEND OTP button */}
                         <button
+                          type="button"
                           className="btn btn-outline-primary h-100 px-3"
                           style={{ whiteSpace: "nowrap" }}
+                          onClick={handleSendOTP}
                         >
-                          Send OTP
+                          {otpSent ? "Resend OTP" : "Send OTP"}
                         </button>
                       </div>
 
@@ -126,14 +198,19 @@ export default function Signup() {
                             type="text"
                             className="form-control"
                             placeholder="Enter OTP"
+                            value={otp}
+                            onChange={(e) => setOtp(e.target.value)}
+                            required
                           />
                           <label>OTP</label>
                         </div>
 
                         {/* VERIFY button */}
                         <button
+                          type="button"
                           className="btn btn-success h-100 px-3"
                           style={{ whiteSpace: "nowrap" }}
+                          onClick={handleVerifyOTP}
                         >
                           Verify
                         </button>
