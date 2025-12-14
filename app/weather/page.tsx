@@ -15,7 +15,7 @@ import {
   Filler,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
-import Mithu, { MithuMood } from "@/app/components/Mithu";
+import Mithu, { MithuMood } from "components/Mithu";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler);
 

@@ -1,10 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import axios from "axios";
 import { toast } from "react-toastify";
+import AuthLayout from "components/auth/AuthLayout";
+import FormField from "components/ui/form-field";
+import { sendOTP, verifyOTP, signup } from "lib/auth";
 
 export default function Signup() {
   const [name, setName] = useState("");
@@ -23,28 +24,9 @@ export default function Signup() {
       toast.error("Please enter email and name");
       return;
     }
-    try {
-      const res = await axios.post(
-        "http://localhost:4000/api/v1/auth/send-verification-mail",
-        {
-          email,
-          name,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      if (res.data.statusCode == 200) {
-        toast.success(res.data.message);
-        setOtpSent(true);
-      } else {
-        toast.error(res.data.message);
-      }
-    } catch (err: any) {
-      console.log("Send OTP error", err);
-      toast.error(`${err.message}`);
+    const success = await sendOTP(email, name);
+    if (success) {
+      setOtpSent(true);
     }
   };
 
@@ -53,28 +35,9 @@ export default function Signup() {
       toast.error("Please enter email and OTP");
       return;
     }
-    try {
-      const res = await axios.post(
-        "http://localhost:4000/api/v1/auth/verify-otp",
-        {
-          email,
-          otp,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      if (res.data.statusCode == 200) {
-        toast.success(res.data.message);
-        setOtpVerified(true);
-      } else {
-        toast.error(res.data.message);
-      }
-    } catch (err: any) {
-      console.log("Verify OTP error", err);
-      toast.error(`${err.message}`);
+    const success = await verifyOTP(email, otp);
+    if (success) {
+      setOtpVerified(true);
     }
   };
 
@@ -86,202 +49,142 @@ export default function Signup() {
       toast.error("Please verify your OTP first");
       setLoading(false);
       return;
-    };
+    }
 
     if (password !== confirmPassword) {
       toast.error("Passwords do not match");
       setLoading(false);
-      return;
-    };
-    try {
-      const res = await axios.post(
-        "http://localhost:4000/api/v1/auth/signup",
-        {
-          email,
-          password,
-          confirm_password: confirmPassword,
-          name: name,
-          phone_no: mobile,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      if (res.data.statusCode == 200) {
-        toast.success(res.data.message);
-        router.push("/login");
-      } else {
-        toast.error(res.data.message);
-      }
-    } catch (err: any) {
-      console.log("Signup error", err);
-      toast.error(`${err.message}`);
-    } finally {
-      setName("");
-      setEmail("");
-      setOtp("");
-      setOtpSent(false);
-      setOtpVerified(false);
-      setMobile("");
       setPassword("");
       setConfirmPassword("");
       setLoading(false);
+      return;
     }
+
+    const success = await signup({
+      email,
+      password,
+      confirm_password: confirmPassword,
+      name: name,
+      phone_no: mobile,
+    });
+
+    if (success) {
+      router.push("/login");
+    }
+
+    setName("");
+    setEmail("");
+    setOtp("");
+    setOtpSent(false);
+    setOtpVerified(false);
+    setMobile("");
+    setLoading(false);
+    setPassword("");
+    setConfirmPassword("");
+    setLoading(false);
   };
 
   return (
-    <div className="login-body">
-      <div className="container-fluid h-100">
-        <div className="row no-gutter h-100">
-          {/* LEFT SIDE */}
-          <div className="col-md-6 bg-light">
-            <div className="login d-flex align-items-center h-100">
-              <div className="container">
-                <div className="row">
-                  <div className="text-center pb-3">
-                    <Image
-                      src="/images/GenXAILatest.png"
-                      width={150}
-                      height={150}
-                      alt="Logo"
-                      priority
-                    />
-                  </div>
+    <AuthLayout title="Sign up">
+      <div className="col-lg-10 col-xl-7 mx-auto">
+        <form onSubmit={handleSignup}>
+          <FormField
+            label="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
 
-                  <div className="col-lg-10 col-xl-7 mx-auto">
-                    <h3 className="display-7 text-center my-3">Sign up</h3>
-
-                    <form onSubmit={handleSignup}>
-                      <div className="form-floating mb-3 floating-custom-label">
-                        <input
-                          className="form-control"
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          required
-                        />
-                        <label>Name</label>
-                      </div>
-
-                      {/* === EMAIL + SEND OTP === */}
-                      <div className="d-flex align-items-center mb-3 gap-2">
-                        {/* Floating Email Input */}
-                        <div className="form-floating flex-grow-1 floating-custom-label">
-                          <input
-                            type="email"
-                            className="form-control"
-                            placeholder="Email"
-                            required
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                          />
-                          <label>Email</label>
-                        </div>
-
-                        {/* SEND OTP button */}
-                        <button
-                          type="button"
-                          className="btn btn-outline-primary h-100 px-3"
-                          style={{ whiteSpace: "nowrap" }}
-                          onClick={handleSendOTP}
-                        >
-                          {otpSent ? "Resend OTP" : "Send OTP"}
-                        </button>
-                      </div>
-
-                      {/* === OTP INPUT + VERIFY === */}
-                      <div className="d-flex align-items-center mb-3 gap-2">
-                        {/* Floating OTP Input */}
-                        <div className="form-floating flex-grow-1 floating-custom-label">
-                          <input
-                            type="text"
-                            className="form-control"
-                            placeholder="Enter OTP"
-                            value={otp}
-                            onChange={(e) => setOtp(e.target.value)}
-                            required
-                          />
-                          <label>OTP</label>
-                        </div>
-
-                        {/* VERIFY button */}
-                        <button
-                          type="button"
-                          className="btn btn-success h-100 px-3"
-                          style={{ whiteSpace: "nowrap" }}
-                          onClick={handleVerifyOTP}
-                        >
-                          Verify
-                        </button>
-                      </div>
-
-                      <div className="form-floating mb-3 floating-custom-label">
-                        <input
-                          className="form-control"
-                          required
-                          value={mobile}
-                          onChange={(e) => setMobile(e.target.value)}
-                        />
-                        <label>Mobile (As Per Aadhaar) </label>
-                      </div>
-
-                      <div className="form-floating mb-3 floating-custom-label">
-                        <input
-                          type="password"
-                          className="form-control"
-                          required
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                        />
-                        <label>Password</label>
-                      </div>
-
-                      <div className="form-floating mb3 floating-custom-label">
-                        <input
-                          type="password"
-                          className="form-control"
-                          required
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                        />
-                        <label>Confirm Password</label>
-                      </div>
-
-                      <div className="d-flex justify-content-between align-items-center my-3">
-                        <button className="btn btn-success text-uppercase rounded shadow-sm">
-                          {loading ? (
-                            <div
-                              className="spinner-border text-light"
-                              role="status"
-                            >
-                              <span className="sr-only">Loading...</span>
-                            </div>
-                          ) : (
-                            "Sign up"
-                          )}
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                </div>
-              </div>
+          {/* === EMAIL + SEND OTP === */}
+          <div className="d-flex align-items-center mb-3 gap-2">
+            {/* Floating Email Input */}
+            <div className="form-floating flex-grow-1 floating-custom-label">
+              <input
+                type="email"
+                className="form-control"
+                placeholder="Email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <label>Email</label>
             </div>
+
+            {/* SEND OTP button */}
+            <button
+              type="button"
+              className="btn btn-outline-primary h-100 px-3"
+              style={{ whiteSpace: "nowrap" }}
+              onClick={handleSendOTP}
+              disabled={otpVerified}
+            >
+              {otpSent ? "Resend OTP" : "Send OTP"}
+            </button>
           </div>
 
-          {/* RIGHT SIDE IMAGE */}
-          <div className="col-md-6 d-none d-md-flex bg-image"></div>
-        </div>
-      </div>
+          {/* === OTP INPUT + VERIFY === */}
+          <div className="d-flex align-items-center mb-3 gap-2">
+            {/* Floating OTP Input */}
+            <div className="form-floating flex-grow-1 floating-custom-label">
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Enter OTP"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                required
+              />
+              <label>OTP</label>
+            </div>
 
-      <footer className="bg-dark login-footer text-white py-2 text-center">
-        <p className="m-0">
-          Developed and Maintained By
-          <span className="px-2 d-inline-block text-white font-bold">
-            GenXAI Analytics Pvt Ltd
-          </span>
-        </p>
-      </footer>
-    </div>
+            {/* VERIFY button */}
+            <button
+              type="button"
+              className="btn btn-success h-100 px-3"
+              style={{ whiteSpace: "nowrap" }}
+              onClick={handleVerifyOTP}
+              disabled={otpVerified}
+            >
+              Verify
+            </button>
+          </div>
+
+          <FormField
+            label="Mobile (As Per Aadhaar)"
+            value={mobile}
+            onChange={(e) => setMobile(e.target.value)}
+            required
+          />
+
+          <FormField
+            type="password"
+            label="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+
+          <FormField
+            type="password"
+            label="Confirm Password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+          />
+
+          <div className="d-flex justify-content-between align-items-center my-3">
+            <button className="btn btn-success text-uppercase rounded shadow-sm w-100">
+              {loading ? (
+                <div className="spinner-border text-light" role="status">
+                  <span className="sr-only">Loading...</span>
+                </div>
+              ) : (
+                "Sign up"
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </AuthLayout>
   );
 }
