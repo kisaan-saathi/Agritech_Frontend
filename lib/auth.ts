@@ -76,11 +76,9 @@ export const signup = async (data: {
   phone_no: string;
 }) => {
   try {
-    console.log("Signup data", data);
     const res = await axios.post(`${API_BASE}/signup`, data, {
       headers: { "Content-Type": "application/json" },
     });
-    console.log("Signup response", res);
     if (res.data.statusCode == 200) {
       toast.success(res.data.message);
       return true;
