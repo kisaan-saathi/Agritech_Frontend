@@ -19,7 +19,7 @@ export default function AuthLayout({ title, children }: AuthLayoutProps) {
             <div className="login d-flex align-items-center h-100">
               <div className="container">
                 <div className="row">
-                  <div className="d-flex justify-content-between align-items-end m-2 px-4">
+                  <div className="d-flex justify-content-between align-items-end m-2 px-2">
                     <div className="flex flex-col items-center space-x-3">
                       <img
                         className="box shake-after-10s"

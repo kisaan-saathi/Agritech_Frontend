@@ -114,11 +114,20 @@ export default function Signup() {
           />
           <div className="mb-3 d-flex justify-content-between align-items-center px-1">
             <span
-              className={otpVerified || countdown ? "text-muted" : "text-primary cursor-pointer"}
+              className={otpVerified || countdown ? "text-muted" : "cursor-pointer"}
               style={{ cursor: otpVerified || countdown ? "not-allowed" : "pointer" }}
               onClick={otpVerified || countdown ? undefined : handleSendOTP}
             >
-              {otpSent ? "Resend OTP" : "Please Click here to Send OTP"}
+              {otpSent ? (
+                <>
+                  <span className="text-muted">Resend OTP</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-muted">Click here to </span>
+                  <span className="text-primary text-decoration-underline">Send OTP</span>
+                </>
+              )}
             </span>
             {countdown && <span className="text-muted">{countdown}s</span>}
           </div>
@@ -132,11 +141,12 @@ export default function Signup() {
           <div className="mb-3 ml-1">
             <button
               type="button"
-              className="text-success btn btn-link text-decoration-none ml-0 p-0"
+              className="btn btn-link text-decoration-none ml-0 p-0"
               onClick={handleVerifyOTP}
               disabled={otpVerified}
             >
-              Please Click here to Verify OTP
+              <span className="text-muted">Click here to </span>
+              <span className="text-primary text-decoration-underline">Verify OTP</span>
             </button>
           </div>
           <FormField
