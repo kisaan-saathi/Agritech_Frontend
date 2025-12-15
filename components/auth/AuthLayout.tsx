@@ -19,16 +19,24 @@ export default function AuthLayout({ title, children }: AuthLayoutProps) {
             <div className="login d-flex align-items-center h-100">
               <div className="container">
                 <div className="row">
-                  <div className="text-center pb-3">
-                    <Image
-                      src="/images/GenXAILatest.png"
-                      width={150}
-                      height={150}
-                      alt="Logo"
-                      priority
-                    />
+                  <div className="d-flex justify-content-between align-items-end m-2 px-4">
+                    <div className="flex flex-col items-center space-x-3">
+                      <img
+                        className="box shake-after-10s"
+                        width="100"
+                        src="/images/kissan_sathi_logo.png"
+                        alt="Mithu"
+                      />
+                    </div>
+                    <div className="flex align-items-end space-x-3">
+                      <img
+                        className=""
+                        width="100"
+                        src="/images/GenXAILatest.png"
+                        alt="GenXAI"
+                      />
+                    </div>
                   </div>
-
                   <div className="col-lg-10 col-xl-7 mx-auto">
                     <h3 className="display-7 text-center my-3">{title}</h3>
                     {children}
