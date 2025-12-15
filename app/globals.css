@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,6 +10,84 @@
 html, body, #__next {
   height: 100%;
  /** margin: 0;*/
+}
+
+/* Custom CSS for Radial Progress Bar */
+.radial-progress {
+    position: relative;
+    display: inline-flex;
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    /* Default background conic gradient (will be overridden by ID selectors) */
+    background: conic-gradient(var(--tw-primary-green) 0%, transparent 0%);
+}
+.radial-progress-inner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 50px;
+    height: 50px;
+    background-color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+/* Specific styles for the two colored progress bars */
+#soil-moisture-progress {
+    --tw-primary-green: #3B82F6; /* sky-blue for moisture */
+    background: conic-gradient(var(--tw-primary-green) 68%, #E5E7EB 0%);
+}
+#soil-moisture-progress .radial-progress-inner {
+    color: #3B82F6;
+}
+
+#crop-health-progress {
+    --tw-primary-green: #10B981; /* primary-green for health */
+    background: conic-gradient(var(--tw-primary-green) 92%, #E5E7EB 0%);
+}
+#crop-health-progress .radial-progress-inner {
+    color: #10B981;
+}
+
+/* Important: Add bottom padding to main content to prevent fixed footer overlap */
+main {
+    padding-bottom: 5rem; /* Space for the fixed bottom nav bar (h-20) */
+}
+
+/* Custom style for the overall score gradient */
+.farm-score-card {
+    background-image: linear-gradient(135deg, #10B981, #059669); /* primary-green to secondary-green */
+}
+
+/* LLM Styling */
+.ai-output {
+    background-color: #EEEBFF;
+    border-left: 4px solid #8B5CF6;
+}
+.border-bottom {
+    border-bottom:1px solid #ddd;
+}
+.shadow {
+    box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15) !important;
+}
+.shake-after-10s {
+  animation: shake 2s infinite;
+}
+
+/* Shake keyframes */
+@keyframes shake {
+  0%   { transform: translateX(0); }
+  4%   { transform: translateX(-6px); }
+  8%   { transform: translateX(6px); }
+  12%  { transform: translateX(-6px); }
+  16%   { transform: translateX(0); }
+  /* 16% → 100% = no shaking, pause */
 }
 /**
 .mapboxgl-map, .map-container {
