@@ -54,6 +54,7 @@ export const login = async (email: string, password: string) => {
     if (res.data.statusCode == 200) {
       localStorage.setItem("refreshToken", res.data.data.refreshToken);
       localStorage.setItem("accessToken", res.data.data.accessToken);
+      localStorage.setItem("userName", res.data.data.userName);
       toast.success(res.data.message);
       return true;
     } else {
@@ -93,5 +94,47 @@ export const signup = async (data: {
     console.log("Signup error", err);
     toast.error(`${err.message}`);
     return false;
+  }
+};
+
+export const refreshToken = async (refreshToken: string) => {
+  try {
+    const res = await axios.post(
+      `${API_BASE}/refresh-token`,
+      { refresh_token: refreshToken },
+      { headers: { "Content-Type": "application/json" } }
+    );
+    if (res.data.statusCode == 200) {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      localStorage.setItem("refreshToken", res.data.data.refreshToken);
+      localStorage.setItem("accessToken", res.data.data.accessToken);
+      toast.success(res.data.message);
+    } else {
+      toast.error(res.data.message);
+    }
+  } catch (err: any) {
+    console.log("Refresh token error", err);
+    toast.error(`${err.message}`);
+  }
+};
+
+export const apiCallWithRefresh = async (apiCall: () => Promise<any>) => {
+  try {
+    const res = await apiCall();
+    if (res.data.tokenExpire) {
+      console.log('Access token expired, attempting to refresh token');
+      const refreshTokenValue = localStorage.getItem('refreshToken');
+      if (refreshTokenValue) {
+        await refreshToken(refreshTokenValue);
+        return await apiCall();
+      } else {
+        throw new Error('Failed to refresh token');
+      }
+    } else {
+      return res;
+    }
+  } catch (error: any) {
+    throw error;
   }
 };
