@@ -1,6 +1,5 @@
 import axios from "axios";
 import { toast } from "react-toastify";
-
 const API_BASE = "http://localhost:4000/api/v1/auth";
 
 export const sendOTP = async (email: string, name: string) => {
@@ -82,7 +81,11 @@ export const signup = async (data: {
     if (res.data.statusCode == 200) {
       toast.success(res.data.message);
       return true;
-    } else {
+    } else if (res.data.statusCode == 400) {
+      toast.warning(res.data.message);
+      return false;
+    }
+    else {
       toast.error(res.data.message);
       return false;
     }

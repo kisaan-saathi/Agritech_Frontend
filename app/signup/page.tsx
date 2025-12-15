@@ -173,6 +173,9 @@ export default function Signup() {
               )}
             </button>
           </div>
+          <a href="/login" className="text-decoration-none text-center d-block">
+            Already have an account? Log in
+          </a>
         </form>
       </div>
     </AuthLayout>
