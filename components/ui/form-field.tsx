@@ -19,7 +19,7 @@ export default function FormField({
     <div className="form-floating mb-3 floating-custom-label">
       <input
         type={type}
-        className="form-control"
+        className="form-control py-3"
         placeholder={placeholder}
         required={required}
         value={value}

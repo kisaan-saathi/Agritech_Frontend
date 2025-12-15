@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import AuthLayout from "components/auth/AuthLayout";
 import FormField from "components/ui/form-field";
@@ -17,7 +17,17 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    if (countdown && countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (countdown === 0) {
+      setCountdown(null);
+    }
+  }, [countdown]);
 
   const handleSendOTP = async () => {
     if (!email || !name) {
@@ -27,6 +37,7 @@ export default function Signup() {
     const success = await sendOTP(email, name);
     if (success) {
       setOtpSent(true);
+      setCountdown(60);
     }
   };
 
@@ -38,6 +49,7 @@ export default function Signup() {
     const success = await verifyOTP(email, otp);
     if (success) {
       setOtpVerified(true);
+      setCountdown(null);
     }
   };
 
@@ -94,61 +106,39 @@ export default function Signup() {
             onChange={(e) => setName(e.target.value)}
             required
           />
-
-          {/* === EMAIL + SEND OTP === */}
-          <div className="d-flex align-items-center mb-3 gap-2">
-            {/* Floating Email Input */}
-            <div className="form-floating flex-grow-1 floating-custom-label">
-              <input
-                type="email"
-                className="form-control"
-                placeholder="Email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <label>Email</label>
-            </div>
-
-            {/* SEND OTP button */}
-            <button
-              type="button"
-              className="btn btn-outline-primary h-100 px-3"
-              style={{ whiteSpace: "nowrap" }}
-              onClick={handleSendOTP}
-              disabled={otpVerified}
+          <FormField
+            label="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <div className="mb-3 d-flex justify-content-between align-items-center px-1">
+            <span
+              className={otpVerified || countdown ? "text-muted" : "text-primary cursor-pointer"}
+              style={{ cursor: otpVerified || countdown ? "not-allowed" : "pointer" }}
+              onClick={otpVerified || countdown ? undefined : handleSendOTP}
             >
-              {otpSent ? "Resend OTP" : "Send OTP"}
-            </button>
+              {otpSent ? "Resend OTP" : "Please Click here to Send OTP"}
+            </span>
+            {countdown && <span className="text-muted">{countdown}s</span>}
           </div>
-
-          {/* === OTP INPUT + VERIFY === */}
-          <div className="d-flex align-items-center mb-3 gap-2">
-            {/* Floating OTP Input */}
-            <div className="form-floating flex-grow-1 floating-custom-label">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Enter OTP"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                required
-              />
-              <label>OTP</label>
-            </div>
-
-            {/* VERIFY button */}
+          <FormField
+            label="OTP"
+            placeholder="OTP"
+            value={otp}
+            onChange={(e) => setOtp(e.target.value)}
+            required
+          />
+          <div className="mb-3 ml-1">
             <button
               type="button"
-              className="btn btn-success h-100 px-3"
-              style={{ whiteSpace: "nowrap" }}
+              className="text-success btn btn-link text-decoration-none ml-0 p-0"
               onClick={handleVerifyOTP}
               disabled={otpVerified}
             >
-              Verify
+              Please Click here to Verify OTP
             </button>
           </div>
-
           <FormField
             label="Mobile (As Per Aadhaar)"
             value={mobile}
