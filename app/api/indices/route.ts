@@ -14,42 +14,9 @@ function readMean(bucket: any, id: string): number | null {
   return null;
 }
  
-function normalize(v: number, min = -1, max = 1) {
-  return Math.min(1, Math.max(0, (v - min) / (max - min)));
+function clamp(v: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, v));
 }
- 
-/* ================= FIELD HEALTH ================= */
- 
-function computeHealthScore(series: any[]) {
-  const recent = series.slice(-3);
- 
-  let ndvi = 0, ndre = 0, evi = 0, savi = 0, ndwi = 0;
- 
-  recent.forEach((s) => {
-    ndvi += normalize(s.ndvi);
-    ndre += normalize(s.ndre);
-    evi += normalize(s.evi);
-    savi += normalize(s.savi);
-    ndwi += normalize(s.ndwi);
-  });
- 
-  const n = recent.length || 1;
-  ndvi /= n;
-  ndre /= n;
-  evi /= n;
-  savi /= n;
-  ndwi /= n;
- 
-  return Math.round(
-    0.4 * ndvi +
-      0.2 * ndre +
-      0.15 * evi +
-      0.15 * savi +
-      0.1 * (1 - ndwi)
-  );
-}
- 
-/* ================= SOIL FEATURE MATH ================= */
  
 function mean(arr: number[]) {
   return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
@@ -58,7 +25,7 @@ function mean(arr: number[]) {
 function std(arr: number[]) {
   if (!arr.length) return null;
   const m = mean(arr)!;
-  return Math.sqrt(mean(arr.map((v) => (v - m) ** 2))!);
+  return Math.sqrt(mean(arr.map(v => (v - m) ** 2))!);
 }
  
 function linearTrend(values: number[]) {
@@ -66,41 +33,57 @@ function linearTrend(values: number[]) {
   const x = values.map((_, i) => i);
   const x̄ = mean(x)!;
   const ȳ = mean(values)!;
- 
-  const num = x.reduce(
-    (s, xi, i) => s + (xi - x̄) * (values[i] - ȳ),
-    0
-  );
+  const num = x.reduce((s, xi, i) => s + (xi - x̄) * (values[i] - ȳ), 0);
   const den = x.reduce((s, xi) => s + (xi - x̄) ** 2, 0);
   return den === 0 ? 0 : num / den;
 }
  
 /* ============================================================
-   STATIC SOIL — TEMP STUB (OPTION A)
+   SOIL TEXTURE (SATELLITE HEURISTIC)
 ============================================================ */
  
-async function fetchStaticSoilData(client: any, fieldId: string) {
-  const q = `
-    SELECT
-      area_ha,
-      NULL::double precision AS clay,
-      NULL::double precision AS silt,
-      NULL::double precision AS sand,
-      NULL::double precision AS elevation
-    FROM fields
-    WHERE id = $1
-  `;
-  const res = await client.query(q, [fieldId]);
-  return res.rows[0];
+function estimateSoilTexture(soil: any) {
+  const ndvi = clamp(soil.ndvi_mean_90d ?? 0.5, 0, 1);
+  const bsi = clamp(soil.bsi_mean_90d ?? 0, -1, 1);
+ 
+  let clay = 20 + (1 - ndvi) * 30;
+  let sand = 30 + (bsi + 1) * 20;
+  let silt = 100 - clay - sand;
+ 
+  clay = clamp(clay, 10, 60);
+  sand = clamp(sand, 10, 70);
+  silt = clamp(100 - clay - sand, 5, 60);
+ 
+  return {
+    clay: Number(clay.toFixed(1)),
+    silt: Number(silt.toFixed(1)),
+    sand: Number(sand.toFixed(1)),
+    elevation: 400
+  };
 }
  
 /* ============================================================
-   RAINFALL — TEMP STUB (OPTION A)
-   ✔ No rainfall tables required
-   ✔ Prevents 500 error
+   SOIL CHEMISTRY (SATELLITE HEURISTIC)
 ============================================================ */
  
-async function fetchRainfall30d(client: any, fieldId: string) {
+function estimateChemistry(soil: any) {
+  const ndvi = clamp(soil.ndvi_mean_90d ?? 0.5, 0, 1);
+  const bsi = clamp(soil.bsi_mean_90d ?? 0, -1, 1);
+ 
+  const soc = clamp(0.4 + ndvi * 1.6, 0.4, 2.5);
+  const ph = clamp(6.2 + (0.5 - ndvi) * 1.5 + bsi * 0.3, 5.5, 8.5);
+ 
+  return {
+    soc_0_30: Number(soc.toFixed(2)),
+    ph_0_30: Number(ph.toFixed(2))
+  };
+}
+ 
+/* ============================================================
+   RAINFALL — STUB
+============================================================ */
+ 
+async function fetchRainfall30d() {
   return 0;
 }
  
@@ -114,7 +97,7 @@ export async function POST(req: NextRequest) {
   const { fieldId, from, to } = JSON.parse(await req.text());
  
   const geoRes = await pool.query(
-    `SELECT ST_AsGeoJSON(geom) AS geom FROM fields WHERE id=$1`,
+    `SELECT ST_AsGeoJSON(geom) AS geom, area_ha FROM fields WHERE id=$1`,
     [fieldId]
   );
  
@@ -123,14 +106,11 @@ export async function POST(req: NextRequest) {
   }
  
   const geometry = JSON.parse(geoRes.rows[0].geom);
+  const area_ha = geoRes.rows[0].area_ha;
  
-  /* ✅ SAFE DATE HANDLING */
   const now = new Date();
-  const threeMonthsAgo = new Date(now);
-  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
- 
-  const fromDate = from ?? threeMonthsAgo.toISOString();
-  const toDate = to ?? now.toISOString();
+  const fromDate = from ?? new Date(now.setMonth(now.getMonth() - 3)).toISOString();
+  const toDate = to ?? new Date().toISOString();
  
   const token = await getSentinelToken();
  
@@ -138,17 +118,15 @@ export async function POST(req: NextRequest) {
     input: {
       bounds: {
         geometry,
-        properties: { crs: "http://www.opengis.net/def/crs/EPSG/0/4326" },
+        properties: { crs: "http://www.opengis.net/def/crs/EPSG/0/4326" }
       },
-      data: [
-        {
-          type: "sentinel-2-l2a",
-          dataFilter: {
-            timeRange: { from: fromDate, to: toDate },
-            mosaickingOrder: "leastCC",
-          },
-        },
-      ],
+      data: [{
+        type: "sentinel-2-l2a",
+        dataFilter: {
+          timeRange: { from: fromDate, to: toDate },
+          mosaickingOrder: "leastCC"
+        }
+      }]
     },
     aggregation: {
       timeRange: { from: fromDate, to: toDate },
@@ -162,31 +140,22 @@ export async function POST(req: NextRequest) {
             output:[
               {id:"ndvi",bands:1},
               {id:"ndre",bands:1},
-              {id:"evi",bands:1},
-              {id:"ndwi",bands:1},
-              {id:"savi",bands:1},
               {id:"bsi",bands:1},
               {id:"dataMask",bands:1}
             ]
           };
         }
         function evaluatePixel(s){
-          if(s.dataMask===0) return {
-            ndvi:[0],ndre:[0],evi:[0],
-            ndwi:[0],savi:[0],bsi:[0],dataMask:[0]
-          };
+          if(s.dataMask===0) return { ndvi:[0], ndre:[0], bsi:[0], dataMask:[0] };
           return {
             ndvi:[(s.B08-s.B04)/(s.B08+s.B04)],
             ndre:[(s.B08-s.B05)/(s.B08+s.B05)],
-            evi:[2.5*(s.B08-s.B04)/(s.B08+6*s.B04-7.5*s.B02+1)],
-            ndwi:[(s.B03-s.B08)/(s.B03+s.B08)],
-            savi:[1.5*(s.B08-s.B04)/(s.B08+s.B04+0.5)],
             bsi:[(s.B11+s.B04-s.B08-s.B02)/(s.B11+s.B04+s.B08+s.B02)],
             dataMask:[1]
           };
         }
-      `,
-    },
+      `
+    }
   };
  
   const sentinelRes = await fetch(
@@ -195,19 +164,14 @@ export async function POST(req: NextRequest) {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
+        "Content-Type": "application/json"
       },
-      body: JSON.stringify(sentinelBody),
+      body: JSON.stringify(sentinelBody)
     }
   );
  
   if (!sentinelRes.ok) {
-    const errText = await sentinelRes.text();
-    console.error("Sentinel error:", errText);
-    return NextResponse.json(
-      { error: "Sentinel request failed" },
-      { status: 502 }
-    );
+    return NextResponse.json({ error: "Sentinel failed" }, { status: 502 });
   }
  
   const stats = await sentinelRes.json();
@@ -219,98 +183,83 @@ export async function POST(req: NextRequest) {
     const series: any[] = [];
  
     for (const b of stats.data ?? []) {
-      const date = b.interval.from.slice(0, 10);
       const ndvi = readMean(b, "ndvi");
       if (ndvi == null) continue;
  
-      const row = {
-        date,
+      const cloud_pct =
+        b.outputs?.dataMask?.stats?.mean != null
+          ? (1 - b.outputs.dataMask.stats.mean) * 100
+          : 0;
+ 
+      series.push({
         ndvi,
         ndre: readMean(b, "ndre"),
-        evi: readMean(b, "evi"),
-        ndwi: readMean(b, "ndwi"),
-        savi: readMean(b, "savi"),
         bsi: readMean(b, "bsi"),
-      };
- 
-      const scene = await client.query(
-        `INSERT INTO satellite_scenes(field_id,satellite,scene_date,source)
-         VALUES($1,'SENTINEL_2',$2,'sentinel-hub')
-         ON CONFLICT(field_id,satellite,scene_date)
-         DO UPDATE SET scene_date=EXCLUDED.scene_date
-         RETURNING id`,
-        [fieldId, date]
-      );
- 
-      await client.query(
-        `INSERT INTO vegetation_indices(scene_id,ndvi,ndre,evi,ndwi,savi,bsi)
-         VALUES($1,$2,$3,$4,$5,$6,$7)
-         ON CONFLICT(scene_id) DO UPDATE SET
-         ndvi=EXCLUDED.ndvi, ndre=EXCLUDED.ndre, evi=EXCLUDED.evi,
-         ndwi=EXCLUDED.ndwi, savi=EXCLUDED.savi, bsi=EXCLUDED.bsi`,
-        [
-          scene.rows[0].id,
-          row.ndvi,
-          row.ndre,
-          row.evi,
-          row.ndwi,
-          row.savi,
-          row.bsi,
-        ]
-      );
- 
-      series.push(row);
+        cloud_pct
+      });
     }
  
-    const last90 = series.slice(-13);
-    const last30 = series.slice(-4);
- 
-    const soil = {
-      ndvi_mean_90d: mean(last90.map((s) => s.ndvi)),
-      ndvi_std_90d: std(last90.map((s) => s.ndvi)),
-      ndvi_trend_30d: linearTrend(last30.map((s) => s.ndvi)),
-      ndre_mean_90d: mean(last90.map((s) => s.ndre)),
-      bsi_mean_90d: mean(last90.map((s) => s.bsi)),
-      valid_obs_count: last90.length,
+    const soilAgg = {
+      ndvi_mean_90d: mean(series.map(s => s.ndvi)),
+      ndvi_std_90d: std(series.map(s => s.ndvi)),
+      ndvi_trend_30d: linearTrend(series.slice(-4).map(s => s.ndvi)),
+      ndre_mean_90d: mean(series.map(s => s.ndre)),
+      bsi_mean_90d: mean(series.map(s => s.bsi)),
+      cloud_pct: mean(series.map(s => s.cloud_pct)),
+      valid_obs_count: series.length
     };
  
-    const staticSoil = await fetchStaticSoilData(client, fieldId);
-    const rainfall_30d = await fetchRainfall30d(client, fieldId);
+    const texture = estimateSoilTexture(soilAgg);
+    const chemistry = estimateChemistry(soilAgg);
+    const rainfall_30d = await fetchRainfall30d();
  
     await client.query(
       `INSERT INTO soil_features(
-        field_id,ndvi_mean_90d,ndvi_trend_30d,ndvi_std_90d,
-        ndre_mean_90d,bsi_mean_90d,
-        clay,silt,sand,valid_obs_count,
-        area_ha,elevation,rainfall_30d
-      ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+        field_id,
+        ndvi_mean_90d, ndvi_trend_30d, ndvi_std_90d,
+        ndre_mean_90d, bsi_mean_90d,
+        clay, silt, sand,
+        ph_0_30, soc_0_30, cloud_pct,
+        valid_obs_count,
+        area_ha, elevation, rainfall_30d
+      ) VALUES (
+        $1,$2,$3,$4,$5,$6,
+        $7,$8,$9,
+        $10,$11,$12,
+        $13,$14,$15,$16
+      )
       ON CONFLICT(field_id) DO UPDATE SET
-        ndvi_mean_90d=EXCLUDED.ndvi_mean_90d,
-        ndvi_trend_30d=EXCLUDED.ndvi_trend_30d,
-        ndvi_std_90d=EXCLUDED.ndvi_std_90d,
-        ndre_mean_90d=EXCLUDED.ndre_mean_90d,
-        bsi_mean_90d=EXCLUDED.bsi_mean_90d,
-        clay=EXCLUDED.clay,
-        silt=EXCLUDED.silt,
-        sand=EXCLUDED.sand,
-        valid_obs_count=EXCLUDED.valid_obs_count,
-        elevation=EXCLUDED.elevation,
-        rainfall_30d=EXCLUDED.rainfall_30d,
-        computed_at=now()`,
+        ndvi_mean_90d = EXCLUDED.ndvi_mean_90d,
+        ndvi_trend_30d = EXCLUDED.ndvi_trend_30d,
+        ndvi_std_90d = EXCLUDED.ndvi_std_90d,
+        ndre_mean_90d = EXCLUDED.ndre_mean_90d,
+        bsi_mean_90d = EXCLUDED.bsi_mean_90d,
+        clay = EXCLUDED.clay,
+        silt = EXCLUDED.silt,
+        sand = EXCLUDED.sand,
+        ph_0_30 = EXCLUDED.ph_0_30,
+        soc_0_30 = EXCLUDED.soc_0_30,
+        cloud_pct = EXCLUDED.cloud_pct,
+        elevation = EXCLUDED.elevation,
+        rainfall_30d = EXCLUDED.rainfall_30d,
+        computed_at = now()`,
       [
         fieldId,
-        soil.ndvi_mean_90d,
-        soil.ndvi_trend_30d,
-        soil.ndvi_std_90d,
-        soil.ndre_mean_90d,
-        soil.bsi_mean_90d,
-        staticSoil.clay,
-        staticSoil.silt,
-        staticSoil.sand,
-        soil.valid_obs_count,
-        staticSoil.area_ha,
-        staticSoil.elevation,
-        rainfall_30d,
+        soilAgg.ndvi_mean_90d,
+        soilAgg.ndvi_trend_30d,
+        soilAgg.ndvi_std_90d,
+        soilAgg.ndre_mean_90d,
+        soilAgg.bsi_mean_90d,
+        texture.clay,
+        texture.silt,
+        texture.sand,
+        chemistry.ph_0_30,
+        chemistry.soc_0_30,
+        soilAgg.cloud_pct,
+        soilAgg.valid_obs_count,
+        area_ha,
+        texture.elevation,
+        rainfall_30d
       ]
     );
  
@@ -318,13 +267,14 @@ export async function POST(req: NextRequest) {
  
     return NextResponse.json({
       fieldId,
-      scenesProcessed: series.length,
-      soilModule: "stubbed",
+      soil: { ...texture, ...chemistry },
+      cloud_pct: soilAgg.cloud_pct
     });
+ 
   } catch (e) {
     await client.query("ROLLBACK");
     console.error(e);
-    return NextResponse.json({ error: "Processing failed" }, { status: 500 });
+    return NextResponse.json({ error: "Failed" }, { status: 500 });
   } finally {
     client.release();
   }
