@@ -225,7 +225,7 @@ export default function FieldDashboard() {
         onDeleteField={handleDeleteField}
       />
 
-      <CoordsDisplay selectedField={selectedField} />
+      {/* <CoordsDisplay selectedField={selectedField} /> */}
 
       <Timeline
         dates={availableDates}

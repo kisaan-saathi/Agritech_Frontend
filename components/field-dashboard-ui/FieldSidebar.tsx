@@ -66,18 +66,18 @@ export default function FieldSidebar({
       <style jsx>{`
         .field-sidebar {
           position: absolute;
-          top: 60px;
-          left: 16px;
+          top: 22%;
+          right: 100px;
           width: 260px;
-          max-height: calc(100% - 80px);
+          max-height: 50%;
           background: rgba(10, 22, 40, 0.95);
           border-radius: 8px;
           border: 1px solid rgba(255, 255, 255, 0.1);
           z-index: 100;
           display: flex;
           flex-direction: column;
-          overflow: hidden;
-          transform: translateX(-300px);
+          overflow: hidden !important;
+          transform: translateX(200px);
           opacity: 0;
           pointer-events: none;
           transition: all 0.3s ease;
