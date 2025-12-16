@@ -11,6 +11,7 @@ import SensorMetrics from "./components/SensorMetrics";
 import ApplicationFeatures from "./components/ApplicationFeatures";
 import CropOverview from "./components/CropOverview";
 import { useDiseaseId } from "../../lib/hooks/dashboard";
+import { Hand } from "lucide-react";
 
 export default function DashboardClient() {
   const router = useRouter();
@@ -35,7 +36,10 @@ export default function DashboardClient() {
         const token = localStorage.getItem("accessToken");
         console.log("Logging out with token:", token);
         return await axios.get("http://localhost:4000/api/v1/auth/logout", {
-          headers: { Authorization: `Bearer ${token}`,  "Content-Type": "application/json"},
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         });
       });
       if (res.data.statusCode == 200) {
@@ -62,16 +66,17 @@ export default function DashboardClient() {
         <main className="flex-1 p-4 sm:p-8 overflow-y-auto">
           {/* Header (Mobile/Desktop) - Used for User and Notifications */}
           <header className="flex justify-between items-center mb-8 pb-4 border-b border-gray-200">
-            <div className="flex items-center space-x-3">
-              <h1 className="text-3xl font-extrabold text-gray-800">
-                Welcome, {user} to Kisaan Saathi
-              </h1>
+            <div className="flex flex-col items-center space-x-3">
               <img
                 className="box shake-after-10s"
-                width="50"
-                src="/images/mithu.jpg"
-                alt="Mithu"
+                width="70"
+                src="/images/kissan_sathi_logo.png"
+                alt="Kissan Sathi"
               />
+              <span className="text-3xl font-extrabold text-gray-800 mb-0 flex items-center gap-2">
+                Welcome, {user}
+                <Hand className="w-7 h-7  animate-wave" fill='#f5db75ff'  />
+              </span>
             </div>
             <div className="flex items-center space-x-4">
               {/* Mock Language Toggle */}
@@ -140,7 +145,7 @@ export default function DashboardClient() {
           <ActionCenter onDiseaseClick={handleIdentifyDisease} />
           <SensorMetrics />
           <ApplicationFeatures />
-          <CropOverview />
+          {/* <CropOverview /> */}
         </main>
 
         <footer className="fixed bottom-0 left-0 right-0 z-50 h-20 bg-white border-t border-gray-200 shadow-2xl">
