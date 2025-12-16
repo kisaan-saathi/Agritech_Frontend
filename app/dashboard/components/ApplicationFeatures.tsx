@@ -22,7 +22,9 @@ export default function ApplicationFeatures() {
             </svg>
             <span className="text-xl font-bold mt-2 text-gray-900 text-bold">Advisories</span>
           </a>
-          <a href="#" className="flex flex-col items-center p-1 rounded-xl hover:bg-yellow-50 transition duration-150 text-decoration-none hover:border border-soil-brown">
+          
+          {/* UPDATED: Added redirection to /soil-analysis */}
+          <a href="/soil" className="flex flex-col items-center p-1 rounded-xl hover:bg-yellow-50 transition duration-150 text-decoration-none hover:border border-soil-brown">
             <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-soil-brown">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
               <line x1="12" y1="18" x2="12" y2="10"/>
@@ -30,6 +32,7 @@ export default function ApplicationFeatures() {
             </svg>
             <span className="text-xl font-bold mt-2 text-gray-900 text-bold">Soil Analysis</span>
           </a>
+
           <a href="#" className="flex flex-col items-center p-1 rounded-xl hover:bg-yellow-50 transition duration-150 text-decoration-none hover:border border-yellow-600">
             <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-600">
               <path d="M17 19c-1.1-1.46-3-4-5-4s-3.9-2.54-5-4c-1.1-1.46-1-4 0-4s3 2 5 2 3.9-2 5-2 1.1 2.54 0 4-3 4-5 4-3.9 2.54-5 4"/>
