@@ -1,25 +1,151 @@
+/* ---------------- Google Fonts ---------------- */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
 
+/* ---------------- Tailwind ---------------- */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ---------------- Scrollbar ---------------- */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
 
+/* ---------------- Base HTML/Body ---------------- */
 html, body, #__next {
+  width: 100%;
   height: 100%;
- /** margin: 0;*/
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* from old repo */
+  font-family: Arial, Helvetica, sans-serif; /* fallback font */
 }
 
-/* Custom CSS for Radial Progress Bar */
+/* ---------------- Theme Variables ---------------- */
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+/* ---------------- Mapbox / Draw Controls ---------------- */
+.mapboxgl-ctrl-group {
+  background: rgba(10, 22, 40, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+  overflow: hidden;
+}
+
+.mapboxgl-ctrl-group button {
+  background: transparent !important;
+  border: none !important;
+  width: 36px !important;
+  height: 36px !important;
+  color: #fff !important;
+}
+
+.mapboxgl-ctrl-group button + button {
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.mapboxgl-ctrl-group button:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.mapboxgl-ctrl button:focus {
+  outline: 2px solid #0ea5e9;
+  outline-offset: 1px;
+}
+
+.mapboxgl-ctrl-top-left {
+  top: 70px !important;
+  left: 16px !important;
+}
+
+.mapbox-gl-draw_ctrl-draw-btn.mapbox-gl-draw_polygon,
+.mapboxgl-ctrl-group button.mapbox-gl-draw_polygon {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolygon points='12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2'/%3E%3C/svg%3E") !important;
+  background-size: 18px 18px !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
+
+.mapbox-gl-draw_ctrl-draw-btn.mapbox-gl-draw_trash,
+.mapboxgl-ctrl-group button.mapbox-gl-draw_trash {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 6h18'/%3E%3Cpath d='M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6'/%3E%3Cpath d='M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2'/%3E%3Cline x1='10' y1='11' x2='10' y2='17'/%3E%3Cline x1='14' y1='11' x2='14' y2='17'/%3E%3C/svg%3E") !important;
+  background-size: 16px 16px !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
+
+.mapbox-gl-draw_ctrl-draw-btn.mapbox-gl-draw_line,
+.mapboxgl-ctrl-group button.mapbox-gl-draw_line {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='5' y1='19' x2='19' y2='5'/%3E%3Ccircle cx='5' cy='19' r='2'/%3E%3Ccircle cx='19' cy='5' r='2'/%3E%3C/svg%3E") !important;
+  background-size: 18px 18px !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
+
+.mapbox-gl-draw_ctrl-draw-btn.mapbox-gl-draw_point,
+.mapboxgl-ctrl-group button.mapbox-gl-draw_point {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3C/svg%3E") !important;
+  background-size: 18px 18px !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
+
+.mapboxgl-ctrl.mapboxgl-ctrl-group,
+.mapboxgl-ctrl.mapboxgl-ctrl-group > button {
+  font-size: 14px;
+}
+
+.mapboxgl-ctrl-bottom-right,
+.mapboxgl-ctrl-top-right,
+.mapboxgl-ctrl-top-left,
+.mapboxgl-ctrl-bottom-left {
+  z-index: 1001;
+}
+
+.mapbox-gl-draw_ctrl-draw-btn,
+.mapbox-gl-draw_ctrl-draw-btn::before,
+.mapbox-gl-draw_ctrl-draw-btn::after {
+  filter: none !important;
+  opacity: 1 !important;
+}
+
+.mapboxgl-ctrl-group .mapbox-gl-draw_ctrl-draw-btn {
+  background-color: transparent !important;
+}
+
+.mapbox-gl-draw_ctrl-draw-btn {
+  filter: invert(0) !important;
+}
+
+/* ---------------- Radial Progress Bars ---------------- */
 .radial-progress {
     position: relative;
     display: inline-flex;
     width: 70px;
     height: 70px;
     border-radius: 50%;
-    /* Default background conic gradient (will be overridden by ID selectors) */
     background: conic-gradient(var(--tw-primary-green) 0%, transparent 0%);
 }
 .radial-progress-inner {
@@ -37,35 +163,25 @@ html, body, #__next {
     font-size: 0.75rem;
     font-weight: bold;
 }
-
-/* Specific styles for the two colored progress bars */
 #soil-moisture-progress {
-    --tw-primary-green: #3B82F6; /* sky-blue for moisture */
+    --tw-primary-green: #3B82F6;
     background: conic-gradient(var(--tw-primary-green) 68%, #E5E7EB 0%);
 }
-#soil-moisture-progress .radial-progress-inner {
-    color: #3B82F6;
-}
+#soil-moisture-progress .radial-progress-inner { color: #3B82F6; }
 
 #crop-health-progress {
-    --tw-primary-green: #10B981; /* primary-green for health */
+    --tw-primary-green: #10B981;
     background: conic-gradient(var(--tw-primary-green) 92%, #E5E7EB 0%);
 }
-#crop-health-progress .radial-progress-inner {
-    color: #10B981;
-}
+#crop-health-progress .radial-progress-inner { color: #10B981; }
 
-/* Important: Add bottom padding to main content to prevent fixed footer overlap */
+/* ---------------- Dashboard Layout / Utilities ---------------- */
 main {
-    padding-bottom: 5rem; /* Space for the fixed bottom nav bar (h-20) */
+    padding-bottom: 5rem; /* Prevent overlap with fixed footer */
 }
-
-/* Custom style for the overall score gradient */
 .farm-score-card {
-    background-image: linear-gradient(135deg, #10B981, #059669); /* primary-green to secondary-green */
+    background-image: linear-gradient(135deg, #10B981, #059669);
 }
-
-/* LLM Styling */
 .ai-output {
     background-color: #EEEBFF;
     border-left: 4px solid #8B5CF6;
@@ -79,60 +195,19 @@ main {
 .shake-after-10s {
   animation: shake 2s infinite;
 }
-
-/* Shake keyframes */
 @keyframes shake {
   0%   { transform: translateX(0); }
   4%   { transform: translateX(-6px); }
   8%   { transform: translateX(6px); }
   12%  { transform: translateX(-6px); }
-  16%   { transform: translateX(0); }
-  /* 16% → 100% = no shaking, pause */
-}
-/**
-.mapboxgl-map, .map-container {
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 6px 20px rgba(231, 240, 236, 0.06);
+  16%  { transform: translateX(0); }
 }
 
-.map-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  right: 12px;
-  top: 80px;
-  position: absolute;
-  z-index: 10;
-}
+/* Optional commented legacy styles kept for reference */
+/*
+.mapboxgl-map, .map-container { ... }
+.map-controls { ... }
+body { ... }
+.map-container { ... }
+.kpi-card { ... }
 */
-/**
-body {
-  background-color: #c2edcb;    
-  color: #0f172a;             
-  font-family: 'Poppins', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-.map-container {
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 6px 20px rgba(2,6,23,0.06);
-  background: #fff;
-}
-.map-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  position: absolute;
-  right: 12px;
-  top: 80px;
-  z-index: 20;
-}
-.kpi-card {
-  border-radius: 14px;
-  background: #fff;
-  box-shadow: 0 6px 20px rgba(2,6,23,0.06);
-}
-  */
-

@@ -16,15 +16,20 @@ export default function DashboardClient() {
   const router = useRouter();
   const [showMenu, setShowMenu] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const [user, setUser] = useState<string>("");
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
+    const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
     if (!token) {
       router.push("/login");
     } else {
       setAuthChecked(true);
+      // safely read userName from localStorage on the client
+      const u = localStorage.getItem("userName") || "";
+      setUser(u);
     }
   }, [router]);
-  const user = localStorage.getItem("userName") || "";
+  // `user` is now read into state in the effect above to avoid accessing
+  // localStorage during server-side render.
   const { handleIdentifyDisease } = useDiseaseId();
 
   if (!authChecked) return null;

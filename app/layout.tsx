@@ -1,21 +1,50 @@
-import './globals.css';
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+
+// Global styles
+import "./globals.css";
+
+// Admin / custom styles
 import "./styles/styles.css";
 import "./styles/styles_custom.css";
 import "./styles/table-card.css";
-import '../node_modules/bootstrap/dist/css/bootstrap.min.css';
 
-export const metadata = {
-  title: "KISSAN SAATHI Admin",
-  description: "Admin Web Application",
+// Bootstrap
+import "bootstrap/dist/css/bootstrap.min.css";
+
+// Mapbox CSS (REQUIRED)
+import "mapbox-gl/dist/mapbox-gl.css";
+import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
+
+// Fonts
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+// Metadata (merged meaningfully)
+export const metadata: Metadata = {
+  title: "Kissan Saathi",
+  description: "AI-powered crop monitoring & Admin platform",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en">
-      <body className="h-screen overflow-hidden">
+    <html lang="en" className="h-full" suppressHydrationWarning>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased h-full w-full overflow-hidden`}
+      >
         {children}
       </body>
     </html>
   );
 }
-
