@@ -76,7 +76,7 @@ export default function FarmScoreCard() {
         </div>
         <div className="lg:col-span-2 space-y-4 shadow rounded-2xl">
           <h2 className="text-xl font-bold text-gray-800 mb-0 p-3 border-bottom">
-            Interactive Field Map
+            My Farm
           </h2>
           <div className="flex flex-wrap gap-2 pt-0 p-3 border-bottom">
             <button className="px-4 py-2 bg-sky-blue text-white font-semibold rounded-full text-sm shadow-md hover:bg-blue-600 transition">
