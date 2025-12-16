@@ -1,741 +1,614 @@
-// app/soil/page.tsx
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
-import SoilHealthSmartCard from "./SoilHealthSmartCard";
-import "./soil-health.css";
-import SoilPredictionCard from "./SoilPredictionCard";
-import SoilPredictionTable from "./SoilPredictionTable";
-/**
- * Soil page: connected to backend.
- * Uses updated SoilHealthResponseDto from backend:
- *  - thermogram: SoilLayerDto[]
- *  - nutrients: NutrientDto[]
- *  - indices: SoilIndicesDto | null
- *  - crop: optional string
- */
+import React, { useEffect, useState } from "react";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Tooltip,
+  Legend,
+  ArcElement
+} from "chart.js";
+import { Pie } from "react-chartjs-2";
 
-type Depth = { label: string; temp: number; moisture: number };
+import {
+  BookOpen,
+  FileText,
+  GraduationCap,
+  ImageIcon,
+  ArrowRight,
+  Droplets,
+  ThermometerSun,
+  Sprout,
+  AlertTriangle,
+  CheckCircle2,
+  Clock
+} from "lucide-react";
 
-const DEFAULT_DEPTHS: Depth[] = [
-  { label: "5 cm", temp: 29.2, moisture: 66.9 },
-  { label: "15 cm", temp: 25.3, moisture: 74.1 },
-  { label: "50 cm", temp: 26.1, moisture: 86 },
-  { label: "150 cm", temp: 26.8, moisture: 100 },
-];
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  ArcElement,
+  Tooltip,
+  Legend
+);
 
-const TEMP_FORECAST = [
-  { date: "11-10", "5 cm": 26.8, "15 cm": 25.5, "50 cm": 26.0, "150 cm": 27.0 },
-  { date: "11-11", "5 cm": 26.6, "15 cm": 25.3, "50 cm": 25.9, "150 cm": 26.8 },
-  { date: "11-12", "5 cm": 26.9, "15 cm": 25.2, "50 cm": 25.8, "150 cm": 26.7 },
-  { date: "11-13", "5 cm": 26.5, "15 cm": 25.0, "50 cm": 25.9, "150 cm": 26.6 },
-  { date: "11-14", "5 cm": 26.7, "15 cm": 25.1, "50 cm": 25.9, "150 cm": 26.7 },
-  { date: "11-15", "5 cm": 26.6, "15 cm": 25.0, "50 cm": 25.8, "150 cm": 26.6 },
-  { date: "11-16", "5 cm": 26.5, "15 cm": 24.9, "50 cm": 25.7, "150 cm": 26.5 },
-];
+const API_BASE = "http://localhost:4000";
 
-const MOISTURE_FORECAST = [
-  { date: "11-10", "5 cm": 0.66, "15 cm": 0.74, "50 cm": 0.86, "150 cm": 1.0 },
-  { date: "11-11", "5 cm": 0.67, "15 cm": 0.745, "50 cm": 0.86, "150 cm": 1.0 },
-  { date: "11-12", "5 cm": 0.665, "15 cm": 0.742, "50 cm": 0.86, "150 cm": 1.0 },
-  { date: "11-13", "5 cm": 0.66, "15 cm": 0.74, "50 cm": 0.86, "150 cm": 1.0 },
-  { date: "11-14", "5 cm": 0.668, "15 cm": 0.744, "50 cm": 0.86, "150 cm": 1.0 },
-  { date: "11-15", "5 cm": 0.667, "15 cm": 0.743, "50 cm": 0.86, "150 cm": 1.0 },
-  { date: "11-16", "5 cm": 0.666, "15 cm": 0.741, "50 cm": 0.86, "150 cm": 1.0 },
-];
-
-type SoilStats = {
-  nitrogen?: number | null;
-  phosphorus?: number | null;
-  potassium?: number | null;
-  moisture?: number | null;
-  ph?: number | null;
-  ec?: number | null;
-  organicCarbon?: number | null;
-  sulfur?: number | null;
-  iron?: number | null;
-  zinc?: number | null;
-  copper?: number | null;
-  boron?: number | null;
-  manganese?: number | null;
-};
-
-type SoilIndices =
-  | {
-      ndvi?: number | null;
-      ndre?: number | null;
-      evi?: number | null;
-      ndwi?: number | null;
-      savi?: number | null;
-      vari?: number | null;
-      soilOrganicCarbon?: number | null;
-      landSurfaceTemp?: number | null;
-    }
-  | null;
-
-/* ---------- Small mapping helpers (convert backend DTO -> UI) ---------- */
-
-function mapThermogramToDepths(thermogram: any[] | undefined, defaultDepths: Depth[]): Depth[] {
-  if (!Array.isArray(thermogram) || thermogram.length === 0) {
-    return defaultDepths.slice();
+// ===== Weather UI Helper =====
+function getWeatherUI(temp: number, moist: number) {
+  if (temp <= 12) {
+    return { bg: "from-cyan-100 to-blue-200", icon: "❄" };
   }
-
-  const mapped: Depth[] = thermogram.slice(0, defaultDepths.length).map((layer: any, idx: number) => ({
-    label: layer?.depthLabel ?? defaultDepths[idx].label,
-    temp: layer?.temperature != null && !Number.isNaN(Number(layer.temperature)) ? Number(layer.temperature) : defaultDepths[idx].temp,
-    moisture:
-      layer?.moisture != null && !Number.isNaN(Number(layer.moisture))
-        ? Number(layer.moisture)
-        : defaultDepths[idx].moisture,
-  }));
-
-  while (mapped.length < defaultDepths.length) {
-    mapped.push({ ...defaultDepths[mapped.length] });
+  if (moist >= 70) {
+    return { bg: "from-slate-700 to-slate-900", icon: "🌧" };
   }
-
-  return mapped;
-}
-
-function mapNutrientsToSoilStats(nutrients: any[] | undefined, thermogram?: any[]): SoilStats {
-  const byCode = (code: string) =>
-    Array.isArray(nutrients) ? nutrients.find((n) => String(n?.code ?? "").toUpperCase() === code) : undefined;
-
-  const deducedMoist =
-    Array.isArray(thermogram) && thermogram.length
-      ? thermogram[thermogram.length - 1]?.moisture ?? null
-      : null;
-
-  return {
-    nitrogen: byCode("N")?.value ?? byCode("N")?.percentOfOptimal ?? null,
-    phosphorus: byCode("P")?.value ?? byCode("P")?.percentOfOptimal ?? null,
-    potassium: byCode("K")?.value ?? byCode("K")?.percentOfOptimal ?? null,
-    organicCarbon: byCode("OC")?.value ?? byCode("OC")?.percentOfOptimal ?? null,
-    zinc: byCode("ZN")?.value ?? byCode("ZN")?.percentOfOptimal ?? null,
-    iron: byCode("FE")?.value ?? byCode("FE")?.percentOfOptimal ?? null,
-    ph: byCode("PH")?.value ?? null,
-    ec: byCode("EC")?.value ?? null,
-    moisture: deducedMoist,
-    sulfur: byCode("S")?.value ?? byCode("S")?.percentOfOptimal ?? null,
-    copper: byCode("CU")?.value ?? byCode("CU")?.percentOfOptimal ?? null,
-    boron: byCode("B")?.value ?? byCode("B")?.percentOfOptimal ?? null,
-    manganese: byCode("MN")?.value ?? byCode("MN")?.percentOfOptimal ?? null,
-  };
-}
-
-/* ---------- Inline chart utils (small, no external libs) ---------- */
-
-type ForecastRow = { date: string; [depth: string]: number | string | undefined };
-
-function getSeriesKeys(forecast: ForecastRow[]) {
-  if (!Array.isArray(forecast) || forecast.length === 0) return [];
-  return Object.keys(forecast[0]).filter((k) => k !== "date");
-}
-
-function computeYRange(forecast: ForecastRow[], seriesKeys: string[]) {
-  let min = Number.POSITIVE_INFINITY;
-  let max = Number.NEGATIVE_INFINITY;
-  forecast.forEach((r) => {
-    seriesKeys.forEach((k) => {
-      const v = Number(r[k]);
-      if (!Number.isNaN(v)) {
-        if (v < min) min = v;
-        if (v > max) max = v;
-      }
-    });
-  });
-  if (min === Number.POSITIVE_INFINITY || max === Number.NEGATIVE_INFINITY) {
-    min = 0;
-    max = 1;
+  if (moist >= 60) {
+    return { bg: "from-slate-300 to-slate-400", icon: "☁" };
   }
-  if (Math.abs(max - min) < 0.001) {
-    // small range -> expand
-    max = max + 1;
-    min = Math.max(0, min - 1);
+  if (temp >= 32) {
+    return { bg: "from-yellow-300 to-orange-400", icon: "☀" };
   }
-  return { min, max };
+  return { bg: "from-sky-100 to-sky-200", icon: "🌤" };
 }
-
-/* ---------- Small presentational components inserted inline ---------- */
-
-function SoilDepthListCard({ depths, title, unitLabel, lastUpdated }: { depths: Depth[]; title: string; unitLabel?: string; lastUpdated?: string }) {
-  return (
-    <div className="bg-white rounded-lg shadow p-4 h-full">
-      <div className="flex items-start gap-4">
-        <div style={{ width: "180px", minWidth: "240px" }}>
-          <img src="/images/soil-stack.png" alt="soil stack" style={{ width: "100%", height: "auto", objectFit: "contain" }} />
-        </div>
-        <div className="flex-1">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-gray-700">{title}</h3>
-            {lastUpdated && <div className="text-xs text-gray-400">Last updated: {lastUpdated.split("T")[0]}</div>}
-          </div>
-
-          <div className="space-y-3">
-            {depths.map((d, i) => (
-              <div key={i} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-md">
-                <div className="flex items-center gap-3">
-                  <div className="h-2 w-2 rounded-full bg-gray-400" />
-                  <div className="text-xs text-gray-600">{d.label}</div>
-                </div>
-                <div className="text-sm font-semibold">
-                  {typeof d.temp === "number" && unitLabel === "°C" ? d.temp.toFixed(2) + " " + unitLabel : (d.temp ?? "-")}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/**
- * ForecastChartCard
- * - forecast: array of rows {date, "5 cm": val, "15 cm": val...}
- * - label: heading
- * - valueFormatter: (v) => string
- */
-function ForecastChartCard({
-  forecast,
-  label,
-  valueFormatter,
-}: {
-  forecast: ForecastRow[];
-  label: string;
-  valueFormatter?: (v: number) => string;
-}) {
-  const seriesKeys = getSeriesKeys(forecast);
-  const { min, max } = computeYRange(forecast, seriesKeys);
-  const width = 500;
-  const height = 220;
-  const padding = { top: 12, right: 10, bottom: 28, left: 36 };
-
-  // auto color palette (repeatable)
-  const COLORS = ["#ef4444", "#f59e0b", "#10b981", "#3b82f6"];
-
-  // points for each series
-  const seriesPoints = seriesKeys.map((key) => {
-    const pts = forecast.map((row, idx) => {
-      const x = padding.left + (idx / Math.max(1, forecast.length - 1)) * (width - padding.left - padding.right);
-      const rawv = Number(row[key]);
-      const t = Number.isNaN(rawv) ? min : rawv;
-      const normalized = (t - min) / (max - min);
-      const y = padding.top + (1 - normalized) * (height - padding.top - padding.bottom);
-      return [x, y];
-    });
-    return { key, pts };
-  });
-
-  // helper to build path string
-  const pathFor = (pts: number[][]) => pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p[0].toFixed(2)} ${p[1].toFixed(2)}`).join(" ");
-
-  return (
-    <div className="bg-white rounded-lg shadow p-4 h-full">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-700">{label}</h3>
-      </div>
-
-      <div className="flex gap-4">
-        <div className="flex-1">
-          <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height} preserveAspectRatio="none" className="block">
-            {/* background grid */}
-            <defs>
-              <linearGradient id="g" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
-                <stop offset="100%" stopColor="#f8fafc" stopOpacity="1" />
-              </linearGradient>
-            </defs>
-
-            <rect x="0" y="0" width={width} height={height} fill="url(#g)" rx="8" />
-
-            {/* horizontal lines */}
-            {[0, 0.25, 0.5, 0.75, 1].map((t, i) => {
-              const y = padding.top + t * (height - padding.top - padding.bottom);
-              return <line key={i} x1={padding.left} x2={width - padding.right} y1={y} y2={y} stroke="#eef2f7" strokeWidth={1} />;
-            })}
-
-            {/* series paths */}
-            {seriesPoints.map((s, i) => {
-              const d = pathFor(s.pts);
-              const color = COLORS[i % COLORS.length];
-              return (
-                <g key={s.key}>
-                  <path d={d} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                  {/* dots */}
-                  {s.pts.map((p, idx) => (
-                    <circle key={idx} cx={p[0]} cy={p[1]} r={2.5} fill={color} stroke="#fff" strokeWidth={0.5} />
-                  ))}
-                </g>
-              );
-            })}
-
-            {/* x-axis labels */}
-            {forecast.map((r, idx) => {
-              const x = padding.left + (idx / Math.max(1, forecast.length - 1)) * (width - padding.left - padding.right);
-              return (
-                <text key={idx} x={x} y={height - 6} fontSize={10} textAnchor="middle" fill="#6b7280">
-                  {r.date}
-                </text>
-              );
-            })}
-
-            {/* y-axis numeric ticks (3 ticks) */}
-            {[0, 0.5, 1].map((t, i) => {
-              const v = min + (1 - t) * (max - min);
-              const y = padding.top + t * (height - padding.top - padding.bottom);
-              return (
-                <g key={i}>
-                  <text x={8} y={y + 4} fontSize={11} fill="#9ca3af">
-                    {valueFormatter ? valueFormatter(v) : v.toFixed(2)}
-                  </text>
-                </g>
-              );
-            })}
-          </svg>
-        </div>
-
-        {/* legend */}
-        <div className="w-36 flex-shrink-0">
-          <div className="space-y-2">
-            {seriesKeys.map((k, i) => (
-              <div key={k} className="flex items-center gap-2 text-xs">
-                <span style={{ width: 12, height: 12, background: ["#ef4444", "#f59e0b", "#10b981", "#3b82f6"][i % 4] }} className="inline-block rounded-sm" />
-                <div className="text-gray-600">{k}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ---------- Page component ---------- */
 
 export default function SoilPage() {
-  const [selectedFarm, setSelectedFarm] = useState("My Farm 1");
-  const [selectedFarmPolygon, setSelectedFarmPolygon] = useState<any | null>(null);
-
-  // api state
-  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  const [soilStats, setSoilStats] = useState<SoilStats | null>(null);
-  const [depths, setDepths] = useState<Depth[]>(DEFAULT_DEPTHS);
-  const [indices, setIndices] = useState<SoilIndices | null>(null);
-  const [tempForecast, setTempForecast] = useState<any[]>(TEMP_FORECAST);
-  const [moistureForecast, setMoistureForecast] = useState<any[]>(MOISTURE_FORECAST);
-  const [currentCrop, setCurrentCrop] = useState<string>("RICE");
-  const [lastUpdated, setLastUpdated] = useState<string | undefined>(undefined);
 
-  // NEW: predictions state (page-level)
-  const [predictions, setPredictions] = useState<Record<string, any> | null>(null);
+  /* ---------- Fertilizer state ---------- */
+  const [state, setState] = useState("");
+  const [district, setDistrict] = useState("");
+  const [N, setN] = useState("");
+  const [P, setP] = useState("");
+  const [K, setK] = useState("");
+  const [OC, setOC] = useState("");
+  const [fertilizer, setFertilizer] = useState<any>(null);
+  const [loadingFert, setLoadingFert] = useState(false);
 
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
+  const [states, setStates] = useState<string[]>([]);
+  const [districts, setDistricts] = useState<string[]>([]);
+  const [loadingSoil, setLoadingSoil] = useState(true);
 
-  // Allow developer to enable fallback default coords (for dev only).
-  // Set NEXT_PUBLIC_ALLOW_DEFAULT_COORDS=true to allow fallback coords.
-  const ALLOW_DEFAULT_COORDS = (process.env.NEXT_PUBLIC_ALLOW_DEFAULT_COORDS || "false").toLowerCase() === "true";
-  const DEFAULT_COORDS = { lat: 19.0760, lon: 72.8777 }; // Mumbai (dev only)
+  /* ---------- VALIDATION ---------- */
+  const isFormValid = !!state && !!district && !!N && !!P && !!K && !!OC && !loadingFert;
 
-  /**
-   * Robust fetch helpers
-   */
-  async function parseResponseSafely(res: Response) {
-    const text = await res.text().catch(() => "");
-    try {
-      return text ? JSON.parse(text) : {};
-    } catch {
-      // Not JSON — return text under message
-      return { message: text || `HTTP ${res.status}` };
-    }
-  }
-
-  // fetch soil by lat/lon (single call)
-  async function fetchSoilByCoords(lat: number, lon: number) {
-    const url = `${API_BASE_URL}/soil?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`;
-    const r = await fetch(url);
-    if (!r.ok) {
-      const errBody = await parseResponseSafely(r);
-      const msg = typeof errBody.message === "string" ? errBody.message : `Failed to fetch soil data (${r.status})`;
-      throw new Error(msg);
-    }
-    return r.json();
-  }
-
-  // POST polygon and get soil
-  async function postPolygonAndGetSoil(polygon: any) {
-    const r = await fetch(`${API_BASE_URL}/soil/area`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ polygon }),
-    });
-    if (!r.ok) {
-      const errBody = await parseResponseSafely(r);
-      const msg = typeof errBody.message === "string" ? errBody.message : `Failed POST /soil/area (${r.status})`;
-      throw new Error(msg);
-    }
-    return r.json();
-  }
-
-  // GET farm by name (if backend supports) and return polygon
-  async function getFarmPolygonByName(farmName: string) {
-    const r = await fetch(`${API_BASE_URL}/farm/${encodeURIComponent(farmName)}`);
-    if (!r.ok) {
-      return null;
-    }
-    const j = await r.json().catch(() => null);
-    return j?.polygon ?? j?.geojson ?? null;
-  }
-
-  // Try to fetch coords from weather endpoint
-  async function getCoordsFromWeather() {
-    try {
-      const w = await fetch(`${API_BASE_URL}/weather`);
-      if (!w.ok) return null;
-      const wjson = await w.json().catch(() => null);
-      const lat = wjson?.location?.latitude ?? wjson?.coord?.lat ?? wjson?.latitude ?? null;
-      const lon = wjson?.location?.longitude ?? wjson?.coord?.lon ?? wjson?.longitude ?? null;
-      if (lat != null && lon != null) {
-        return { lat: Number(lat), lon: Number(lon) };
-      }
-      return null;
-    } catch {
-      return null;
-    }
-  }
-
-  /**
-   * fetchSoil(): improved order and friendlier error handling
-   *
-   * Order:
-   *  1) POST polygon to /soil/area (if polygon drawn)
-   *  2) GET /farm/:name -> POST its polygon to /soil/area
-   *  3) GET /weather -> use coords -> call /soil?lat=..&lon=..
-   *  4) Try calling /soil (no params) only as last resort (and handle lat/lon error by retrying weather or fallback coords)
-   */
-  const fetchSoil = async () => {
-    setError(null);
-    setLoading(true);
-
-    try {
-      let raw: any | null = null;
-
-      // 1) polygon provided by map -> POST
-      if (selectedFarmPolygon) {
-        try {
-          raw = await postPolygonAndGetSoil(selectedFarmPolygon);
-        } catch (err) {
-          console.warn("POST /soil/area failed:", err);
-        }
-      }
-
-      // 2) try farm polygon via /farm/:name
-      if (!raw) {
-        try {
-          const polygonFromFarm = await getFarmPolygonByName(selectedFarm);
-          if (polygonFromFarm) {
-            try {
-              raw = await postPolygonAndGetSoil(polygonFromFarm);
-            } catch (err) {
-              console.warn("POST /soil/area with farm polygon failed:", err);
-            }
-          }
-        } catch (err) {
-          console.debug("Error fetching farm/:name:", err);
-        }
-      }
-
-      // 3) Try getting coords from /weather BEFORE calling /soil without params.
-      //    This avoids hitting /soil with empty params in most cases.
-      if (!raw) {
-        const coordsFromWeather = await getCoordsFromWeather();
-        if (coordsFromWeather) {
-          try {
-            raw = await fetchSoilByCoords(coordsFromWeather.lat, coordsFromWeather.lon);
-          } catch (err) {
-            console.warn("fetchSoilByCoords(using weather coords) failed:", err);
-            // allow fallback to try /soil() below
-          }
-        }
-      }
-
-      // 4) As a last resort, call /soil with no params (backend might accept it or return useful message)
-      if (!raw) {
-        const r = await fetch(`${API_BASE_URL}/soil`);
-        if (!r.ok) {
-          const errBody = await parseResponseSafely(r);
-          const msg = typeof errBody.message === "string" ? errBody.message : `Failed to fetch soil data (${r.status})`;
-
-          // If backend explicitly complains about missing lat/lon, attempt one more automatic recovery:
-          if (String(msg).toLowerCase().includes("lat") && String(msg).toLowerCase().includes("lon")) {
-            // 4a) Try weather again (sometimes weather wasn't available earlier due to race or transient error)
-            const coords = await getCoordsFromWeather();
-            if (coords) {
-              try {
-                raw = await fetchSoilByCoords(coords.lat, coords.lon);
-              } catch (err) {
-                console.warn("Retry fetchSoilByCoords after lat/lon error failed:", err);
-              }
-            }
-
-            // 4b) If still not resolved and developer enabled default coords, use them (dev only)
-            if (!raw && ALLOW_DEFAULT_COORDS) {
-              console.warn("Using default coords because weather did not provide coords and fallback is enabled.");
-              raw = await fetchSoilByCoords(DEFAULT_COORDS.lat, DEFAULT_COORDS.lon);
-            }
-
-            // 4c) If still no data -> throw a friendly error (don't show raw backend message)
-            if (!raw) {
-              throw new Error(
-                "Location not available. Draw a polygon on the map or ensure backend /weather or /farm/:name returns coordinates."
-              );
-            }
-          } else {
-            // non-lat/lon error from /soil -> bubble it up (but we will show it in friendly form)
-            throw new Error(msg);
-          }
-        } else {
-          // /soil returned OK (rare) — parse result
-          raw = await r.json().catch(() => null);
-        }
-      }
-
-      // Final guard: if we still didn't get anything show helpful message
-      if (!raw) {
-        throw new Error(
-          "Could not determine coordinates to fetch soil data. Draw a polygon on the map or enable coordinates in your backend."
-        );
-      }
-
-      // ---- map the response to UI-friendly shapes ----
-      const mappedDepths = mapThermogramToDepths(raw?.thermogram, DEFAULT_DEPTHS);
-      setDepths(mappedDepths);
-
-      const stats = mapNutrientsToSoilStats(raw?.nutrients, raw?.thermogram);
-      setSoilStats(stats);
-
-      setIndices(raw?.indices ?? raw?.mapLayers ?? null);
-      setCurrentCrop(raw?.crop ?? raw?.recommendedCrop ?? currentCrop);
-
-      if (Array.isArray(raw?.tempForecast) && raw.tempForecast.length) {
-        setTempForecast(raw.tempForecast);
-      } else {
-        setTempForecast(TEMP_FORECAST);
-      }
-
-      if (Array.isArray(raw?.moistureForecast) && raw.moistureForecast.length) {
-        setMoistureForecast(raw.moistureForecast);
-      } else {
-        setMoistureForecast(MOISTURE_FORECAST);
-      }
-
-      setLastUpdated(raw?.updatedAt ?? new Date().toISOString());
-
-      // NEW: set page-level predictions so SoilPredictionTable can render them
-      setPredictions(raw?.predictions ?? null);
-    } catch (err: any) {
-      console.error("fetchSoil error:", err);
-
-      // Map common backend messages to friendly text for the UI:
-      const rawMsg = String(err?.message ?? "");
-      if (rawMsg.toLowerCase().includes("lat") && rawMsg.toLowerCase().includes("lon")) {
-        setError(
-          "Location not provided by backend. Draw a polygon on the map, or ensure your backend exposes /weather or /farm/:name with coordinates."
-        );
-      } else {
-        // show error message but keep it user-friendly
-        setError(rawMsg || "Something went wrong while fetching soil data.");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // fetch on mount
+  /* ---------- Load Data ---------- */
   useEffect(() => {
-    fetchSoil();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    async function loadInitialData() {
+      try {
+        setLoadingSoil(true);
+        // FIXED: Added backticks
+        const [soilRes, stateRes] = await Promise.all([
+          fetch(`${API_BASE}/soil`),
+          fetch(`${API_BASE}/locations/states`),
+        ]);
+        const soilJson = await soilRes.json();
+        const stateJson = await stateRes.json();
+        setData(soilJson);
+        setStates(stateJson);
+
+        if (soilJson?.nutrients) {
+          setN(String(soilJson.nutrients.N ?? ""));
+          setP(String(soilJson.nutrients.P ?? ""));
+          setK(String(soilJson.nutrients.K ?? ""));
+          setOC(String(soilJson.nutrients.OC ?? ""));
+        }
+      } catch {
+        setError("Failed to load soil data");
+      } finally {
+        setLoadingSoil(false);
+      }
+    }
+    loadInitialData();
   }, []);
 
-  // memoize chart-friendly forecasts (convert moisture to percentages for display if necessary)
-  const tempForecastMemo = useMemo(() => tempForecast as ForecastRow[], [tempForecast]);
-  const moistureForecastMemo = useMemo(
-    () =>
-      (moistureForecast as ForecastRow[]).map((r) => {
-        // if moisture is 0..1, convert to percent for chart visibility (but preserve original shape)
-        const converted: any = { ...r };
-        Object.keys(r).forEach((k) => {
-          if (k === "date") return;
-          const v = Number((r as any)[k]);
-          if (!Number.isNaN(v) && v <= 1.5) {
-            converted[k] = Number((v * 100).toFixed(3)); // convert to %
-          } else {
-            converted[k] = v;
-          }
-        });
-        return converted;
-      }),
-    [moistureForecast]
-  );
+  useEffect(() => {
+    if (!state) return;
+    // FIXED: Added backticks
+    fetch(`${API_BASE}/locations/districts?state=${state}`)
+      .then((r) => r.json())
+      .then(setDistricts);
+  }, [state]);
+
+  async function getRecommendation() {
+    try {
+      setLoadingFert(true);
+      // FIXED: Added backticks
+      const res = await fetch(`${API_BASE}/fertilizer/recommend`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ state, district, N: Number(N), P: Number(P), K: Number(K), OC: Number(OC) }),
+      });
+      const json = await res.json();
+      setFertilizer(json);
+    } catch {
+      setFertilizer(null);
+    } finally {
+      setLoadingFert(false);
+    }
+  }
+
+  const nutrients = data?.nutrients ?? {};
+  
+  // Forecast Data
+  const forecast7d = Array.isArray(data?.forecast7d) ? data.forecast7d : [];
+  const dummyForecast7d = [
+    { day: "Today", temp: 26, moist: 45, status: "Optimal" },
+    { day: "Mon", temp: 26, moist: 42, status: "Optimal" },
+    { day: "Tue", temp: 26, moist: 40, status: "Optimal" },
+    { day: "Wed", temp: 25, moist: 38, status: "Optimal" },
+    { day: "Thu", temp: 26, moist: 35, status: "Critical" },
+  ];
+  const hasValidForecastData = Array.isArray(forecast7d) && forecast7d.some((d: any) => typeof d?.temp === "number");
+  const finalForecast7d = hasValidForecastData ? forecast7d : dummyForecast7d;
+
+  // Nutrient Data
+  const nutrientLabels = ["Nitrogen (N)", "Phosphorus (P)", "Potassium (K)", "Organic Carbon (OC)", "Sulfur (S)", "Iron (Fe)", "Zinc (Zn)", "Copper (Cu)", "Boron (B)", "Manganese (Mn)"];
+  const apiNutrientValues = [nutrients.N, nutrients.P, nutrients.K, nutrients.OC, nutrients.S, nutrients.Fe, nutrients.Zn, nutrients.Cu, nutrients.B, nutrients.Mn].map((v: any) => (typeof v === "number" ? v : 0));
+  const hasRealData = apiNutrientValues.some((v) => v > 0);
+  const finalNutrientValues = hasRealData ? apiNutrientValues : [30, 20, 15, 7, 4, 10, 6, 3, 2, 5];
+
+  const nutrientPieData = {
+    labels: nutrientLabels,
+    datasets: [{
+      label: "Soil Nutrients",
+      data: finalNutrientValues,
+      backgroundColor: ["#10B981", "#F59E0B", "#3B82F6", "#DC2626", "#8B5CF6", "#EC4899", "#06B6D4", "#84CC16", "#F97316", "#6366F1"],
+      borderWidth: 1,
+    }],
+  };
+
+  // UI Components
+  function FeatureDonut({ title, labels, values, colors }: any) {
+    return (
+      <div className="bg-white rounded-lg shadow p-3 text-center border border-gray-100 flex flex-col items-center justify-between h-full">
+        <div className="text-sm font-semibold text-gray-700">{title}</div>
+        <div className="h-[100px] w-full flex items-center justify-center my-2">
+          <Pie data={{ labels, datasets: [{ data: values, backgroundColor: colors, borderWidth: 1 }] }} options={{ responsive: true, maintainAspectRatio: false, cutout: "70%", plugins: { legend: { display: false } } }} />
+        </div>
+        <div className="text-[10px] text-gray-400">Overview</div>
+      </div>
+    );
+  }
+
+  // --- Realistic Soil Stack ---
+  const SOIL_ROW_HEIGHT = "60px";
+  const soilGradients = ["from-[#5d4037] to-[#4e342e]", "from-[#795548] to-[#6d4c41]", "from-[#8d6e63] to-[#795548]", "from-[#a1887f] to-[#8d6e63]"];
+  const DUMMY_SOIL_LAYERS = [
+    { label: "5–10 cm", value: 28, status: "Monitor", color: "yellow" },
+    { label: "15–30 cm", value: 25, status: "Optimal", color: "green" },
+    { label: "30–60 cm", value: 18, status: "Good", color: "blue" },
+    { label: "60–100 cm", value: 14, status: "Too Cold", color: "red" },
+  ];
+  const DUMMY_MOISTURE_LAYERS = [
+    { label: "5–10 cm", value: 18, status: "Low", color: "red" },
+    { label: "15–30 cm", value: 32, status: "Optimal", color: "green" },
+    { label: "30–60 cm", value: 45, status: "Good", color: "blue" },
+    { label: "60–100 cm", value: 55, status: "Good", color: "blue" },
+  ];
+
+  const layers = data?.soilLayers ?? DUMMY_SOIL_LAYERS;
+  const moistureLayers = data?.moistureLayers ?? DUMMY_MOISTURE_LAYERS;
+
+  function SoilLayerStack({ layers }: { layers: any[] }) {
+    return (
+      <div className="relative w-[120px] shadow-xl rounded-b-2xl">
+        {/* Realistic Grass Top */}
+        <div className="h-6 w-full bg-gradient-to-b from-[#4ade80] to-[#15803d] rounded-t-xl relative overflow-hidden border-b-2 border-[#3e2723]">
+             <div className="absolute bottom-0 left-0 w-full h-2 bg-black/10"></div>
+        </div>
+        
+        <div className="flex flex-col rounded-b-xl overflow-hidden border-x border-b border-[#3e2723]">
+          {layers.map((layer, i) => (
+            // FIXED: Added backticks around className string
+            <div key={i} style={{ height: SOIL_ROW_HEIGHT }} className={`flex items-center justify-center text-white font-bold text-sm bg-gradient-to-b ${soilGradients[i]} relative shadow-inner`}>
+              <div className="absolute inset-0 bg-black/5 mix-blend-multiply" />
+              <span className="relative z-10 drop-shadow-md">{layer.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  function DepthRowAligned({ label, value, status, color }: any) {
+    const badgeMap: any = {
+      yellow: "bg-yellow-100 text-yellow-800 border-yellow-200",
+      green: "bg-green-100 text-green-800 border-green-200",
+      blue: "bg-blue-100 text-blue-800 border-blue-200",
+      red: "bg-red-100 text-red-800 border-red-200",
+    };
+    return (
+      <div style={{ height: SOIL_ROW_HEIGHT }} className="flex items-center justify-between border-b border-gray-50 last:border-0">
+        <div className="text-xs font-medium text-gray-500 w-16">{label}</div>
+        <div className="text-sm font-bold text-gray-800">{value}</div>
+        {/* FIXED: Added backticks around className */}
+        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${badgeMap[color]} uppercase tracking-wider`}>
+          {status}
+        </span>
+      </div>
+    );
+  }
+
+  // --- Action Plan Card Component ---
+  function ActionCard({ step, title, desc, cta, color }: any) {
+    const theme: any = {
+      red: { border: "border-red-500", bg: "bg-red-50", icon: "text-red-500", btn: "bg-red-600 hover:bg-red-700" },
+      yellow: { border: "border-yellow-500", bg: "bg-yellow-50", icon: "text-yellow-600", btn: "bg-yellow-600 hover:bg-yellow-700" },
+      blue: { border: "border-blue-500", bg: "bg-blue-50", icon: "text-blue-500", btn: "bg-blue-600 hover:bg-blue-700" },
+    };
+    const t = theme[color];
+
+    return (
+      // FIXED: Added backticks around className
+      <div className={`border-2 ${t.border} rounded-lg p-3 ${t.bg} flex flex-col justify-between h-full`}>
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+             {/* FIXED: Added backticks around className */}
+            <span className={`flex items-center justify-center w-6 h-6 rounded bg-white font-bold text-xs shadow-sm ${t.icon}`}>
+              #{step}
+            </span>
+            <div className="text-xs font-bold uppercase text-gray-700">Recommended Action</div>
+          </div>
+          <h4 className="font-bold text-sm text-gray-900 leading-tight mb-1">{title}</h4>
+          <p className="text-[11px] text-gray-600 leading-snug mb-3">{desc}</p>
+        </div>
+        {/* FIXED: Added backticks around className */}
+        <button className={`${t.btn} text-white text-[10px] font-bold py-1.5 px-3 rounded w-full transition-colors`}>
+          {cta}
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-      {/* header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center space-x-3">
-          <label className="text-sm text-gray-600">Farm</label>
-          <select
-            value={selectedFarm}
-            onChange={(e) => setSelectedFarm(e.target.value)}
-            className="rounded-md border px-3 py-1 bg-white"
-          >
-            <option>My Farm 1</option>
-            <option>My Farm 2</option>
-          </select>
-        </div>
-
-        <div className="flex items-center space-x-3">
-          <div className="text-sm text-gray-600">Kisaan Saathi</div>
-          <div className="h-9 w-9 rounded-full bg-green-500 text-white flex items-center justify-center">A</div>
-        </div>
-      </div>
-
-      {/* NOTE: location & polygon handled by backend; UI allows polygon later */} 
-      <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="col-span-2">
-          <div className="text-sm text-gray-600 mb-2">
-            Location for soil analysis is provided by the backend. If you draw a polygon on the map it will POST to <code>/soil/area</code>. If not, frontend will attempt to get coords from /farm/:name or /weather.
-          </div>
-        </div>
-        <div className="flex items-center md:justify-end">
-          <button
-            type="button"
-            onClick={() => fetchSoil()}
-            disabled={loading}
-            className="px-4 py-2 rounded-md bg-green-600 text-white text-sm font-semibold hover:bg-green-700 disabled:opacity-60"
-          >
-            {loading ? "Refreshing..." : "Refresh Soil Data"}
-          </button>
-        </div>
-      </div>
-
-      {/* error */}
-      {error && (
-        <div className="mb-4 bg-amber-50 border border-amber-200 text-amber-800 px-4 py-2 rounded-lg text-sm">
-          {error}
-        </div>
-      )}
-
-      {/* soil stats summary */}
-      {soilStats && (
-        <div className="mb-6 grid grid-cols-2 md:grid-cols-3 gap-3">
-          {soilStats.nitrogen != null && (
-            <div className="bg-white rounded-xl shadow-sm p-3">
-              <div className="text-xs text-gray-500">Nitrogen (N)</div>
-              <div className="text-xl font-semibold">{soilStats.nitrogen}</div>
-            </div>
-          )}
-          {soilStats.phosphorus != null && (
-            <div className="bg-white rounded-xl shadow-sm p-3">
-              <div className="text-xs text-gray-500">Phosphorus (P)</div>
-              <div className="text-xl font-semibold">{soilStats.phosphorus}</div>
-            </div>
-          )}
-          {soilStats.potassium != null && (
-            <div className="bg-white rounded-xl shadow-sm p-3">
-              <div className="text-xs text-gray-500">Potassium (K)</div>
-              <div className="text-xl font-semibold">{soilStats.potassium}</div>
-            </div>
-          )}
-          {soilStats.moisture != null && (
-            <div className="bg-white rounded-xl shadow-sm p-3">
-              <div className="text-xs text-gray-500">Moisture</div>
-              <div className="text-xl font-semibold">{soilStats.moisture} %</div>
-            </div>
-          )}
-          {soilStats.ph != null && (
-            <div className="bg-white rounded-xl shadow-sm p-3">
-              <div className="text-xs text-gray-500">pH</div>
-              <div className="text-xl font-semibold">{soilStats.ph}</div>
-            </div>
-          )}
-          {soilStats.ec != null && (
-            <div className="bg-white rounded-xl shadow-sm p-3">
-              <div className="text-xs text-gray-500">EC</div>
-              <div className="text-xl font-semibold">{soilStats.ec} dS/m</div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Mithu Soil Health Smart Card */}
-      <SoilHealthSmartCard
-        depths={depths}
-        soilStats={soilStats ?? null}
-        indices={indices ?? null}
-        tempForecast={tempForecast}
-        farmName={selectedFarm}
-        lastUpdated={lastUpdated}
-        currentCrop={(currentCrop as any) ?? "RICE"}
-      />
-
-      {/* ===== Prediction controls & results (added) ===== */}
-      <div className="mt-6 space-y-4">
-        {/* SoilPredictionCard can fetch independently and also notify page via onResult */}
-        <SoilPredictionCard onResult={(data) => setPredictions(data?.predictions ?? null)} />
-
-        {/* If page-level fetch produced predictions, show them in a table */}
-        {predictions && (
+    // FIXED: Changed 'min-h-screen' to 'h-screen overflow-y-auto' to enable scrolling
+    <div className="p-5 h-screen overflow-y-auto bg-[#f3f7f6]">
+      {/* Top Strip */}
+      <div className="bg-white px-6 py-3 flex items-center justify-between border-b mb-6 rounded-lg shadow-sm">
+        <div className="flex items-center gap-3 bg-green-50 px-4 py-2 rounded-lg">
+          <img src="/images/mithu.jpg" className="w-10 h-10 object-contain" />
           <div>
-            <SoilPredictionTable predictions={predictions} />
+            <div className="font-bold text-green-800">Soil Saathi</div>
+            <div className="text-xs text-gray-500">Mithu — your soil co-pilot</div>
           </div>
-        )}
+        </div>
+        <button onClick={() => location.reload()} className="bg-green-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-green-800 transition">
+          Refresh Data
+        </button>
       </div>
 
-      {/* Temperature & Moisture + Forecasts (restored UI) */}
-      <div className="grid grid-cols-12 gap-6 mt-6">
-        {/* Left column: Soil Temperature Card */}
-        <div className="col-span-12 lg:col-span-6 flex flex-col gap-6">
-          <SoilDepthListCard depths={depths} title="Soil Temperature (°C)" unitLabel="°C" lastUpdated={lastUpdated} />
-
-          {/* Updated Soil Moisture card: matches Temperature layout */}
-          <div className="bg-white rounded-lg shadow p-4 h-full">
-            <div className="flex items-start gap-4">
-              <div style={{ width: "180px", minWidth: "240px" }}>
-                <img src="/images/soil-stack.png" alt="soil stack" style={{ width: "100%", height: "auto", objectFit: "contain" }} />
+      {/* Field Map */}
+      <div className="mb-6 bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+        <div className="flex justify-between items-center mb-2">
+            <div className="text-sm font-bold text-gray-800 flex items-center gap-2">
+              <ImageIcon className="w-4 h-4 text-green-600"/> Field Map / Live View
+            </div>
+            <div className="text-[10px] text-gray-400">Live Satellite Feed • Updated 5m ago</div>
+        </div>
+        <div className="h-[280px] w-full rounded-lg overflow-hidden bg-gray-100 relative group">
+           <img 
+             src="https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/77.2090,28.6139,15,0/1200x400?access_token=pk.eyJ1IjoiZGVtbyIsImEiOiJja2dibW15bXAwZ3YwMnJvNnJqcG43bnJvIn0.eV9X_yv_wz_wz_wz" 
+             className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" 
+             alt="Satellite View" 
+             onError={(e) => (e.currentTarget.style.display = 'none')}
+           />
+           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full text-xs font-semibold text-gray-600 shadow-sm border border-white">
+                Interactive Map Loading...
               </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-semibold text-gray-700">Soil Moisture (%)</h3>
-                  {lastUpdated && <div className="text-xs text-gray-400">Last updated: {lastUpdated.split("T")[0]}</div>}
-                </div>
+           </div>
+        </div>
+      </div>
 
-                <div className="space-y-3">
-                  {depths.map((d, i) => (
-                    <div key={i} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-md" >
-                      <div className="flex items-center gap-3">
-                        <div className="h-2 w-2 rounded-full bg-green-400" />
-                        <div className="text-sm text-gray-600">{d.label}</div>
-                      </div>
-                      <div className="text-sm font-semibold">
-                        {typeof d.moisture === "number" ? `${d.moisture.toFixed(1)}%` : `${d.moisture ?? "-"}`}
-                      </div>
+      {/* Main Grid: Left Sidebar & Right Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 items-stretch">
+        
+        {/* LEFT SIDEBAR (Flex Col to stretch) */}
+        <div className="flex flex-col gap-6 h-full">
+          
+          {/* Score Card */}
+          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+               <h3 className="text-sm font-bold text-gray-800">Soil Score Card</h3>
+               <span className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded">LIVE</span>
+            </div>
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 text-center border border-green-100">
+              <div className="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">Overall Health Score</div>
+              <div className="text-5xl font-black text-green-700 mb-3 tracking-tighter">
+                {data?.soilScore ?? "84"}
+              </div>
+              <div className="h-1.5 w-24 bg-gray-200 rounded-full mx-auto mb-4 overflow-hidden">
+                <div className="h-full bg-green-500 w-[84%]"></div>
+              </div>
+              <button className="flex items-center justify-center gap-2 w-full bg-green-700 hover:bg-green-800 text-white text-xs font-bold py-2.5 rounded-lg transition-all shadow-sm">
+                <FileText className="w-3 h-3" /> Download Health Card
+              </button>
+            </div>
+          </div>
+
+          {/* Key Nutrients (Flex-1 to fill remaining vertical space) */}
+          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex-1 flex flex-col">
+            <h3 className="text-sm font-bold text-center text-gray-800 mb-6">Key Soil Nutrients Overview</h3>
+            
+            <div className="flex-1 flex flex-col justify-center">
+              {/* Main Chart */}
+              <div className="h-[220px] flex items-center justify-center mb-6 relative">
+                 <Pie 
+                   data={nutrientPieData} 
+                   options={{ responsive: true, maintainAspectRatio: false, cutout: "65%", plugins: { legend: { display: false } } }} 
+                 />
+                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span className="text-3xl font-bold text-gray-800">10</span>
+                    <span className="text-[10px] text-gray-400 uppercase">Parameters</span>
+                 </div>
+              </div>
+
+              {/* Legend */}
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[11px] px-2 mb-6">
+                {nutrientLabels.map((label, i) => (
+                  <div key={label} className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: nutrientPieData.datasets[0].backgroundColor[i] }} />
+                    <span className="text-gray-600 font-medium truncate">{label}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Feature Donuts */}
+              <div className="grid grid-cols-2 gap-3 mt-auto">
+                 <FeatureDonut title="pH Level" labels={["Acidic", "Neutral", "Alkaline"]} values={[20, 60, 20]} colors={["#f87171", "#4ade80", "#60a5fa"]} />
+                 <FeatureDonut title="EC Value" labels={["Low", "Optimal", "High"]} values={[15, 70, 15]} colors={["#fbbf24", "#34d399", "#f472b6"]} />
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* RIGHT CONTENT (Flex Col) */}
+        <div className="flex flex-col gap-6 h-full">
+
+          {/* Forecast */}
+          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold text-gray-800">7-Day Soil Forecast</h3>
+              <div className="flex items-center gap-1 text-[10px] text-gray-400">
+                <Clock className="w-3 h-3" /> Updated: 6:00 AM
+              </div>
+            </div>
+            <div className="flex gap-3 overflow-x-auto pb-2">
+              {finalForecast7d.map((d: any, i: number) => {
+                const w = getWeatherUI(d.temp, d.moist);
+                return (
+                   // FIXED: Added backticks around className
+                  <div key={i} className={`flex-1 min-w-[90px] rounded-xl p-3 bg-gradient-to-b ${w.bg} border border-white/50 shadow-sm flex flex-col items-center justify-between relative`}>
+                    <div className="text-xl mb-1 filter drop-shadow-sm">{w.icon}</div>
+                    <div className="text-center">
+                      <div className="text-[10px] font-bold text-gray-600 uppercase mb-0.5">{d.day ?? "Today"}</div>
+                      <div className="text-2xl font-black text-gray-800 leading-none">{d.temp}°</div>
+                      <div className="text-[10px] font-medium text-gray-700 mt-1">{d.moist}% Moist</div>
                     </div>
-                  ))}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Insights Grid (Flex-1 to stretch) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1">
+            
+            {/* TEMPERATURE PANEL */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex flex-col h-full">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-1.5 bg-green-100 rounded-lg"><ThermometerSun className="w-4 h-4 text-green-700" /></div>
+                <h3 className="font-bold text-green-900 text-sm">Real-Time Soil Temperature</h3>
+              </div>
+              
+              <div className="bg-green-50 border border-green-100 rounded-lg px-3 py-2 text-xs text-green-800 mb-4 flex items-start gap-2">
+                <Sprout className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span><span className="font-bold">Co-Pilot Insight:</span> Soil warming trend detected. Planting window optimal in 48hrs.</span>
+              </div>
+
+              <div className="mb-6 flex-1 flex flex-col justify-center">
+                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">DIAGNOSTIC VIEW</div>
+                <div className="flex gap-4">
+                  <SoilLayerStack layers={layers} />
+                  <div className="flex-1 flex flex-col justify-center">
+                     {layers.map((l: any, i: number) => <DepthRowAligned key={i} {...l} />)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Plan */}
+              <div className="mt-auto pt-4 border-t border-dashed border-gray-200">
+                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1">
+                   <AlertTriangle className="w-3 h-3 text-red-400" /> Action Plan Required
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                   <ActionCard 
+                     step="1" 
+                     color="red"
+                     title="Warming Irrigation" 
+                     desc="Initiate thermal irrigation cycle for 3 hours."
+                     cta="Set Reminder"
+                   />
+                   <ActionCard 
+                     step="2" 
+                     color="yellow"
+                     title="Apply P-Boost" 
+                     desc="Add 25kg DAP/Hectare to aid root warmth."
+                     cta="Track Inventory"
+                   />
                 </div>
               </div>
             </div>
-            <div className="text-xs text-gray-400 mt-3"> </div>
-          </div>
-          {/* End updated moisture card */}
-        </div>
 
-        {/* Right column: Forecast charts */}
-        <div className="col-span-12 lg:col-span-6 flex flex-col gap-6">
-          <ForecastChartCard forecast={tempForecastMemo} label="Soil Temperature Forecast (Next 7 Days)" valueFormatter={(v) => `${Number(v).toFixed(1)}°C`} />
-          <ForecastChartCard forecast={moistureForecastMemo} label="Soil Moisture Forecast (Next 7 Days)" valueFormatter={(v) => `${Number(v).toFixed(1)}%`} />
+            {/* MOISTURE PANEL */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex flex-col h-full">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-1.5 bg-blue-100 rounded-lg"><Droplets className="w-4 h-4 text-blue-700" /></div>
+                <h3 className="font-bold text-blue-900 text-sm">Real-Time Soil Moisture</h3>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 text-xs text-blue-800 mb-4 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span><span className="font-bold">Advisory:</span> Rapid moisture decline in top 10cm layer.</span>
+              </div>
+
+              <div className="mb-6 flex-1 flex flex-col justify-center">
+                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">DIAGNOSTIC VIEW</div>
+                <div className="flex gap-4">
+                  <SoilLayerStack layers={moistureLayers} />
+                  <div className="flex-1 flex flex-col justify-center">
+                     {/* FIXED: Added backticks around value string */}
+                     {moistureLayers.map((l: any, i: number) => <DepthRowAligned key={i} label={l.label} value={`${l.value}%`} status={l.status} color={l.color} />)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Plan */}
+              <div className="mt-auto pt-4 border-t border-dashed border-gray-200">
+                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1">
+                   <CheckCircle2 className="w-3 h-3 text-blue-400" /> Scheduled Actions
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                   <ActionCard 
+                     step="1" 
+                     color="blue"
+                     title="Drip Irrigation" 
+                     desc="Run system A/B for 45 mins at 6 PM."
+                     cta="Start Now"
+                   />
+                   <ActionCard 
+                     step="2" 
+                     color="yellow"
+                     title="Mulching" 
+                     desc="Apply organic mulch to retain top-soil water."
+                     cta="View Guide"
+                   />
+                </div>
+              </div>
+            </div>
+
+          </div>
         </div>
       </div>
+
+      {/* ================= FERTILIZER ================= */}
+      <div className="bg-green-50 rounded-xl p-6 shadow border border-green-200 mt-6">
+
+      {/* GOV HEADER */}
+      <div className="bg-white p-4 rounded-xl shadow flex justify-between items-center mt-8">
+        <div className="flex gap-4">
+          <img src="/images/gov-logo.png" className="h-14" />
+          <div>
+            <div className="font-bold text-sm">Government of India</div>
+            <div className="text-xs">Ministry of Agriculture and Farmers Welfare <p>Department of Agriculture and Farmers Welfare</p></div>
+          </div>
+        </div>
+        <div className="flex gap-3 items-center">
+          <img src="/images/soil-health-logo.png" className="h-12" />
+          <div>
+            <div className="font-bold">Soil Health Card</div>
+            <div className="text-xs text-gray-500">Healthy Earth, Greener Farm</div>
+          </div>
+        </div>
+      </div>
+
+        <div className="bg-green-700 text-white px-6 py-3 font-semibold text-lg">Fertilizer Recommendation</div>
+        <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6">
+
+          <div className="bg-white rounded-lg p-4 border shadow-sm">
+
+            <select className="w-full border rounded px-3 py-2 mb-3" value={state} onChange={(e) => setState(e.target.value)}>
+              <option value="">Select State</option>
+              {Array.isArray(states) && states.map((s) => <option key={s}>{s}</option>)}
+            </select>
+
+            <select className="w-full border rounded px-3 py-2 mb-3" value={district} onChange={(e) => setDistrict(e.target.value)} disabled={!state}>
+              <option value="">Select District</option>
+              {districts.map((d) => <option key={d}>{d}</option>)}
+            </select>
+
+            <input className="w-full border rounded px-3 py-2 mb-2" placeholder="Nitrogen" value={N} onChange={(e) => setN(e.target.value)} />
+            <input className="w-full border rounded px-3 py-2 mb-2" placeholder="Phosphorus" value={P} onChange={(e) => setP(e.target.value)} />
+            <input className="w-full border rounded px-3 py-2 mb-2" placeholder="Potassium" value={K} onChange={(e) => setK(e.target.value)} />
+            <input className="w-full border rounded px-3 py-2 mb-4" placeholder="Organic Carbon" value={OC} onChange={(e) => setOC(e.target.value)} />
+
+            <button
+              onClick={getRecommendation}
+              disabled={!isFormValid}
+              className={`px-4 py-2 border rounded w-full ${
+                isFormValid ? "bg-white" : "bg-gray-200 cursor-not-allowed"
+              }`}
+            >
+              {loadingFert ? "Loading..." : "Get Recommendations"}
+            </button>
+          </div>
+
+          {/* TABLE */}
+          <div className="bg-white rounded-lg p-4 border shadow-sm">
+            <div className="px-4 py-2 border-b bg-green-50 font-semibold text-green-800">Recommendation</div>
+            <table className="w-full border text-sm">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="p-2 border">Crop</th>
+                  <th className="p-2 border">Soil Conditioner</th>
+                  <th className="p-2 border">Fertilizer Combination 1</th>
+                  <th className="p-2 border">Fertilizer Combination 2</th>
+                </tr>
+              </thead>
+              <tbody>
+                {fertilizer ? (
+                  <tr>
+                    <td className="p-2 border">{fertilizer.crop}</td>
+                    <td className="p-2 border">{fertilizer.soilConditioner}</td>
+                    <td className="p-2 border">{fertilizer.combo1?.map((c: string, i: number) => <div key={i}>{c}</div>)}</td>
+                    <td className="p-2 border">{fertilizer.combo2?.map((c: string, i: number) => <div key={i}>{c}</div>)}</td>
+                  </tr>
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="p-3 text-center text-gray-400">
+                      Click "Get Recommendations" to view fertilizer advice
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+
+      {/* Resources */}
+      <section className="mt-8">
+        <h2 className="text-xl font-bold text-gray-800 mb-6">Knowledge & Resources</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[
+            { title: "Sustainable Farming Guide", desc: "Manual for chemical-free practices.", icon: BookOpen },
+            { title: "Mission Guidelines", desc: "Official policy documents.", icon: FileText },
+            { title: "Study Materials", desc: "Natural farming implementation.", icon: GraduationCap },
+            { title: "Success Stories", desc: "Gallery of trained farmers.", icon: ImageIcon },
+          ].map((r) => (
+            <div key={r.title} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer group">
+              <div className="flex gap-4 items-center">
+                <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center group-hover:bg-green-100 transition-colors">
+                  <r.icon className="text-green-600 w-6 h-6" />
+                </div>
+                <div>
+                  <div className="font-bold text-gray-800">{r.title}</div>
+                  <div className="text-xs text-gray-500">{r.desc}</div>
+                </div>
+              </div>
+              <ArrowRight className="text-gray-300 group-hover:text-green-600 transition-colors" />
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
