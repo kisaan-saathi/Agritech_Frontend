@@ -24,9 +24,6 @@ export default function HamburgerButton({
 
       <style jsx>{`
         .hamburger-btn {
-          position: absolute;
-          top: 16px;
-          left: 16px;
           width: 44px;
           height: 44px;
           background: rgba(10, 22, 40, 0.95);
@@ -35,7 +32,6 @@ export default function HamburgerButton({
           color: #fff;
           font-size: 20px;
           cursor: pointer;
-          z-index: 101;
           display: flex;
           align-items: center;
           justify-content: center;
