@@ -11,7 +11,7 @@ export default function ActionCenter({ onDiseaseClick }: ActionCenterProps) {
     <section className="mb-10 shadow rounded-2xl pb-2">
       <h2 className="text-xl font-bold text-gray-800 mb-4 p-3 border-bottom">Action Center & Quick Control</h2>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-3 pb-3">
-        <div className="lg:col-span-2 bg-white rounded-2xl shadow p-6">
+        <div className="lg:col-span-3 bg-white rounded-2xl shadow p-6">
           <h3 className="text-xl font-bold text-gray-800 mb-6 border-b pb-3">Critical Alerts & Tasks</h3>
           <div id="ai-advisory-output" className="mb-4 min-h-[50px] flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200 p-3 text-sm text-gray-500" dangerouslySetInnerHTML={{ __html: aiAdvisoryOutput }}></div>
           <ul className="divide-y divide-gray-100">
@@ -47,7 +47,7 @@ export default function ActionCenter({ onDiseaseClick }: ActionCenterProps) {
             </li>
           </ul>
         </div>
-        <div className="lg:col-span-1 space-y-4">
+        {/* <div className="lg:col-span-1 space-y-4">
           <button id="ai-advisory-button" onClick={handleGenerateAdvisory} disabled={loadingAdvisory} className="w-full flex items-center justify-center p-4 bg-llm-purple text-white font-semibold rounded-xl shadow hover:bg-purple-600 transition duration-200">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
               <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/>
@@ -87,7 +87,7 @@ export default function ActionCenter({ onDiseaseClick }: ActionCenterProps) {
               </button>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
     </section>
   );
