@@ -257,7 +257,11 @@ export default function FieldDashboard() {
       <style jsx>{`
         .dashboard-container {
           position: relative;
-          width: 100vw;
+          /* Horizontal padding for left/right spacing */
+          --dash-h-pad: 24px;
+          padding: 0 var(--dash-h-pad);
+          box-sizing: border-box;
+          width: 100%;
           height: 100vh;
           overflow: hidden;
           background: #0a0a0a;
@@ -265,10 +269,10 @@ export default function FieldDashboard() {
         .map-container {
           position: absolute;
           top: 0;
+          /* Use container's padding box so the map is inset by the horizontal padding */
           left: 0;
           right: 0;
           bottom: 50px;
-          width: 100%;
         }
         :global(.mapboxgl-ctrl-logo),
         :global(.mapboxgl-ctrl-attrib) {
