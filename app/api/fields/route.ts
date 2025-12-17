@@ -13,6 +13,7 @@ export async function GET() {
         f.name,
         f.crop_type,
         f.area_ha,
+        f.harvest_date,
         ST_AsGeoJSON(f.geom) AS geometry,
         h.health_score
       FROM fields f
@@ -30,6 +31,7 @@ export async function GET() {
           name: row.name,
           cropType: row.crop_type,
           area: row.area_ha,
+          harvestDate: row.harvest_date,
           health_score: row.health_score, // ✅ keep null if processing
         },
       })),
@@ -55,6 +57,7 @@ export async function POST(req: Request) {
       cropType,
       season,
       sowingDate,
+      harvestDate,
       geometry,
     } = await req.json();
 
@@ -73,11 +76,12 @@ export async function POST(req: Request) {
         crop_type,
         season,
         sowing_date,
+        harvest_date,
         geom
       )
       VALUES (
-        $1, $2, $3, $4, $5,
-        ST_SetSRID(ST_GeomFromGeoJSON($6), 4326)
+        $1, $2, $3, $4, $5, $6,
+        ST_SetSRID(ST_GeomFromGeoJSON($7), 4326)
       )
       RETURNING id
       `,
@@ -87,6 +91,7 @@ export async function POST(req: Request) {
         cropType ?? null,
         season ?? null,
         sowingDate ?? null,
+        harvestDate ?? null,
         JSON.stringify(geometry),
       ]
     );

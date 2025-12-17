@@ -1,3 +1,43 @@
+/**
+ * PUT /api/fields/[id]
+ * Updates all field details (full update)
+ */
+export async function PUT(req: Request, { params }: Params) {
+  try {
+    const { id } = await params;
+    const body = await req.json();
+    const { name, farmerName, cropType, season, sowingDate, harvestDate } = body;
+
+    const result = await pool.query(`
+      UPDATE fields
+      SET
+        name = COALESCE($2, name),
+        farmer_name = COALESCE($3, farmer_name),
+        crop_type = COALESCE($4, crop_type),
+        season = COALESCE($5, season),
+        sowing_date = COALESCE($6, sowing_date),
+        harvest_date = COALESCE($7, harvest_date),
+        updated_at = NOW()
+      WHERE id = $1
+      RETURNING id, name, farmer_name, crop_type, season, sowing_date, harvest_date
+    `, [id, name, farmerName, cropType, season, sowingDate, harvestDate]);
+
+    if (result.rowCount === 0) {
+      return NextResponse.json(
+        { error: "Field not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ success: true, field: result.rows[0] });
+  } catch (err) {
+    console.error("Fields API PUT error:", err);
+    return NextResponse.json(
+      { error: "Failed to update field" },
+      { status: 500 }
+    );
+  }
+}
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 
@@ -17,7 +57,11 @@ export async function GET(req: Request, { params }: Params) {
       SELECT
         f.id,
         f.name,
+        f.farmer_name,
         f.crop_type,
+        f.season,
+        f.sowing_date,
+        f.harvest_date,
         f.area_ha,
         ST_AsGeoJSON(f.geom) AS geometry,
         h.health_score
@@ -40,7 +84,11 @@ export async function GET(req: Request, { params }: Params) {
       properties: {
         id: row.id,
         name: row.name,
+        farmerName: row.farmer_name,
         cropType: row.crop_type,
+        season: row.season,
+        sowingDate: row.sowing_date,
+        harvestDate: row.harvest_date,
         area: row.area_ha,
         health_score: row.health_score,
       },
