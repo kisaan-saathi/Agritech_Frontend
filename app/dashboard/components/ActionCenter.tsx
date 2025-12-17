@@ -14,7 +14,7 @@ export default function ActionCenter({ onDiseaseClick }: ActionCenterProps) {
         Action Center & Quick Control
       </h2>
       <div className="grid grid-cols-4 lg:grid-cols-4 gap-6 px-3 pb-3">
-        <div className="lg:col-span-2 bg-white rounded-2xl shadow p-6">
+        <div className="lg:col-span-2 md:col-span-2 sm:col-span-2 bg-white rounded-2xl shadow p-6">
           <h3 className="text-xl font-bold text-gray-800 mb-6 border-b pb-3">
             Critical Alerts & Tasks
           </h3>
@@ -130,11 +130,11 @@ export default function ActionCenter({ onDiseaseClick }: ActionCenterProps) {
             </div>
           </div>
         </div> */}
-        <div className="lg:col-span-2 bg-white rounded-2xl shadow p-6">
+        <div className="lg:col-span-2 md:col-span-2 sm:col-span-2 bg-white rounded-2xl shadow p-6">
           <h3 className="text-xl font-bold text-gray-800 mb-6 border-b pb-3">
             Real-time Sensor Readings & Indices
           </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 gap-6 px-3 py-2">
+          <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-6 px-3 py-2">
             <div className="bg-white rounded-2xl shadow border py-2 px-3 border-b-5 border-primary hover:shadow-2xl transition duration-300">
               <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">
                 Soil Moisture

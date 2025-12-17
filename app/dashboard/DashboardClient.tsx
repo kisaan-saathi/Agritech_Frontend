@@ -19,7 +19,10 @@ export default function DashboardClient() {
   const [authChecked, setAuthChecked] = useState(false);
   const [user, setUser] = useState<string>("");
   useEffect(() => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+    const token =
+      typeof window !== "undefined"
+        ? localStorage.getItem("accessToken")
+        : null;
     if (!token) {
       router.push("/login");
     } else {
@@ -47,20 +50,29 @@ export default function DashboardClient() {
           },
         });
       });
-      if (res.data.statusCode == 200) {
-        toast.success(res.data.message || "Logged out successfully");
+      if (res.data.statusCode == 200 || res.data.statusCode == 401) {
+        if(res.data.statusCode == 200) {
+          toast.success(res.data.message);
+        } else {
+          toast.error(res.data.message);
+        }
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("userName");
         setShowMenu(false);
         router.push("/login");
       } else {
-        console.log("Logout API error", res.data);
         toast.error(res.data.message || "Logout failed");
+        setShowMenu(false)
       }
     } catch (error: any) {
-      console.log("Logout API error", error);
-      toast.error(error.message || "Logout failed");
+      console.log("logout error",error)
+      // toast.error(error.res.data.message || "Logout failed");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("userName");
+      setShowMenu(false);
+      router.push("/login");
     }
   };
 
@@ -80,7 +92,7 @@ export default function DashboardClient() {
               />
               <span className="text-3xl font-extrabold text-gray-800 mb-0 flex items-center gap-2">
                 Welcome, {user}
-                <Hand className="w-7 h-7  animate-wave" fill='#f5db75ff'  />
+                <Hand className="w-7 h-7  animate-wave" fill="#f5db75ff" />
               </span>
             </div>
             <div className="flex items-center space-x-4">

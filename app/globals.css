@@ -203,6 +203,18 @@ main {
   16%  { transform: translateX(0); }
 }
 
+@keyframes wave {
+  0% { transform: rotate(0deg); }
+  15% { transform: rotate(14deg); }
+  30% { transform: rotate(-8deg); }
+  45% { transform: rotate(14deg); }
+  60% { transform: rotate(0deg); }
+}
+
+.animate-wave {
+  animation: wave 1.5s infinite;
+  transform-origin: bottom center;
+}
 /* Optional commented legacy styles kept for reference */
 /*
 .mapboxgl-map, .map-container { ... }

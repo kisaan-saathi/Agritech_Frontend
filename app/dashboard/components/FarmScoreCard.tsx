@@ -214,8 +214,8 @@ export default function FarmScoreCard() {
   }, []);
   return (
     <section className="mb-5 h-100vh">
-      <div className="grid grid-cols-6 lg:grid-cols-6 gap-6 pb-3">
-        <div className="lg:col-span-1 rounded-2xl shadow p-2">
+      <div className="grid grid-cols-6 lg:grid-cols-6 sm:grid-cols-6 gap-6 pb-3">
+        <div className="lg:col-span-1 md:col-span-2 sm:col-span-2 rounded-2xl shadow p-2">
           <h2 className="text-xl font-bold text-gray-800 p-3 border-bottom">
             Farm Balance Scorecard
           </h2>
@@ -275,7 +275,7 @@ export default function FarmScoreCard() {
             </div>
           </div>
         </div>
-        <div className="lg:col-span-5 shadow rounded-2xl">
+        <div className="lg:col-span-5 md:col-span-4 sm:col-span-4 shadow rounded-2xl">
           <div className="flex items-center justify-between border-b p-1">
             <div className="flex flex-row">
               <h2 className="text-xl font-bold text-gray-800 mb-0 p-3">
