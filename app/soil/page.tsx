@@ -1,5 +1,6 @@
 "use client";
 
+
 import React, { useEffect, useState } from "react";
 import {
   Chart as ChartJS,
@@ -19,13 +20,14 @@ import {
   GraduationCap,
   ImageIcon,
   ArrowRight,
-  Droplets,
   ThermometerSun,
   Sprout,
   AlertTriangle,
+  Droplets,
   CheckCircle2,
-  Clock
 } from "lucide-react";
+
+import { useRouter } from "next/navigation";
 
 ChartJS.register(
   CategoryScale,
@@ -42,21 +44,68 @@ const API_BASE = "http://localhost:4000";
 // ===== Weather UI Helper =====
 function getWeatherUI(temp: number, moist: number) {
   if (temp <= 12) {
-    return { bg: "from-cyan-100 to-blue-200", icon: "❄" };
+    return {
+      bg: "from-cyan-100 to-blue-200",
+      icon: "❄️",
+    };
   }
+
   if (moist >= 70) {
-    return { bg: "from-slate-700 to-slate-900", icon: "🌧" };
+    return {
+      bg: "from-slate-700 to-slate-900",
+      icon: "🌧",
+    };
   }
+
   if (moist >= 60) {
-    return { bg: "from-slate-300 to-slate-400", icon: "☁" };
+    return {
+      bg: "from-slate-300 to-slate-400",
+      icon: "☁️",
+    };
   }
+
   if (temp >= 32) {
-    return { bg: "from-yellow-300 to-orange-400", icon: "☀" };
+    return {
+      bg: "from-yellow-300 to-orange-400",
+      icon: "☀️",
+    };
   }
-  return { bg: "from-sky-100 to-sky-200", icon: "🌤" };
+
+  return {
+    bg: "from-sky-100 to-sky-200",
+    icon: "🌤",
+  };
+}
+
+// ===== Action Card Component =====
+function ActionCard({ step, color, title, desc, cta }: { step: string; color: string; title: string; desc: string; cta: string }) {
+  const styles: any = {
+    red: { box: "bg-red-50 border-red-100", title: "text-red-900", btn: "bg-red-100 text-red-700 hover:bg-red-200" },
+    yellow: { box: "bg-yellow-50 border-yellow-100", title: "text-yellow-900", btn: "bg-yellow-100 text-yellow-700 hover:bg-yellow-200" },
+    blue: { box: "bg-blue-50 border-blue-100", title: "text-blue-900", btn: "bg-blue-100 text-blue-700 hover:bg-blue-200" },
+    green: { box: "bg-green-50 border-green-100", title: "text-green-900", btn: "bg-green-100 text-green-700 hover:bg-green-200" },
+  };
+
+  const s = styles[color] || styles.blue;
+
+  return (
+    <div className={`p-3 rounded-lg border ${s.box} flex flex-col gap-2`}>
+      <div className="flex justify-between items-start">
+        <span className="font-bold text-[10px] uppercase tracking-wider opacity-60">Step {step}</span>
+      </div>
+      <div>
+        <div className={`font-bold text-xs leading-tight ${s.title}`}>{title}</div>
+        <div className="text-[10px] text-gray-600 mt-1 leading-snug">{desc}</div>
+      </div>
+      <button className={`mt-auto w-full py-1.5 rounded text-[10px] font-bold ${s.btn} transition-colors`}>
+        {cta}
+      </button>
+    </div>
+  );
 }
 
 export default function SoilPage() {
+  const router = useRouter();
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -70,25 +119,37 @@ export default function SoilPage() {
   const [fertilizer, setFertilizer] = useState<any>(null);
   const [loadingFert, setLoadingFert] = useState(false);
 
+  // New State for Nutrient Tabs
+  const [nutrientTab, setNutrientTab] = useState<"macro" | "micro" | "prop">("macro");
+
   const [states, setStates] = useState<string[]>([]);
   const [districts, setDistricts] = useState<string[]>([]);
   const [loadingSoil, setLoadingSoil] = useState(true);
 
   /* ---------- VALIDATION ---------- */
-  const isFormValid = !!state && !!district && !!N && !!P && !!K && !!OC && !loadingFert;
+  const isFormValid =
+    !!state &&
+    !!district &&
+    !!N &&
+    !!P &&
+    !!K &&
+    !!OC &&
+    !loadingFert;
 
-  /* ---------- Load Data ---------- */
+  /* ---------- Load soil + states ---------- */
   useEffect(() => {
     async function loadInitialData() {
       try {
         setLoadingSoil(true);
-        // FIXED: Added backticks
+
         const [soilRes, stateRes] = await Promise.all([
           fetch(`${API_BASE}/soil`),
           fetch(`${API_BASE}/locations/states`),
         ]);
+
         const soilJson = await soilRes.json();
         const stateJson = await stateRes.json();
+
         setData(soilJson);
         setStates(stateJson);
 
@@ -104,26 +165,37 @@ export default function SoilPage() {
         setLoadingSoil(false);
       }
     }
+
     loadInitialData();
   }, []);
 
+  /* ---------- Load districts ---------- */
   useEffect(() => {
     if (!state) return;
-    // FIXED: Added backticks
+
     fetch(`${API_BASE}/locations/districts?state=${state}`)
       .then((r) => r.json())
       .then(setDistricts);
   }, [state]);
 
+  /* ---------- Fertilizer API ---------- */
   async function getRecommendation() {
     try {
       setLoadingFert(true);
-      // FIXED: Added backticks
+
       const res = await fetch(`${API_BASE}/fertilizer/recommend`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ state, district, N: Number(N), P: Number(P), K: Number(K), OC: Number(OC) }),
+        body: JSON.stringify({
+          state,
+          district,
+          N: Number(N),
+          P: Number(P),
+          K: Number(K),
+          OC: Number(OC),
+        }),
       });
+
       const json = await res.json();
       setFertilizer(json);
     } catch {
@@ -133,10 +205,12 @@ export default function SoilPage() {
     }
   }
 
-  const nutrients = data?.nutrients ?? {};
-  
-  // Forecast Data
-  const forecast7d = Array.isArray(data?.forecast7d) ? data.forecast7d : [];
+  // API data
+  const forecast7d = Array.isArray(data?.forecast7d)
+    ? data.forecast7d
+    : [];
+
+  // Dummy fallback
   const dummyForecast7d = [
     { day: "Today", temp: 26, moist: 45, status: "Optimal" },
     { day: "Mon", temp: 26, moist: 42, status: "Optimal" },
@@ -144,47 +218,30 @@ export default function SoilPage() {
     { day: "Wed", temp: 25, moist: 38, status: "Optimal" },
     { day: "Thu", temp: 26, moist: 35, status: "Critical" },
   ];
-  const hasValidForecastData = Array.isArray(forecast7d) && forecast7d.some((d: any) => typeof d?.temp === "number");
-  const finalForecast7d = hasValidForecastData ? forecast7d : dummyForecast7d;
 
-  // Nutrient Data
-  const nutrientLabels = ["Nitrogen (N)", "Phosphorus (P)", "Potassium (K)", "Organic Carbon (OC)", "Sulfur (S)", "Iron (Fe)", "Zinc (Zn)", "Copper (Cu)", "Boron (B)", "Manganese (Mn)"];
-  const apiNutrientValues = [nutrients.N, nutrients.P, nutrients.K, nutrients.OC, nutrients.S, nutrients.Fe, nutrients.Zn, nutrients.Cu, nutrients.B, nutrients.Mn].map((v: any) => (typeof v === "number" ? v : 0));
-  const hasRealData = apiNutrientValues.some((v) => v > 0);
-  const finalNutrientValues = hasRealData ? apiNutrientValues : [30, 20, 15, 7, 4, 10, 6, 3, 2, 5];
-
-  const nutrientPieData = {
-    labels: nutrientLabels,
-    datasets: [{
-      label: "Soil Nutrients",
-      data: finalNutrientValues,
-      backgroundColor: ["#10B981", "#F59E0B", "#3B82F6", "#DC2626", "#8B5CF6", "#EC4899", "#06B6D4", "#84CC16", "#F97316", "#6366F1"],
-      borderWidth: 1,
-    }],
-  };
-
-  // UI Components
-  function FeatureDonut({ title, labels, values, colors }: any) {
-    return (
-      <div className="bg-white rounded-lg shadow p-3 text-center border border-gray-100 flex flex-col items-center justify-between h-full">
-        <div className="text-sm font-semibold text-gray-700">{title}</div>
-        <div className="h-[100px] w-full flex items-center justify-center my-2">
-          <Pie data={{ labels, datasets: [{ data: values, backgroundColor: colors, borderWidth: 1 }] }} options={{ responsive: true, maintainAspectRatio: false, cutout: "70%", plugins: { legend: { display: false } } }} />
-        </div>
-        <div className="text-[10px] text-gray-400">Overview</div>
-      </div>
+  // IMPORTANT: robust validation
+  const hasValidForecastData =
+    Array.isArray(forecast7d) &&
+    forecast7d.some(
+      (d: any) =>
+        typeof d?.temp === "number" &&
+        !Number.isNaN(d.temp)
     );
-  }
 
-  // --- Realistic Soil Stack ---
-  const SOIL_ROW_HEIGHT = "60px";
-  const soilGradients = ["from-[#5d4037] to-[#4e342e]", "from-[#795548] to-[#6d4c41]", "from-[#8d6e63] to-[#795548]", "from-[#a1887f] to-[#8d6e63]"];
+  // THIS is the only array you should render
+  const finalForecast7d = hasValidForecastData
+    ? forecast7d
+    : dummyForecast7d;
+
+
+  const SOIL_ROW_HEIGHT = "56px";
   const DUMMY_SOIL_LAYERS = [
     { label: "5–10 cm", value: 28, status: "Monitor", color: "yellow" },
     { label: "15–30 cm", value: 25, status: "Optimal", color: "green" },
     { label: "30–60 cm", value: 18, status: "Good", color: "blue" },
     { label: "60–100 cm", value: 14, status: "Too Cold", color: "red" },
   ];
+
   const DUMMY_MOISTURE_LAYERS = [
     { label: "5–10 cm", value: 18, status: "Low", color: "red" },
     { label: "15–30 cm", value: 32, status: "Optimal", color: "green" },
@@ -192,23 +249,69 @@ export default function SoilPage() {
     { label: "60–100 cm", value: 55, status: "Good", color: "blue" },
   ];
 
-  const layers = data?.soilLayers ?? DUMMY_SOIL_LAYERS;
-  const moistureLayers = data?.moistureLayers ?? DUMMY_MOISTURE_LAYERS;
+  const soilLayersFromAPI = data?.soilLayers;
+
+  // Validate API data properly
+  const hasValidSoilLayerData =
+    Array.isArray(soilLayersFromAPI) &&
+    soilLayersFromAPI.length > 0 &&
+    soilLayersFromAPI.every(
+      (l: any) =>
+        typeof l?.value === "number" &&
+        typeof l?.label === "string"
+    );
+
+  // Final source of truth (THIS is what you render)
+  const layers = hasValidSoilLayerData
+    ? soilLayersFromAPI
+    : DUMMY_SOIL_LAYERS;
+
+  const moistureLayersFromAPI = data?.moistureLayers;
+
+  const hasValidMoistureData =
+    Array.isArray(moistureLayersFromAPI) &&
+    moistureLayersFromAPI.length > 0 &&
+    moistureLayersFromAPI.every(
+      (l: any) => typeof l?.value === "number"
+    );
+
+  const moistureLayers = hasValidMoistureData
+    ? moistureLayersFromAPI
+    : DUMMY_MOISTURE_LAYERS;
+
+  // ✅ SHARED soil gradient palette (USED IN MULTIPLE PLACES)
+  const soilGradients = [
+    "from-[#7b5a3a] to-[#6a4a2f]",
+    "from-[#6a4a2f] to-[#5a3a25]",
+    "from-[#5a3a25] to-[#4a2f1f]",
+    "from-[#4a2f1f] to-[#3a2416]",
+  ];
 
   function SoilLayerStack({ layers }: { layers: any[] }) {
+
     return (
-      <div className="relative w-[120px] shadow-xl rounded-b-2xl">
-        {/* Realistic Grass Top */}
-        <div className="h-6 w-full bg-gradient-to-b from-[#4ade80] to-[#15803d] rounded-t-xl relative overflow-hidden border-b-2 border-[#3e2723]">
-             <div className="absolute bottom-0 left-0 w-full h-2 bg-black/10"></div>
-        </div>
-        
-        <div className="flex flex-col rounded-b-xl overflow-hidden border-x border-b border-[#3e2723]">
+      <div className="relative w-[140px]">
+        {/* Grass / Surface */}
+        <div className="h-6 rounded-t-full bg-gradient-to-b from-green-400 to-green-700 shadow-sm" />
+
+        {/* Soil Column */}
+        <div className="overflow-hidden rounded-b-2xl shadow-lg border border-[#4a2f1f]">
           {layers.map((layer, i) => (
-            // FIXED: Added backticks around className string
-            <div key={i} style={{ height: SOIL_ROW_HEIGHT }} className={`flex items-center justify-center text-white font-bold text-sm bg-gradient-to-b ${soilGradients[i]} relative shadow-inner`}>
-              <div className="absolute inset-0 bg-black/5 mix-blend-multiply" />
-              <span className="relative z-10 drop-shadow-md">{layer.value}</span>
+            <div
+              key={i}
+              style={{ height: SOIL_ROW_HEIGHT }}
+              className={`
+              flex items-center justify-center
+              text-white font-semibold text-sm
+              bg-gradient-to-b ${soilGradients[i]}
+              border-b border-black/10
+              relative
+            `}
+            >
+              {/* subtle highlight */}
+              <div className="absolute inset-0 bg-white/5 pointer-events-none" />
+
+              {layer.value}
             </div>
           ))}
         </div>
@@ -216,189 +319,372 @@ export default function SoilPage() {
     );
   }
 
-  function DepthRowAligned({ label, value, status, color }: any) {
+  function DepthRowAligned({
+    label,
+    value,
+    status,
+    color,
+  }: any) {
     const badgeMap: any = {
-      yellow: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      green: "bg-green-100 text-green-800 border-green-200",
-      blue: "bg-blue-100 text-blue-800 border-blue-200",
-      red: "bg-red-100 text-red-800 border-red-200",
+      yellow: "bg-yellow-100 text-yellow-700",
+      green: "bg-green-100 text-green-700",
+      blue: "bg-blue-100 text-blue-700",
+      red: "bg-red-100 text-red-700",
     };
-    return (
-      <div style={{ height: SOIL_ROW_HEIGHT }} className="flex items-center justify-between border-b border-gray-50 last:border-0">
-        <div className="text-xs font-medium text-gray-500 w-16">{label}</div>
-        <div className="text-sm font-bold text-gray-800">{value}</div>
-        {/* FIXED: Added backticks around className */}
-        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${badgeMap[color]} uppercase tracking-wider`}>
-          {status}
-        </span>
-      </div>
-    );
-  }
-
-  // --- Action Plan Card Component ---
-  function ActionCard({ step, title, desc, cta, color }: any) {
-    const theme: any = {
-      red: { border: "border-red-500", bg: "bg-red-50", icon: "text-red-500", btn: "bg-red-600 hover:bg-red-700" },
-      yellow: { border: "border-yellow-500", bg: "bg-yellow-50", icon: "text-yellow-600", btn: "bg-yellow-600 hover:bg-yellow-700" },
-      blue: { border: "border-blue-500", bg: "bg-blue-50", icon: "text-blue-500", btn: "bg-blue-600 hover:bg-blue-700" },
-    };
-    const t = theme[color];
 
     return (
-      // FIXED: Added backticks around className
-      <div className={`border-2 ${t.border} rounded-lg p-3 ${t.bg} flex flex-col justify-between h-full`}>
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-             {/* FIXED: Added backticks around className */}
-            <span className={`flex items-center justify-center w-6 h-6 rounded bg-white font-bold text-xs shadow-sm ${t.icon}`}>
-              #{step}
-            </span>
-            <div className="text-xs font-bold uppercase text-gray-700">Recommended Action</div>
-          </div>
-          <h4 className="font-bold text-sm text-gray-900 leading-tight mb-1">{title}</h4>
-          <p className="text-[11px] text-gray-600 leading-snug mb-3">{desc}</p>
+      <div
+        className="w-full flex items-center justify-between"
+      >
+        {/* Temperature */}
+        <div className="text-sm font-bold text-gray-900">
+          {value}
         </div>
-        {/* FIXED: Added backticks around className */}
-        <button className={`${t.btn} text-white text-[10px] font-bold py-1.5 px-3 rounded w-full transition-colors`}>
-          {cta}
-        </button>
+
+        {/* Status */}
+        <div>
+          <span
+            className={`px-2 py-0.5 rounded-full text-xs font-medium ${badgeMap[color]}`}
+          >
+            {status}
+          </span>
+        </div>
       </div>
     );
   }
+
+  // =========================================================
+  //  NEW NUTRIENT SECTION HELPER FUNCTIONS & DATA
+  // =========================================================
+
+  // Fallback data if API is null
+  const STATIC_DISTRIBUTION = {
+    N: { high: 22, med: 75, low: 3 },
+    P: { high: 35, med: 50, low: 15 },
+    K: { high: 32, med: 57, low: 11 },
+    S: { suff: 73, def: 27 },
+    Fe: { suff: 71, def: 29 },
+    Zn: { suff: 61, def: 39 },
+    Cu: { suff: 95, def: 5 },
+    B: { suff: 62, def: 38 },
+    Mn: { suff: 88, def: 12 },
+    OC: { high: 27, med: 16, low: 57 },
+    pH: { acidic: 50, neutral: 40, alkaline: 10 },
+    EC: { nonSaline: 95, saline: 5 }
+  };
+
+  const STATIC_TEST_VALUES: any = {
+    pH: 5.7, EC: 0.03, OC: 0.6,
+    N: 254, P: 15, K: 191,
+    S: null, Zn: 0.56, B: 0.48, Fe: null, Mn: null, Cu: null
+  };
+
+  // Component for a Single Grouped Bar Row (Sleek Redesign)
+  const NutrientGroupRow = ({
+    label,
+    myValue,
+    unit,
+    bars,
+    isGrid = false // NEW PROP: Helps layout in grid without reducing text size
+  }: {
+    label: string,
+    myValue: any,
+    unit: string,
+    bars: { label: string, val: number, color: string }[],
+    isGrid?: boolean
+  }) => {
+    return (
+      <div className={`group relative bg-white border border-slate-100 hover:border-slate-200 hover:shadow-md rounded-2xl p-5 transition-all duration-300 ${isGrid ? 'h-full' : ''}`}>
+        
+        {/* Header Line */}
+        <div className="flex justify-between items-end mb-4">
+          <div className="flex items-center gap-2">
+             {/* Decorative dot */}
+             <div className="w-1.5 h-1.5 rounded-full bg-slate-300 group-hover:bg-green-500 transition-colors"></div>
+             <span className="text-base font-bold text-slate-700 tracking-tight">{label}</span>
+          </div>
+          
+          {myValue !== null && myValue !== undefined ? (
+             <div className="bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 flex flex-col items-end">
+               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Test Result</span>
+               <span className="font-extrabold text-sm text-slate-800 leading-none">
+                  {myValue} <span className="text-[10px] font-semibold text-slate-500 ml-0.5">{unit}</span>
+               </span>
+             </div>
+          ) : (
+            <span className="px-3 py-1 text-xs font-medium text-slate-400 bg-slate-50 rounded-lg">
+              Not Tested
+            </span>
+          )}
+        </div>
+
+        {/* The Grouped Bars */}
+        <div className="space-y-3">
+          {bars.map((bar, idx) => (
+            <div key={idx} className={`flex items-center ${isGrid ? 'gap-2' : 'gap-3'}`}>
+               {/* Label */}
+               <div className="w-14 text-[11px] font-semibold text-slate-500 text-right shrink-0">
+                 {bar.label}
+               </div>
+               
+               {/* Track & Bar */}
+               <div className="flex-1 h-3 bg-slate-100 rounded-full relative overflow-hidden">
+                  <div 
+                    className={`h-full rounded-full shadow-sm transition-all duration-1000 ease-out ${bar.color}`} 
+                    style={{ width: `${bar.val}%` }}
+                  />
+               </div>
+               
+               {/* Percentage */}
+               <div className="w-8 text-[11px] font-bold text-slate-700 text-right">
+                 {bar.val}%
+               </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
 
   return (
-    // FIXED: Changed 'min-h-screen' to 'h-screen overflow-y-auto' to enable scrolling
+    // ADDED: h-screen and overflow-y-auto to enable scrolling
     <div className="p-5 h-screen overflow-y-auto bg-[#f3f7f6]">
-      {/* Top Strip */}
-      <div className="bg-white px-6 py-3 flex items-center justify-between border-b mb-6 rounded-lg shadow-sm">
+
+      {/* ================= MITHU TOP STRIP ================= */}
+      <div className="bg-white px-6 py-3 flex items-center justify-between border-b">
         <div className="flex items-center gap-3 bg-green-50 px-4 py-2 rounded-lg">
           <img src="/images/mithu.jpg" className="w-10 h-10 object-contain" />
           <div>
             <div className="font-bold text-green-800">Soil Saathi</div>
-            <div className="text-xs text-gray-500">Mithu — your soil co-pilot</div>
+            <div className="text-xs text-gray-500">
+              Mithu — your soil co-pilot
+            </div>
           </div>
         </div>
-        <button onClick={() => location.reload()} className="bg-green-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-green-800 transition">
-          Refresh Data
+        <button
+          onClick={() => location.reload()}
+          className="bg-green-700 text-white px-4 py-1.5 rounded-lg text-sm"
+        >
+          Refresh
         </button>
       </div>
 
-      {/* Field Map */}
-      <div className="mb-6 bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-        <div className="flex justify-between items-center mb-2">
-            <div className="text-sm font-bold text-gray-800 flex items-center gap-2">
-              <ImageIcon className="w-4 h-4 text-green-600"/> Field Map / Live View
-            </div>
-            <div className="text-[10px] text-gray-400">Live Satellite Feed • Updated 5m ago</div>
+      {error && (
+        <div className="bg-red-100 text-red-700 px-4 py-2 mt-2 rounded">
+          {error}
         </div>
-        <div className="h-[280px] w-full rounded-lg overflow-hidden bg-gray-100 relative group">
-           <img 
-             src="https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/77.2090,28.6139,15,0/1200x400?access_token=pk.eyJ1IjoiZGVtbyIsImEiOiJja2dibW15bXAwZ3YwMnJvNnJqcG43bnJvIn0.eV9X_yv_wz_wz_wz" 
-             className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" 
-             alt="Satellite View" 
-             onError={(e) => (e.currentTarget.style.display = 'none')}
-           />
-           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full text-xs font-semibold text-gray-600 shadow-sm border border-white">
-                Interactive Map Loading...
-              </div>
-           </div>
+      )}
+
+      {/* ================= FIELD MAP (Full Width) ================= */}
+      <div className="w-full mb-4 mt-4">
+        <div className="bg-white rounded-lg p-4 shadow">
+          <div className="text-sm font-semibold mb-2">Field Map / Live View</div>
+          <div className="h-[200px] flex items-center justify-center border rounded text-gray-400 text-sm bg-gray-50">
+            Field Map (Full Screen Width)
+          </div>
+          <div className="text-[11px] text-gray-400 mt-2">
+            Source: Backend • Last: {data?.lastUpdated ?? "--"}
+          </div>
         </div>
       </div>
 
-      {/* Main Grid: Left Sidebar & Right Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 items-stretch">
-        
-        {/* LEFT SIDEBAR (Flex Col to stretch) */}
-        <div className="flex flex-col gap-6 h-full">
-          
-          {/* Score Card */}
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-4">
-               <h3 className="text-sm font-bold text-gray-800">Soil Score Card</h3>
-               <span className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded">LIVE</span>
-            </div>
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 text-center border border-green-100">
-              <div className="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">Overall Health Score</div>
-              <div className="text-5xl font-black text-green-700 mb-3 tracking-tighter">
-                {data?.soilScore ?? "84"}
+      {/* ================= MAIN CONTENT GRID ================= */}
+      <div className="grid grid-cols-1 lg:grid-cols-[500px_1fr] gap-4 items-stretch">
+
+        {/* LEFT COLUMN: Score Card & Nutrients */}
+        <div className="flex flex-col gap-4 h-full">
+
+           {/* 1. SOIL SCORE CARD (Top) */}
+           <div className="bg-white rounded-lg p-4 shadow">
+            <div className="text-sm font-semibold mb-2">Soil Score Card</div>
+            <div className="bg-green-50 rounded p-3 text-center">
+              <div className="text-xs text-gray-500">Overall Soil Score</div>
+              <div className="text-3xl font-bold text-green-700">
+                {data?.soilScore ?? "--"}
               </div>
-              <div className="h-1.5 w-24 bg-gray-200 rounded-full mx-auto mb-4 overflow-hidden">
-                <div className="h-full bg-green-500 w-[84%]"></div>
-              </div>
-              <button className="flex items-center justify-center gap-2 w-full bg-green-700 hover:bg-green-800 text-white text-xs font-bold py-2.5 rounded-lg transition-all shadow-sm">
-                <FileText className="w-3 h-3" /> Download Health Card
+              <button onClick={() => router.push('/soil/health-card')}
+                className="flex items-center justify-center gap-2 w-full bg-green-700 hover:bg-green-800 text-white text-xs font-bold py-2.5 rounded-lg transition-all shadow-sm">
+                <FileText className="w-3 h-3" /> Get Soil Health Card
               </button>
             </div>
           </div>
 
-          {/* Key Nutrients (Flex-1 to fill remaining vertical space) */}
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex-1 flex flex-col">
-            <h3 className="text-sm font-bold text-center text-gray-800 mb-6">Key Soil Nutrients Overview</h3>
+          {/* 2. KEY SOIL NUTRIENTS (Fills Remaining Height using flex-1) */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col relative overflow-hidden flex-1">
             
-            <div className="flex-1 flex flex-col justify-center">
-              {/* Main Chart */}
-              <div className="h-[220px] flex items-center justify-center mb-6 relative">
-                 <Pie 
-                   data={nutrientPieData} 
-                   options={{ responsive: true, maintainAspectRatio: false, cutout: "65%", plugins: { legend: { display: false } } }} 
-                 />
-                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-3xl font-bold text-gray-800">10</span>
-                    <span className="text-[10px] text-gray-400 uppercase">Parameters</span>
-                 </div>
+            {/* Background Decoration */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-green-50 rounded-full blur-3xl opacity-50 -mr-16 -mt-16 pointer-events-none"></div>
+
+            {/* TITLE & TABS */}
+            <div className="mb-6 relative z-10">
+              <div className="text-base font-bold text-center text-slate-800 mb-4">
+                Key Soil Nutrients <span className="text-slate-400 font-normal text-sm">(Overview)</span>
+              </div>
+              
+              <div className="flex justify-center">
+                <div className="bg-slate-50 p-1.5 rounded-xl border border-slate-100 inline-flex gap-1 shadow-sm">
+                  {['macro', 'micro', 'prop'].map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setNutrientTab(t as any)}
+                      className={`px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-300 ${
+                        nutrientTab === t
+                          ? 'bg-green-600 text-white shadow-md'
+                          : 'text-slate-500 hover:text-slate-700 hover:bg-white'
+                      }`}
+                    >
+                      {t === 'macro' ? 'Macronutrients' : t === 'micro' ? 'Micronutrients' : 'Properties'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* MAIN CONTENT AREA - NO SCROLL, FULLY DISTRIBUTED */}
+            <div className="flex-1 relative z-10 pb-2">
+
+              {/* CONTAINER: SWITCHES BETWEEN LIST AND GRID */}
+              {/* Uses justify-between / content-between to fill height without gaps */}
+              <div className={nutrientTab === 'micro' ? 'grid grid-cols-2 gap-4 h-full content-between' : 'flex flex-col h-full justify-between'}>
+                {(() => {
+                  const vals = data?.nutrients ? data.nutrients : STATIC_TEST_VALUES;
+                  const stats = data?.stats ? data.stats : STATIC_DISTRIBUTION;
+
+                  if (nutrientTab === "macro") {
+                    return (
+                      <>
+                        <NutrientGroupRow label="Nitrogen (N)" myValue={vals.N} unit="kg/ha" bars={[
+                          { label: "High", val: stats.N.high, color: "bg-green-500" },
+                          { label: "Medium", val: stats.N.med, color: "bg-yellow-400" },
+                          { label: "Low", val: stats.N.low, color: "bg-red-500" }
+                        ]} />
+                        <NutrientGroupRow label="Phosphorus (P)" myValue={vals.P} unit="kg/ha" bars={[
+                          { label: "High", val: stats.P.high, color: "bg-green-500" },
+                          { label: "Medium", val: stats.P.med, color: "bg-yellow-400" },
+                          { label: "Low", val: stats.P.low, color: "bg-red-500" }
+                        ]} />
+                        <NutrientGroupRow label="Potassium (K)" myValue={vals.K} unit="kg/ha" bars={[
+                          { label: "High", val: stats.K.high, color: "bg-green-500" },
+                          { label: "Medium", val: stats.K.med, color: "bg-yellow-400" },
+                          { label: "Low", val: stats.K.low, color: "bg-red-500" }
+                        ]} />
+                      </>
+                    );
+                  }
+
+                  if (nutrientTab === "micro") {
+                    return [
+                      { k: 'S', l: 'Sulfur' }, { k: 'Zn', l: 'Zinc' }, { k: 'B', l: 'Boron' },
+                      { k: 'Fe', l: 'Iron' }, { k: 'Mn', l: 'Manganese' }, { k: 'Cu', l: 'Copper' }
+                    ].map((item) => (
+                      <NutrientGroupRow 
+                        key={item.k} 
+                        label={item.l} 
+                        myValue={vals[item.k]} 
+                        unit="ppm" 
+                        isGrid={true}
+                        bars={[
+                          { label: "Suff.", val: stats[item.k].suff, color: "bg-green-500" },
+                          { label: "Def.", val: stats[item.k].def, color: "bg-red-500" }
+                        ]} 
+                      />
+                    ));
+                  }
+
+                  if (nutrientTab === "prop") {
+                    return (
+                      <>
+                        <NutrientGroupRow label="Organic Carbon (OC)" myValue={vals.OC} unit="%" bars={[
+                          { label: "High", val: stats.OC.high, color: "bg-green-500" },
+                          { label: "Medium", val: stats.OC.med, color: "bg-yellow-400" },
+                          { label: "Low", val: stats.OC.low, color: "bg-red-500" }
+                        ]} />
+                        <NutrientGroupRow label="pH Level" myValue={vals.pH} unit="" bars={[
+                          { label: "Alkaline", val: stats.pH.alkaline, color: "bg-purple-500" },
+                          { label: "Neutral", val: stats.pH.neutral, color: "bg-green-500" },
+                          { label: "Acidic", val: stats.pH.acidic, color: "bg-yellow-500" }
+                        ]} />
+                        <NutrientGroupRow label="Elec. Conductivity" myValue={vals.EC} unit="dS/m" bars={[
+                          { label: "Non-Saline", val: stats.EC.nonSaline, color: "bg-blue-500" },
+                          { label: "Saline", val: stats.EC.saline, color: "bg-orange-500" }
+                        ]} />
+                      </>
+                    )
+                  }
+                })()}
               </div>
 
-              {/* Legend */}
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[11px] px-2 mb-6">
-                {nutrientLabels.map((label, i) => (
-                  <div key={label} className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: nutrientPieData.datasets[0].backgroundColor[i] }} />
-                    <span className="text-gray-600 font-medium truncate">{label}</span>
-                  </div>
-                ))}
-              </div>
+            </div>
 
-              {/* Feature Donuts */}
-              <div className="grid grid-cols-2 gap-3 mt-auto">
-                 <FeatureDonut title="pH Level" labels={["Acidic", "Neutral", "Alkaline"]} values={[20, 60, 20]} colors={["#f87171", "#4ade80", "#60a5fa"]} />
-                 <FeatureDonut title="EC Value" labels={["Low", "Optimal", "High"]} values={[15, 70, 15]} colors={["#fbbf24", "#34d399", "#f472b6"]} />
-              </div>
+            <div className="mt-3 pt-3 border-t border-slate-100 text-[10px] text-slate-400 text-center font-medium">
+              * Distribution data based on regional sampling
             </div>
           </div>
 
         </div>
 
-        {/* RIGHT CONTENT (Flex Col) */}
-        <div className="flex flex-col gap-6 h-full">
+        {/* RIGHT COLUMN: Forecast & Insights */}
+        <div className="flex flex-col gap-4 h-full">
 
-          {/* Forecast */}
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold text-gray-800">7-Day Soil Forecast</h3>
-              <div className="flex items-center gap-1 text-[10px] text-gray-400">
-                <Clock className="w-3 h-3" /> Updated: 6:00 AM
-              </div>
+          {/* ================= SECTION A : 7-DAY FORECAST ================= */}
+          <div className="bg-white rounded-lg p-4 shadow">
+            <div className="text-sm font-semibold mb-4">
+              7-day Forecast
             </div>
-            <div className="flex gap-3 overflow-x-auto pb-2">
+
+            <div className="flex justify-between gap-4">
               {finalForecast7d.map((d: any, i: number) => {
-                const w = getWeatherUI(d.temp, d.moist);
+                const weather = getWeatherUI(d.temp, d.moist);
                 return (
-                   // FIXED: Added backticks around className
-                  <div key={i} className={`flex-1 min-w-[90px] rounded-xl p-3 bg-gradient-to-b ${w.bg} border border-white/50 shadow-sm flex flex-col items-center justify-between relative`}>
-                    <div className="text-xl mb-1 filter drop-shadow-sm">{w.icon}</div>
-                    <div className="text-center">
-                      <div className="text-[10px] font-bold text-gray-600 uppercase mb-0.5">{d.day ?? "Today"}</div>
-                      <div className="text-2xl font-black text-gray-800 leading-none">{d.temp}°</div>
-                      <div className="text-[10px] font-medium text-gray-700 mt-1">{d.moist}% Moist</div>
+                  <div
+                    key={i}
+                    className={`
+            relative flex-1 rounded-2xl px-4 py-4 text-center
+            bg-gradient-to-b ${weather.bg}
+            border border-white/60
+            shadow-md
+            transition-all duration-300
+            `}
+                  >
+                    {/* Weather Icon */}
+                    <div className="absolute top-2 right-2 text-xl">
+                      {weather.icon}
+                    </div>
+
+                    {/* Day */}
+                    <div className="text-sm font-medium text-slate-700">
+                      {d.day ?? "Today"}
+                    </div>
+
+                    {/* Temperature */}
+                    <div className="text-3xl font-bold text-slate-900 mt-1">
+                      {d.temp}°
+                    </div>
+
+                    {/* Moisture */}
+                    <div className="text-xs text-slate-700 mt-1">
+                      {d.moist}% Moist
+                    </div>
+
+                    {/* Status */}
+                    <div className="text-xs font-semibold text-slate-800 mt-1">
+                      {d.status}
                     </div>
                   </div>
-                )
+                );
               })}
+
             </div>
+
+            {!hasValidForecastData && (
+              <div className="text-[11px] text-gray-400 text-center mt-3">
+                Showing sample data (real forecast will appear here)
+              </div>
+            )}
           </div>
 
-          {/* Insights Grid (Flex-1 to stretch) */}
+          {/* ================= SECTION B : SOIL INSIGHTS (CORRECTED) ================= */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1">
             
             {/* TEMPERATURE PANEL */}
@@ -413,13 +699,39 @@ export default function SoilPage() {
                 <span><span className="font-bold">Co-Pilot Insight:</span> Soil warming trend detected. Planting window optimal in 48hrs.</span>
               </div>
 
-              <div className="mb-6 flex-1 flex flex-col justify-center">
+             <div className="mb-6 flex-1 flex flex-col justify-center">
                 <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">DIAGNOSTIC VIEW</div>
-                <div className="flex gap-4">
-                  <SoilLayerStack layers={layers} />
-                  <div className="flex-1 flex flex-col justify-center">
-                     {layers.map((l: any, i: number) => <DepthRowAligned key={i} {...l} />)}
+                
+                {/* 1. Container: Height fixed at h-80 for alignment */}
+                <div className="flex gap-4 h-80 items-center">
+                  
+                  {/* 2. Left: Depth Labels - 4 items, centered with equal spacing */}
+                  <div className="flex flex-col justify-center gap-10 w-20 flex-shrink-0 pr-2">
+                    {layers.map((l: any, i: number) => (
+                      <div key={i} className="flex items-center justify-end text-sm text-gray-500 font-medium whitespace-nowrap h-6">
+                        {l.label}
+                      </div>
+                    ))}
                   </div>
+
+                  {/* 3. Center: Image - Full height, centered */}
+                  <div className="flex-1 flex justify-center h-[90%] relative">
+                     <img src="/images/soil.png" className="h-full w-auto object-contain rounded drop-shadow-sm" />
+                  </div>
+
+                  {/* 4. Right: Value + Status - 4 items, centered with equal spacing */}
+                  <div className="flex flex-col justify-center gap-10 w-32 flex-shrink-0 pl-2">
+                     {layers.map((l: any, i: number) => (
+                       <div key={i} className="flex items-center w-full h-6">
+                         <DepthRowAligned 
+                            {...l} 
+                            label="" 
+                            value={<span className="font-bold text-gray-800">{l.value}°C</span>} 
+                         />
+                       </div>
+                     ))}
+                  </div>
+
                 </div>
               </div>
 
@@ -461,12 +773,38 @@ export default function SoilPage() {
 
               <div className="mb-6 flex-1 flex flex-col justify-center">
                 <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">DIAGNOSTIC VIEW</div>
-                <div className="flex gap-4">
-                  <SoilLayerStack layers={moistureLayers} />
-                  <div className="flex-1 flex flex-col justify-center">
-                     {/* FIXED: Added backticks around value string */}
-                     {moistureLayers.map((l: any, i: number) => <DepthRowAligned key={i} label={l.label} value={`${l.value}%`} status={l.status} color={l.color} />)}
+                {/* Responsive container, h-80 for matching height */}
+                <div className="flex gap-4 h-80 items-center">
+                  
+                  {/* LEFT: Depth Labels - 4 items, centered with equal spacing */}
+                  <div className="flex flex-col justify-center gap-10 w-20 flex-shrink-0 pr-2">
+                    {moistureLayers.map((l: any, i: number) => (
+                      <div key={i} className="flex items-center justify-end text-sm text-gray-500 font-medium whitespace-nowrap h-6">
+                        {l.label}
+                      </div>
+                    ))}
                   </div>
+
+                  {/* CENTER: Soil Image - Identical styling */}
+                  <div className="flex-1 flex justify-center h-[90%] relative">
+                     <img src="/images/soil.png" className="h-full w-auto object-contain rounded drop-shadow-sm" />
+                  </div>
+
+                  {/* RIGHT: Percentage + Status - 4 items, centered with equal spacing */}
+                  <div className="flex flex-col justify-center gap-10 w-32 flex-shrink-0 pl-2">
+                     {moistureLayers.map((l: any, i: number) => (
+                       <div key={i} className="flex items-center w-full h-6">
+                         <DepthRowAligned 
+                            key={i} 
+                            label="" 
+                            value={<span className="font-bold text-gray-800">{l.value}%</span>} 
+                            status={l.status} 
+                            color={l.color} 
+                         />
+                       </div>
+                     ))}
+                  </div>
+                  
                 </div>
               </div>
 
@@ -495,33 +833,35 @@ export default function SoilPage() {
             </div>
 
           </div>
+
         </div>
       </div>
 
-      {/* ================= FERTILIZER ================= */}
+      {/* ================= GOVERNMENT HEADER ================= */}
       <div className="bg-green-50 rounded-xl p-6 shadow border border-green-200 mt-6">
 
-      {/* GOV HEADER */}
-      <div className="bg-white p-4 rounded-xl shadow flex justify-between items-center mt-8">
-        <div className="flex gap-4">
-          <img src="/images/gov-logo.png" className="h-14" />
-          <div>
-            <div className="font-bold text-sm">Government of India</div>
-            <div className="text-xs">Ministry of Agriculture and Farmers Welfare <p>Department of Agriculture and Farmers Welfare</p></div>
+        {/* GOV HEADER */}
+        <div className="bg-white p-4 rounded-xl shadow flex justify-between items-center mt-8">
+          <div className="flex gap-4">
+            <img src="/images/gov-logo.png" className="h-14" />
+            <div>
+              <div className="font-bold text-sm">Government of India</div>
+              <div className="text-xs">Ministry of Agriculture and Farmers Welfare <p>Department of Agriculture and Farmers Welfare</p></div>
+            </div>
+          </div>
+          <div className="flex gap-3 items-center">
+            <img src="/images/soil-health-logo.png" className="h-12" />
+            <div>
+              <div className="font-bold">Soil Health Card</div>
+              <div className="text-xs text-gray-500">Healthy Earth, Greener Farm</div>
+            </div>
           </div>
         </div>
-        <div className="flex gap-3 items-center">
-          <img src="/images/soil-health-logo.png" className="h-12" />
-          <div>
-            <div className="font-bold">Soil Health Card</div>
-            <div className="text-xs text-gray-500">Healthy Earth, Greener Farm</div>
-          </div>
-        </div>
-      </div>
 
         <div className="bg-green-700 text-white px-6 py-3 font-semibold text-lg">Fertilizer Recommendation</div>
         <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6">
 
+          {/* ✅ FIX #2: RESTORED INPUT WRAPPER */}
           <div className="bg-white rounded-lg p-4 border shadow-sm">
 
             <select className="w-full border rounded px-3 py-2 mb-3" value={state} onChange={(e) => setState(e.target.value)}>
@@ -542,9 +882,8 @@ export default function SoilPage() {
             <button
               onClick={getRecommendation}
               disabled={!isFormValid}
-              className={`px-4 py-2 border rounded w-full ${
-                isFormValid ? "bg-white" : "bg-gray-200 cursor-not-allowed"
-              }`}
+              className={`px-4 py-2 border rounded w-full ${isFormValid ? "bg-white" : "bg-gray-200 cursor-not-allowed"
+                }`}
             >
               {loadingFert ? "Loading..." : "Get Recommendations"}
             </button>
@@ -584,31 +923,49 @@ export default function SoilPage() {
         </div>
       </div>
 
-      {/* Resources */}
-      <section className="mt-8">
-        <h2 className="text-xl font-bold text-gray-800 mb-6">Knowledge & Resources</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* ================= RESOURCES ================= */}
+      <section className="mt-12">
+        <h2 className="text-2xl font-bold mb-6">Resources</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {[
-            { title: "Sustainable Farming Guide", desc: "Manual for chemical-free practices.", icon: BookOpen },
-            { title: "Mission Guidelines", desc: "Official policy documents.", icon: FileText },
-            { title: "Study Materials", desc: "Natural farming implementation.", icon: GraduationCap },
-            { title: "Success Stories", desc: "Gallery of trained farmers.", icon: ImageIcon },
+            {
+              title: "Knowledge Material",
+              desc: "Explore guides, manuals, and videos to help you adopt sustainable, chemical-free farming practices.",
+              icon: BookOpen,
+            },
+            {
+              title: "Guidelines",
+              desc: "Access policy documents and instructions to support smooth and effective execution of the mission.",
+              icon: FileText,
+            },
+            {
+              title: "Study Material",
+              desc: "Download study materials that simplify natural farming methods for easy understanding and implementation.",
+              icon: GraduationCap,
+            },
+            {
+              title: "Gallery",
+              desc: "1 crore farmers to be trained and made aware of NF practices, with the help of 2 Krishi Sakhis per cluster.",
+              icon: ImageIcon,
+            },
           ].map((r) => (
-            <div key={r.title} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer group">
-              <div className="flex gap-4 items-center">
-                <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center group-hover:bg-green-100 transition-colors">
-                  <r.icon className="text-green-600 w-6 h-6" />
-                </div>
+            <div
+              key={r.title}
+              className="bg-white rounded-2xl p-6 shadow flex justify-between items-start"
+            >
+              <div className="flex gap-4">
+                <r.icon className="text-green-700 w-10 h-10" />
                 <div>
-                  <div className="font-bold text-gray-800">{r.title}</div>
-                  <div className="text-xs text-gray-500">{r.desc}</div>
+                  <div className="font-bold">{r.title}</div>
+                  <div className="text-sm text-gray-500">{r.desc}</div>
                 </div>
               </div>
-              <ArrowRight className="text-gray-300 group-hover:text-green-600 transition-colors" />
+              <ArrowRight className="text-gray-300" />
             </div>
           ))}
         </div>
       </section>
+
     </div>
   );
 }
