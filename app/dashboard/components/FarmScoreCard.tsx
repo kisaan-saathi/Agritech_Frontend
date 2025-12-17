@@ -19,13 +19,11 @@ import {
 } from "@/lib/api";
 import { useMap } from "@/hooks/useMap";
 import {
-  FieldSidebar,
   Timeline,
   MapControls,
   BottomPanels,
   HoverTooltip,
   LoadingOverlay,
-  HamburgerButton,
   CoordsDisplay,
 } from "@/components/field-dashboard-ui";
 
@@ -40,8 +38,8 @@ export default function FarmScoreCard() {
   );
   const [isLoadingHeatmap, setIsLoadingHeatmap] = useState(false);
   const [fields, setFields] = useState<FieldFeature[]>([]);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [hoverInfo, setHoverInfo] = useState<HoverInfo | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [availableDates, setAvailableDates] =
     useState<string[]>(TIMELINE_DATES);
   const [nextImageDate, setNextImageDate] = useState<string | null>(null);
@@ -151,7 +149,7 @@ export default function FarmScoreCard() {
       };
       handleFieldSelect(selectedFieldData);
       zoomToField(field);
-      setSidebarOpen(false);
+      setDropdownOpen(false);
     },
     [zoomToField, handleFieldSelect]
   );
@@ -207,10 +205,6 @@ export default function FarmScoreCard() {
 
   const handleDateChange = useCallback((date: string) => {
     setSelectedDate(date);
-  }, []);
-
-  const toggleSidebar = useCallback(() => {
-    setSidebarOpen((prev) => !prev);
   }, []);
   return (
     <section className="mb-5 h-100vh">
@@ -285,21 +279,72 @@ export default function FarmScoreCard() {
                 onSearch={handleSearch}
                 onCurrentLocation={handleCurrentLocation}
               />
-            </div>
-            <div className="flex flex-row">
-              <HamburgerButton
-                isOpen={sidebarOpen}
-                onToggle={toggleSidebar}
-                fieldCount={fields.length}
-              />
+              <div className="btn-group ml-2 my-2" style={{ position: 'relative' }}>
+                <button
+                  type="button"
+                  className="btn dropdown-toggle relative my-2"
+                  style={{ backgroundColor: 'white', border: '1px solid black', color: 'black', padding: '5px 12px' }}
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  aria-expanded={dropdownOpen}
+                >
+                  Crop
+                  {fields.length > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs rounded-full px-1 min-w-[18px] h-[18px] flex items-center justify-center">
+                      {fields.length}
+                    </span>
+                  )}
+                </button>
+                <ul className={`dropdown-menu ${dropdownOpen ? 'show' : ''}`} style={{ position: 'absolute', top: '100%', left: '0', zIndex: 1000, display: dropdownOpen ? 'block' : 'none', maxHeight: '200px', overflowY: 'auto', width: '200px' }}>
+                  {fields.length === 0 ? (
+                    <li>
+                      <a className="dropdown-item" href="#">
+                        Draw a polygon on the map to add a field
+                      </a>
+                    </li>
+                  ) : (
+                    fields.map((field) => {
+                      const fieldId = field.properties?.id;
+                      const isActive = selectedField?.id === fieldId?.toString();
 
-              <FieldSidebar
-                isOpen={sidebarOpen}
-                fields={fields}
-                selectedField={selectedField}
-                onFieldClick={handleSidebarFieldSelect}
-                onDeleteField={handleDeleteField}
-              />
+                      return (
+                        <li key={fieldId || Math.random()}>
+                          <a
+                            className={`dropdown-item ${isActive ? 'active' : ''}`}
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handleSidebarFieldSelect(field);
+                            }}
+                          >
+                            <div className="d-flex justify-content-between align-items-center">
+                              <div>
+                                <div className="fw-medium">
+                                  {field.properties?.name || `Field ${fieldId}`}
+                                </div>
+                                <div className="text-muted small">
+                                  {field.properties?.area
+                                    ? `${Number(field.properties.area).toFixed(2)} ha`
+                                    : "Area N/A"}
+                                </div>
+                              </div>
+                              <button
+                                className="btn btn-sm btn-outline-danger ms-2"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteField(fieldId?.toString() || "", e);
+                                }}
+                                title="Delete field"
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </a>
+                        </li>
+                      );
+                    })
+                  )}
+                </ul>
+              </div>
             </div>
           </div>
           <div className="dashboard-container">
