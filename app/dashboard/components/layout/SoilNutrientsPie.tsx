@@ -29,7 +29,7 @@ export default function SoilNutrientsPie() {
     datasets: [
       {
         label: "Soil Nutrient Composition",
-        data: [40, 25, 30, 18, 7, 4, 10, 6, 3, 2, 1, 5],
+        data: [40, 25, 30, 18, 7, 4, 10, 6, 3, 2, 1, 5], // sample values
         backgroundColor: [
           "#4CAF50",
           "#FF9800",
@@ -64,7 +64,6 @@ export default function SoilNutrientsPie() {
       tooltip: {
         callbacks: {
           label: (context: any) => {
-            // FIXED: Added backticks around the return string
             return `${context.label}: ${context.raw}`;
           },
         },
