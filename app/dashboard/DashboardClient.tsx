@@ -50,12 +50,8 @@ export default function DashboardClient() {
           },
         });
       });
-      if (res.data.statusCode == 200 || res.data.statusCode == 401) {
-        if(res.data.statusCode == 200) {
-          toast.success(res.data.message);
-        } else {
-          toast.error(res.data.message);
-        }
+      if (res.data.statusCode == 200) {
+        toast.success(res.data.message);
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("userName");
@@ -64,15 +60,16 @@ export default function DashboardClient() {
       } else {
         toast.error(res.data.message || "Logout failed");
         setShowMenu(false)
+        router.push("/login");
+
       }
     } catch (error: any) {
       console.log("logout error",error)
-      // toast.error(error.res.data.message || "Logout failed");
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-      localStorage.removeItem("userName");
+      // // toast.error(error.res.data.message || "Logout failed");
+      // localStorage.removeItem("accessToken");
+      // localStorage.removeItem("refreshToken");
+      // localStorage.removeItem("userName");
       setShowMenu(false);
-      router.push("/login");
     }
   };
 
