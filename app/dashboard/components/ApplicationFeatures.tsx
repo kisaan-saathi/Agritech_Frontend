@@ -40,7 +40,7 @@ export default function ApplicationFeatures() {
             </svg>
             <span className="text-xl font-bold mt-2 text-gray-900 text-bold">Crop Guide</span>
           </a>
-          <a href="#" className="flex flex-col items-center p-1 rounded-xl hover:bg-blue-50 transition duration-150 text-decoration-none hover:border border-sky-blue">
+          <a href="/weather" className="flex flex-col items-center p-1 rounded-xl hover:bg-blue-50 transition duration-150 text-decoration-none hover:border border-sky-blue">
             <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-sky-blue">
               <path d="M12 2v2M18 6l-1 1M20 12h-2M18 18l-1-1M12 20v2M6 18l1-1M4 12h2M6 6l1 1"/>
               <path d="M15 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
