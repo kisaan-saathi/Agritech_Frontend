@@ -2,7 +2,7 @@ export default function SensorMetrics() {
   return (
     <section className="mb-10 shadow rounded-2xl pb-2">
       <h2 className="text-xl font-bold text-gray-800 mb-0 p-3 border-bottom">Real-time Sensor Readings & Indices</h2>
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-6 px-3 py-3">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 gap-6 px-3 py-3">
         <div className="bg-white rounded-2xl shadow border p-4 border-b-5 border-primary hover:shadow-2xl transition duration-300">
           <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">Soil Moisture</h3>
           <div className="flex items-center justify-between">

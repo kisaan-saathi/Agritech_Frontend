@@ -17,15 +17,23 @@ export default function DashboardClient() {
   const router = useRouter();
   const [showMenu, setShowMenu] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const [user, setUser] = useState<string>("");
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
+    const token =
+      typeof window !== "undefined"
+        ? localStorage.getItem("accessToken")
+        : null;
     if (!token) {
       router.push("/login");
     } else {
       setAuthChecked(true);
+      // safely read userName from localStorage on the client
+      const u = localStorage.getItem("userName") || "";
+      setUser(u);
     }
   }, [router]);
-  const user = localStorage.getItem("userName") || "";
+  // `user` is now read into state in the effect above to avoid accessing
+  // localStorage during server-side render.
   const { handleIdentifyDisease } = useDiseaseId();
 
   if (!authChecked) return null;
@@ -43,19 +51,25 @@ export default function DashboardClient() {
         });
       });
       if (res.data.statusCode == 200) {
-        toast.success(res.data.message || "Logged out successfully");
+        toast.success(res.data.message);
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("userName");
         setShowMenu(false);
         router.push("/login");
       } else {
-        console.log("Logout API error", res.data);
         toast.error(res.data.message || "Logout failed");
+        setShowMenu(false)
+        router.push("/login");
+
       }
     } catch (error: any) {
-      console.log("Logout API error", error);
-      toast.error(error.message || "Logout failed");
+      console.log("logout error",error)
+      // // toast.error(error.res.data.message || "Logout failed");
+      // localStorage.removeItem("accessToken");
+      // localStorage.removeItem("refreshToken");
+      // localStorage.removeItem("userName");
+      setShowMenu(false);
     }
   };
 
@@ -66,7 +80,7 @@ export default function DashboardClient() {
         <main className="flex-1 p-4 sm:p-8 overflow-y-auto">
           {/* Header (Mobile/Desktop) - Used for User and Notifications */}
           <header className="flex justify-between items-center mb-8 pb-4 border-b border-gray-200">
-            <div className="flex flex-col items-center space-x-3">
+            <div className="flex flex-row items-center space-x-3">
               <img
                 className="box shake-after-10s"
                 width="70"
@@ -75,7 +89,7 @@ export default function DashboardClient() {
               />
               <span className="text-3xl font-extrabold text-gray-800 mb-0 flex items-center gap-2">
                 Welcome, {user}
-                <Hand className="w-7 h-7  animate-wave" fill='#f5db75ff'  />
+                <Hand className="w-7 h-7  animate-wave" fill="#f5db75ff" />
               </span>
             </div>
             <div className="flex items-center space-x-4">
@@ -143,100 +157,10 @@ export default function DashboardClient() {
 
           <FarmScoreCard />
           <ActionCenter onDiseaseClick={handleIdentifyDisease} />
-          <SensorMetrics />
+          {/* <SensorMetrics /> */}
           <ApplicationFeatures />
           {/* <CropOverview /> */}
         </main>
-
-        <footer className="fixed bottom-0 left-0 right-0 z-50 h-20 bg-white border-t border-gray-200 shadow-2xl">
-          <nav className="flex h-full justify-around items-center max-w-7xl mx-auto px-4">
-            <a
-              href="#"
-              className="flex flex-col items-center justify-center space-y-1 p-2 text-primary-green transition duration-150"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="w-6 h-6"
-              >
-                <path d="M3 3v18h18" />
-                <path d="M18.7 8l-5.1 5.2-2.8-2.7-5.1 5.2" />
-              </svg>
-              <span className="text-xs font-semibold">Dashboard</span>
-            </a>
-            <a
-              href="#"
-              className="flex flex-col items-center justify-center space-y-1 p-2 text-gray-500 hover:text-primary-green transition duration-150"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="w-6 h-6"
-              >
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                <circle cx="12" cy="10" r="3" />
-              </svg>
-              <span className="text-xs font-medium">Map</span>
-            </a>
-            <a
-              href="#"
-              className="flex flex-col items-center justify-center space-y-1 p-2 text-gray-500 hover:text-primary-green transition duration-150 relative"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="w-6 h-6"
-              >
-                <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z" />
-                <path d="M12 6v6l4 2" />
-              </svg>
-              <span className="text-xs font-medium">Action</span>
-              <span className="absolute top-1 right-2 block h-2 w-2 rounded-full ring-2 ring-white bg-red-500"></span>
-            </a>
-            <a
-              href="#"
-              className="flex flex-col items-center justify-center space-y-1 p-2 text-gray-500 hover:text-primary-green transition duration-150"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="w-6 h-6"
-              >
-                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18A2 2 0 0 1 9.77 6.2h-1.92A2 2 0 0 0 5.92 8.13l-.15.14A2 2 0 0 1 4 9.77v4.46a2 2 0 0 1 1.77 1.5l.15.14A2 2 0 0 0 7.85 17.8h1.92a2 2 0 0 1 1.45 1.77v.18a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1.45-1.77h1.92a2 2 0 0 0 1.93-1.93l.15-.14A2 2 0 0 1 20 14.23V9.77a2 2 0 0 1-1.77-1.5l-.15-.14A2 2 0 0 0 16.15 6.2h-1.92a2 2 0 0 1-1.45-1.77V4a2 2 0 0 0-2-2z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-              <span className="text-xs font-medium">Profile</span>
-            </a>
-          </nav>
-        </footer>
       </div>
     </div>
   );

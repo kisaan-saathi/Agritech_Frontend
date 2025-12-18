@@ -4,7 +4,7 @@ export default function ApplicationFeatures() {
   const { diseaseIdOutput, loadingDisease, handleIdentifyDisease } = useDiseaseId();
 
   return (
-    <section className="mb-20 shadow rounded-2xl">
+    <section className="mb-2 shadow rounded-2xl">
       <h2 className="text-xl font-bold text-gray-800 mb-0 p-3 border-bottom">Application Features</h2>
       <div className="bg-white rounded-2xl shadow-xl p-2">
         <div className="grid grid-cols-4 sm:grid-cols-4 lg:grid-cols-8 gap-1 text-center py-4">

@@ -23,7 +23,7 @@ export default function AuthLayout({ title, children }: AuthLayoutProps) {
                     <div className="flex flex-col items-center space-x-3">
                       <img
                         className="box shake-after-10s"
-                        width="100"
+                        width="150"
                         src="/images/kissan_sathi_logo.png"
                         alt="Mithu"
                       />
@@ -31,7 +31,7 @@ export default function AuthLayout({ title, children }: AuthLayoutProps) {
                     <div className="flex align-items-end space-x-3">
                       <img
                         className=""
-                        width="100"
+                        width="200"
                         src="/images/GenXAILatest.png"
                         alt="GenXAI"
                       />
