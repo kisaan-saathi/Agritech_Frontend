@@ -17,10 +17,11 @@ export const LAYER_NAMES: Record<LayerKey, string> = {
 export interface FieldProperties {
   id: string;
   name?: string;
-  farmer_name?: string;
-  crop_type?: string;
+  farmerName?: string;
+  cropType?: string;
   season?: string;
-  sowing_date?: string;
+  sowingDate?: string;
+  harvestDate?: string;
   health_score?: number;
   area?: number;
 }
@@ -87,3 +88,11 @@ export interface IndexDataPoint {
   ndwi: number;
   savi: number;
 }
+
+/** Supported satellite sources */
+export type SourceKey = "sentinel2" ;
+
+/** Display names for sources */
+export const SOURCE_NAMES: Record<SourceKey, string> = {
+  sentinel2: "Sentinel-2"
+};

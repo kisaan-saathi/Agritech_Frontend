@@ -26,6 +26,7 @@ interface UseMapOptions {
   onFieldsLoad: (fields: any[]) => void;
   onLoadingChange: (isLoading: boolean) => void;
   onHoverChange: (info: HoverInfo | null) => void;
+  onDrawPolygon?: (geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon) => void;
 }
 
 export function useMap({
@@ -36,6 +37,7 @@ export function useMap({
   onFieldsLoad,
   onLoadingChange,
   onHoverChange,
+  onDrawPolygon,
 }: UseMapOptions) {
   // Refs
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -259,7 +261,7 @@ export function useMap({
 
     const draw = new MapboxDraw({
       displayControlsDefault: false,
-      controls: { polygon: true, trash: true },
+      controls: { polygon: false, trash: false },
     });
     drawRef.current = draw;
     map.addControl(draw, "top-left");
@@ -348,44 +350,11 @@ export function useMap({
 
     map.on("draw.create", async (e: any) => {
       const geometry = e.features[0].geometry;
-      
       if (drawRef.current) {
         drawRef.current.deleteAll();
       }
-
-      try {
-        const geojson = await fetchFields();
-        const currentCount = (geojson.features || []).length;
-        const fieldName = `Field ${currentCount + 1}`;
-
-        const result = await createField({
-          name: fieldName,
-          farmerName: "Farmer",
-          cropType: "Crop",
-          season: "Rabi",
-          sowingDate: new Date().toISOString().split("T")[0],
-          geometry,
-        });
-
-        const updatedGeojson = await fetchFields();
-        onFieldsLoad(updatedGeojson.features || []);
-
-        if (map.getSource("fields")) {
-          (map.getSource("fields") as mapboxgl.GeoJSONSource).setData(updatedGeojson);
-        }
-
-        const newField: SelectedField = {
-          id: result.id,
-          properties: { id: result.id, name: fieldName },
-          geometry: geometry as GeoJSON.Polygon | GeoJSON.MultiPolygon,
-        };
-        onFieldSelect(newField);
-
-        await renderHeatmap(map, newField, selectedDateRef.current, selectedLayerRef.current, true);
-
-        calculateIndices(result.id).catch(console.error);
-      } catch (err) {
-        console.error("Failed to save field:", err);
+      if (onDrawPolygon) {
+        onDrawPolygon(geometry);
       }
     });
 
