@@ -46,37 +46,29 @@ export default function Login() {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
+          <a href="#" className="text-decoration-none w-full">
+            Forgot password?
+          </a>
+          <div className="d-flex flex-col justify-content-between align-items-center my-3">
+            <button
+              className="btn btn-success w-full text-uppercase rounded shadow-sm p-2"
+              type="submit"
+            >
+              {loading ? (
+                <div className="spinner-border text-light" role="status">
+                  <span className="sr-only">Loading...</span>
+                </div>
+              ) : (
+                "Login"
+              )}
+            </button>
 
-                      <div className="d-flex justify-content-between align-items-center my-3">
-                        <button
-                          className="btn btn-success text-uppercase rounded shadow-sm"
-                          type="submit"
-                        >
-                          {loading ? (
-                            <div
-                              className="spinner-border text-light"
-                              role="status"
-                            >
-                              <span className="sr-only">Loading...</span>
-                            </div>
-                          ) : (
-                            "Login"
-                          )}
-                        </button>
-
-                        <a
-                          href="/signup"
-                          className="btn btn-outline-primary text-uppercase rounded shadow-sm"
-                        >
-                          Sign Up
-                        </a>
-
-                        <a href="#" className="text-decoration-none">
-                          Forgot password?
-                        </a>
-                      </div>
-       </form>
-     </div>
-   </AuthLayout>
+            <a href="/signup" className="btn fs-100 btn-link w-full my-3">
+              Don’t have an account? Sign up
+            </a>
+          </div>
+        </form>
+      </div>
+    </AuthLayout>
   );
 }
