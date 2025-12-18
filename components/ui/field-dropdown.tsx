@@ -84,8 +84,7 @@ const FieldDropdown: React.FC<FieldDropdownProps> = ({
               selectedField?.id === fieldId?.toString();
             return (
               <li key={fieldId || Math.random()}>
-                <button
-                  type="button"
+                <div
                   className={`dropdown-item bg-none`}
                   style={{
                     display: "flex",
@@ -94,15 +93,16 @@ const FieldDropdown: React.FC<FieldDropdownProps> = ({
                     gap: 8,
                     cursor: "pointer",
                     padding: "2% 5%",
-                    border: "none",
                     color: "black",
                     width: "100%",
                     textAlign: "left",
                     backgroundColor: isActive ? "#dadadaff" : "transparent",
                   }}
                   onClick={(e) => {
-                    e.preventDefault();
-                    handleSidebarFieldSelect(field);
+                    // Only handle click if not clicking on action buttons
+                    if (!(e.target as HTMLElement).closest('.action-btn')) {
+                      handleSidebarFieldSelect(field);
+                    }
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
@@ -110,6 +110,7 @@ const FieldDropdown: React.FC<FieldDropdownProps> = ({
                       handleSidebarFieldSelect(field);
                     }
                   }}
+                  tabIndex={0}
                 >
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div
@@ -146,7 +147,7 @@ const FieldDropdown: React.FC<FieldDropdownProps> = ({
                     style={{ display: "flex", gap: 2, flexShrink: 0 }}
                   >
                     <button
-                      className="btn btn-sm btn-outline-primary ms-2"
+                      className="btn btn-sm btn-outline-primary ms-2 action-btn"
                       onClick={async (e) => {
                         e.stopPropagation();
                         // Fetch latest field data to ensure all properties are loaded
@@ -206,7 +207,7 @@ const FieldDropdown: React.FC<FieldDropdownProps> = ({
                       ✏️
                     </button>
                     <button
-                      className="btn btn-sm btn-outline-danger ms-2"
+                      className="btn btn-sm btn-outline-danger ms-2 action-btn"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleDeleteField(
@@ -219,7 +220,7 @@ const FieldDropdown: React.FC<FieldDropdownProps> = ({
                       🗑️
                     </button>
                   </div>
-                </button>
+                </div>
               </li>
             );
           })

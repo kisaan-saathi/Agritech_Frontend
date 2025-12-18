@@ -1,7 +1,7 @@
 "use client";
 
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 
 import { useRouter } from "next/navigation";
+import FarmMap from "@/components/ui/farm-map";
 
 ChartJS.register(
   CategoryScale,
@@ -477,16 +478,11 @@ export default function SoilPage() {
       )}
 
       {/* ================= FIELD MAP (Full Width) ================= */}
-      <div className="w-full mb-4 mt-4">
-        <div className="bg-white rounded-lg p-4 shadow">
-          <div className="text-sm font-semibold mb-2">Field Map / Live View</div>
-          <div className="h-[200px] flex items-center justify-center border rounded text-gray-400 text-sm bg-gray-50">
-            Field Map (Full Screen Width)
-          </div>
-          <div className="text-[11px] text-gray-400 mt-2">
-            Source: Backend • Last: {data?.lastUpdated ?? "--"}
-          </div>
-        </div>
+      <div className="w-full mb-5 mt-4 bg-white rounded-lg p-0 shadow h-98">
+          <FarmMap
+            title="Soil Map"
+            initialLayer="savi"
+          />
       </div>
 
       {/* ================= MAIN CONTENT GRID ================= */}
@@ -969,3 +965,4 @@ export default function SoilPage() {
     </div>
   );
 }
+

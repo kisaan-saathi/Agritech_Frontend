@@ -6,13 +6,13 @@ import { LayerKey } from '@/lib/types';
 interface MapLayerDropdownProps {
   selectedLayer: LayerKey;
   onLayerChange: (layer: LayerKey) => void;
+  layers?: LayerKey[];
 }
-
-const layers: LayerKey[] = ["ndvi", "ndre", "evi", "savi", "ndwi"];
 
 const MapLayerDropdown: React.FC<MapLayerDropdownProps> = ({
   selectedLayer,
   onLayerChange,
+  layers,
 }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -44,7 +44,7 @@ const MapLayerDropdown: React.FC<MapLayerDropdownProps> = ({
           padding: "8px",
         }}
       >
-        {layers.map((layer) => (
+        {layers?.map((layer) => (
           <li key={layer}>
             <a
               className="dropdown-item"
