@@ -1,29 +1,41 @@
-'use client';
+"use client";
 
-import React, { RefObject, useRef, useState, useCallback, useEffect } from 'react';
-import MapSearch from '../../components/MapSearch';
-import { FieldFeature, SelectedField, LayerKey, SourceKey, HoverInfo } from '@/lib/types';
-import FieldDropdown from './field-dropdown';
-import MapLayerDropdown from './map-layer-dropdown';
-import MapSourceDropdown from './map-source-dropdown';
+import React, {
+  RefObject,
+  useRef,
+  useState,
+  useCallback,
+  useEffect,
+} from "react";
+import MapSearch from "../../components/MapSearch";
+import {
+  FieldFeature,
+  SelectedField,
+  LayerKey,
+  SourceKey,
+  HoverInfo,
+} from "@/lib/types";
+import FieldDropdown from "./field-dropdown";
+import MapLayerDropdown from "./map-layer-dropdown";
+import MapSourceDropdown from "./map-source-dropdown";
 import {
   Timeline,
   HoverTooltip,
   LoadingOverlay,
   CoordsDisplay,
   MapLegend,
-} from '@/components/field-dashboard-ui';
-import { geocodePlace } from '@/lib/geocode';
-import { TIMELINE_DATES } from '@/lib/constants';
+} from "@/components/field-dashboard-ui";
+import { geocodePlace } from "@/lib/geocode";
+import { TIMELINE_DATES } from "@/lib/constants";
 import {
   deleteField,
   updateField,
   fetchScenes,
   SatelliteScene,
-} from '@/lib/api';
-import { useMap } from '@/hooks/useMap';
-import MapboxDraw from '@mapbox/mapbox-gl-draw';
-import { SUPPORTED_LAYERS } from '@/lib/types';
+} from "@/lib/api";
+import { useMap } from "@/hooks/useMap";
+import MapboxDraw from "@mapbox/mapbox-gl-draw";
+import { SUPPORTED_LAYERS } from "@/lib/types";
 
 interface FormData {
   name: string;
@@ -535,31 +547,38 @@ const FarmMap: React.FC<FarmMapProps> = ({ title, initialLayer = "ndvi" }) => {
           </button>
         </form>
       </Modal>
-        {/* Top control bar above the map */}
-        <div
-          className="w-full flex flex-row flex-wrap items-center gap-2 px-6 py-1 bg-white rounded-t-2xl shadow"
-          style={{ zIndex: 10 }}
-        >
-          <h2 className="text-xl font-bold text-gray-800 mb-0">{title}</h2>
-          <MapSearch
-            onSearch={handleSearch}
-            onCurrentLocation={handleCurrentLocation}
-          />
-          <button
-            type="button"
-            className="btn btn-success ml-2"
-            style={{
-              backgroundColor: "#10B981",
-              color: "white",
-              padding: "6px 16px",
-              borderRadius: 6,
-              fontWeight: 600,
-              border: "none",
-            }}
-            onClick={handleCreatePolygon}
-          >
-            Create new field
-          </button>
+      {/* Top control bar above the map */}
+      <div
+        className="w-full d-flex flex-row flex-wrap align-items-center justify-content-between px-3 py-1 bg-white rounded-t-2xl shadow"
+        style={{ zIndex: 10 }}
+      >
+        <div className="flex flex-row flex-wrap align-items-center">
+          <h2 className="text-xl font-bold text-gray-800 mb-0 mr-2">{title}</h2>
+          {title == "My Farm" && (
+            <>
+              <MapSearch
+                onSearch={handleSearch}
+                onCurrentLocation={handleCurrentLocation}
+              />
+              <button
+                type="button"
+                className="btn btn-success ml-2"
+                style={{
+                  backgroundColor: "#10B981",
+                  color: "white",
+                  padding: "6px 16px",
+                  borderRadius: 6,
+                  fontWeight: 600,
+                  border: "none",
+                }}
+                onClick={handleCreatePolygon}
+              >
+                Create new field
+              </button>
+            </>
+          )}
+        </div>
+        <div className="flex flex-row flex-wrap align-items-center">
           <FieldDropdown
             fields={fields}
             selectedField={selectedField}
@@ -574,93 +593,89 @@ const FarmMap: React.FC<FarmMapProps> = ({ title, initialLayer = "ndvi" }) => {
           <MapLayerDropdown
             selectedLayer={selectedLayer}
             onLayerChange={handleLayerChange}
-            layers={title === 'Soil Map' ? ["savi"] : SUPPORTED_LAYERS}
+            layers={title === "Soil Map" ? ["savi"] : SUPPORTED_LAYERS}
           />
           <MapSourceDropdown
             selectedSource={"sentinel2"}
             onSourceChange={() => {}}
           />
         </div>
-        {showDrawInstruction && (
-          <div
-            className="text-center py-2 text-sm text-gray-600 bg-blue-50"
-          >
-            Draw a polygon on the map to add a field
-          </div>
-        )}
-        <div className="dashboard-container">
-          <div className="map-container" ref={mapContainer} />
-
-          {/* Map legend in the left bottom corner */}
-          <div
-            style={{
-              position: "absolute",
-              left: 20,
-              bottom: 20,
-              zIndex: 120,
-            }}
-          >
-            <MapLegend selectedLayer={selectedLayer} />
-          </div>
-
-          <CoordsDisplay selectedField={selectedField} />
-
-          <Timeline
-            dates={availableDates}
-            selectedDate={selectedDate}
-            onDateSelect={handleDateChange}
-            nextImageDate={nextImageDate}
-            isLoading={isLoadingScenes}
-          />
-
-          {selectedField && (
-            <HoverTooltip
-              hoverInfo={hoverInfo}
-              selectedLayer={selectedLayer}
-            />
-          )}
-
-          <LoadingOverlay isLoading={isLoadingHeatmap} />
-
-          <style jsx>{`
-            .dashboard-container {
-              position: relative;
-              /* Horizontal padding for left/right spacing */
-              --dash-h-pad: 24px;
-              padding: 0 var(--dash-h-pad);
-              box-sizing: border-box;
-              width: 100%;
-              height: 90%;
-              overflow: hidden;
-              background: #0a0a0a;
-            }
-            .map-container {
-              position: absolute;
-              top: 0;
-              /* Use container's padding box so the map is inset by the horizontal padding */
-              left: 0;
-              right: 0;
-              bottom: 50px;
-            }
-            :global(.mapboxgl-ctrl-logo),
-            :global(.mapboxgl-ctrl-attrib) {
-              display: none !important;
-            }
-            :global(::-webkit-scrollbar) {
-              width: 6px;
-            }
-            :global(::-webkit-scrollbar-track) {
-              background: rgba(0, 0, 0, 0.2);
-            }
-            :global(::-webkit-scrollbar-thumb) {
-              background: rgba(255, 255, 255, 0.2);
-              border-radius: 3px;
-            }
-            :global(::-webkit-scrollbar-thumb:hover) {
-              background: rgba(255, 255, 255, 0.3);
-            }
-          `}</style>
+      </div>
+      {showDrawInstruction && (
+        <div className="text-center py-2 text-sm text-gray-600 bg-blue-50">
+          Draw a polygon on the map to add a field
         </div>
+      )}
+      <div className="dashboard-container">
+        <div className="map-container" ref={mapContainer} />
+
+        {/* Map legend in the left bottom corner */}
+        <div
+          style={{
+            position: "absolute",
+            left: 20,
+            bottom: 20,
+            zIndex: 120,
+          }}
+        >
+          <MapLegend selectedLayer={selectedLayer} />
+        </div>
+
+        <CoordsDisplay selectedField={selectedField} />
+
+        <Timeline
+          dates={availableDates}
+          selectedDate={selectedDate}
+          onDateSelect={handleDateChange}
+          nextImageDate={nextImageDate}
+          isLoading={isLoadingScenes}
+        />
+
+        {selectedField && (
+          <HoverTooltip hoverInfo={hoverInfo} selectedLayer={selectedLayer} />
+        )}
+
+        <LoadingOverlay isLoading={isLoadingHeatmap} />
+
+        <style jsx>{`
+          .dashboard-container {
+            position: relative;
+            /* Horizontal padding for left/right spacing */
+            --dash-h-pad: 24px;
+            padding: 0 var(--dash-h-pad);
+            box-sizing: border-box;
+            width: 100%;
+            height: 90%;
+            overflow: hidden;
+            background: #0a0a0a;
+          }
+          .map-container {
+            position: absolute;
+            top: 0;
+            /* Use container's padding box so the map is inset by the horizontal padding */
+            left: 0;
+            right: 0;
+            bottom: 50px;
+          }
+          :global(.mapboxgl-ctrl-logo),
+          :global(.mapboxgl-ctrl-attrib) {
+            display: none !important;
+          }
+          :global(::-webkit-scrollbar) {
+            width: 6px;
+          }
+          :global(::-webkit-scrollbar-track) {
+            background: rgba(0, 0, 0, 0.2);
+          }
+          :global(::-webkit-scrollbar-thumb) {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+          }
+          :global(::-webkit-scrollbar-thumb:hover) {
+            background: rgba(255, 255, 255, 0.3);
+          }
+        `}</style>
+      </div>
     </>
   );
 };
