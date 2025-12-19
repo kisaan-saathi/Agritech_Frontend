@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import mapboxgl from "mapbox-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
 import MapboxDraw from "@mapbox/mapbox-gl-draw";
 import type { LayerKey, SelectedField, FieldProperties, HoverInfo } from "@/lib/types";
 import { getBBox, rgbToIndexValue, getVegetationLabel, maskImageToPolygon } from "@/lib/utils";
