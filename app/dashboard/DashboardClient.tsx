@@ -79,12 +79,6 @@ export default function DashboardClient() {
           <header className="flex justify-between items-center mb-8 pb-4 border-b border-gray-200">
             <div className="flex flex-row items-center space-x-3">
               <PageHeader />
-              <img
-                className="box shake-after-10s"
-                width="70"
-                src="/images/kissan_sathi_logo.png"
-                alt="Kissan Sathi"
-              />
               <span className="text-3xl font-extrabold text-gray-800 mb-0 flex items-center gap-2">
                 Welcome, {user}
                 <Hand className="w-7 h-7  animate-wave" fill="#f5db75ff" />
@@ -150,6 +144,12 @@ export default function DashboardClient() {
                   </div>
                 )}
               </div>
+              <img
+                className="box shake-after-10s"
+                width="70"
+                src="/images/kissan_sathi_logo.png"
+                alt="Kissan Sathi"
+              />
             </div>
           </header>
 
