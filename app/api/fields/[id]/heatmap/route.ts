@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { pool } from "@/lib/db";
 import { getSentinelToken } from "@/lib/sentinel";
-import { Console } from "console";
 
 const PROCESS_URL = "https://services.sentinel-hub.com/api/v1/process";
 
