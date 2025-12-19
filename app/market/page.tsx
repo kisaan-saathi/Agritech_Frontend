@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState, useRef } from "react";
+import PageHeader from "@/components/layout/PageHeader";
 
 /**
  * Market Rates page (single-file)
@@ -257,6 +258,7 @@ export default function MarketPage() {
     <main className="min-h-screen p-6 bg-gray-50">
       <div className="max-w-full mx-auto">
         <div className="flex items-center justify-between mb-4">
+          <PageHeader />
           <div>
             <h1 className="text-2xl font-semibold text-gray-800">
               Market Rates <span className="text-sm text-gray-500"> (₹/Quintal)</span>

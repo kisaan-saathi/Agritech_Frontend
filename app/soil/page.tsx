@@ -29,6 +29,7 @@ import {
 
 import { useRouter } from "next/navigation";
 import FarmMap from "@/components/ui/farm-map";
+import PageHeader from "@/components/layout/PageHeader";
 
 ChartJS.register(
   CategoryScale,
@@ -451,10 +452,10 @@ export default function SoilPage() {
   return (
     // ADDED: h-screen and overflow-y-auto to enable scrolling
     <div className="p-5 h-screen overflow-y-auto bg-[#f3f7f6]">
-
       {/* ================= MITHU TOP STRIP ================= */}
       <div className="bg-white px-6 py-3 flex items-center justify-between border-b">
         <div className="flex items-center gap-3 bg-green-50 px-4 py-2 rounded-lg">
+          <PageHeader />
           <img src="/images/mithu.jpg" className="w-10 h-10 object-contain" />
           <div>
             <div className="font-bold text-green-800">Soil Saathi</div>
