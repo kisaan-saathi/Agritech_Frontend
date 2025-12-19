@@ -17,6 +17,7 @@ import { Line } from "react-chartjs-2";
 import Mithu, { MithuMood } from "@/components/Mithu";
 
 import { AlertTriangle } from "lucide-react";
+import PageHeader from "@/components/layout/PageHeader";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler);
 
@@ -280,6 +281,7 @@ export default function WeatherPage() {
     // FIX APPLIED HERE: Changed from 'min-h-screen' to 'h-screen w-full overflow-y-auto'
     <div className="h-screen w-full overflow-y-auto bg-gray-50 p-6">
       <header className="mb-6 flex items-center justify-between">
+        <PageHeader />
         <div>
           <div className="text-2xl font-bold text-slate-800">Weather Dashboard</div>
           <div className="text-xs text-gray-500">Predictions & trends — Mithu guides you</div>

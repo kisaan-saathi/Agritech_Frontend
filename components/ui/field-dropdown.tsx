@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { FieldFeature } from '@/lib/types';
+import React, { useState } from "react";
+import { FieldFeature } from "@/lib/types";
 
 interface SelectedField {
   id?: string;
@@ -39,11 +39,14 @@ const FieldDropdown: React.FC<FieldDropdownProps> = ({
   setShowFieldModal,
   handleDeleteField,
 }) => {
+  const [defaultFieldId, setDefaultFieldId] = useState<string | null>(null);
+
+  const handleSetDefault = (fieldId: string) => {
+    setDefaultFieldId(fieldId);
+    // Here you could also make an API call to persist the default field
+  };
   return (
-    <div
-      className="btn-group ml-2 my-2"
-      style={{ position: "relative" }}
-    >
+    <div className="btn-group ml-2 my-2" style={{ position: "relative" }}>
       <button
         type="button"
         className="btn dropdown-toggle relative my-2"
@@ -68,7 +71,7 @@ const FieldDropdown: React.FC<FieldDropdownProps> = ({
           display: dropdownOpen ? "block" : "none",
           maxHeight: "200px",
           overflowY: "auto",
-          width: "250px"
+          width: "250px",
         }}
       >
         {fields.length === 0 ? (
@@ -80,8 +83,7 @@ const FieldDropdown: React.FC<FieldDropdownProps> = ({
         ) : (
           fields.map((field) => {
             const fieldId = field.properties?.id;
-            const isActive =
-              selectedField?.id === fieldId?.toString();
+            const isActive = selectedField?.id === fieldId?.toString();
             return (
               <li key={fieldId || Math.random()}>
                 <div
@@ -100,7 +102,7 @@ const FieldDropdown: React.FC<FieldDropdownProps> = ({
                   }}
                   onClick={(e) => {
                     // Only handle click if not clicking on action buttons
-                    if (!(e.target as HTMLElement).closest('.action-btn')) {
+                    if (!(e.target as HTMLElement).closest(".action-btn")) {
                       handleSidebarFieldSelect(field);
                     }
                   }}
@@ -122,9 +124,7 @@ const FieldDropdown: React.FC<FieldDropdownProps> = ({
                         maxWidth: 110,
                         fontWeight: 500,
                       }}
-                      title={
-                        field.properties?.name || `Field ${fieldId}`
-                      }
+                      title={field.properties?.name || `Field ${fieldId}`}
                     >
                       {field.properties?.name
                         ? field.properties.name.length > 16
@@ -132,29 +132,37 @@ const FieldDropdown: React.FC<FieldDropdownProps> = ({
                           : field.properties.name
                         : `Field ${fieldId}`}
                     </div>
-                    <div
-                      className="text-muted small"
-                      style={{ fontSize: 12 }}
-                    >
+                    <div className="text-muted small" style={{ fontSize: 12 }}>
                       {field.properties?.area
-                        ? `${Number(field.properties.area).toFixed(
-                            2
-                          )} ha`
+                        ? `${Number(field.properties.area).toFixed(2)} ha`
                         : "Area N/A"}
                     </div>
                   </div>
-                  <div
-                    style={{ display: "flex", gap: 2, flexShrink: 0 }}
-                  >
+                  <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
+                    <div className="form-check">
+                      <input
+                        className="form-check-input"
+                        type="radio"
+                        name="defaultField"
+                        value={fieldId?.toString() || ""}
+                        checked={defaultFieldId === fieldId?.toString()}
+                        onChange={() => handleSetDefault(fieldId?.toString() || "")}
+                        title="Set as Default"
+                        style={{
+                          accentColor: '#3B82F6', // Blue color
+                          cursor: 'pointer',
+                          border: '2px solid #3B82F6', // Blue border
+                          borderRadius: '50%'
+                        }}
+                      />
+                    </div>
                     <button
                       className="btn btn-sm btn-outline-primary ms-2 action-btn"
                       onClick={async (e) => {
                         e.stopPropagation();
                         // Fetch latest field data to ensure all properties are loaded
                         try {
-                          const res = await fetch(
-                            `/api/fields/${fieldId}`
-                          );
+                          const res = await fetch(`/api/fields/${fieldId}`);
                           if (res.ok) {
                             const data = await res.json();
                             const props = data.properties || {};
@@ -174,29 +182,21 @@ const FieldDropdown: React.FC<FieldDropdownProps> = ({
                             // fallback to local properties if fetch fails
                             setForm({
                               name: field.properties?.name || "",
-                              farmerName:
-                                field.properties?.farmerName || "",
-                              cropType:
-                                field.properties?.cropType || "",
+                              farmerName: field.properties?.farmerName || "",
+                              cropType: field.properties?.cropType || "",
                               season: field.properties?.season || "",
-                              sowingDate:
-                                field.properties?.sowingDate || "",
-                              harvestDate:
-                                field.properties?.harvestDate || "",
+                              sowingDate: field.properties?.sowingDate || "",
+                              harvestDate: field.properties?.harvestDate || "",
                             });
                           }
                         } catch {
                           setForm({
                             name: field.properties?.name || "",
-                            farmerName:
-                              field.properties?.farmerName || "",
-                            cropType:
-                              field.properties?.cropType || "",
+                            farmerName: field.properties?.farmerName || "",
+                            cropType: field.properties?.cropType || "",
                             season: field.properties?.season || "",
-                            sowingDate:
-                              field.properties?.sowingDate || "",
-                            harvestDate:
-                              field.properties?.harvestDate || "",
+                            sowingDate: field.properties?.sowingDate || "",
+                            harvestDate: field.properties?.harvestDate || "",
                           });
                         }
                         setEditFieldId(fieldId?.toString() || null);
@@ -210,10 +210,7 @@ const FieldDropdown: React.FC<FieldDropdownProps> = ({
                       className="btn btn-sm btn-outline-danger ms-2 action-btn"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDeleteField(
-                          fieldId?.toString() || "",
-                          e
-                        );
+                        handleDeleteField(fieldId?.toString() || "", e);
                       }}
                       title="Delete field"
                     >

@@ -7,9 +7,7 @@ import { toast } from "react-toastify";
 import { apiCallWithRefresh } from "../../lib/auth";
 import FarmScoreCard from "./components/FarmScoreCard";
 import ActionCenter from "./components/ActionCenter";
-import SensorMetrics from "./components/SensorMetrics";
-import ApplicationFeatures from "./components/ApplicationFeatures";
-import CropOverview from "./components/CropOverview";
+import PageHeader from "@/components/layout/PageHeader";
 import { useDiseaseId } from "../../lib/hooks/dashboard";
 import { Hand } from "lucide-react";
 
@@ -20,16 +18,16 @@ export default function DashboardClient() {
   const [user, setUser] = useState<string>("");
   useEffect(() => {
     const token =
-      typeof window !== "undefined"
+      globalThis.window
         ? localStorage.getItem("accessToken")
         : null;
-    if (!token) {
-      router.push("/login");
-    } else {
+    if (token) {
       setAuthChecked(true);
       // safely read userName from localStorage on the client
       const u = localStorage.getItem("userName") || "";
       setUser(u);
+    } else {
+      router.push("/login");
     }
   }, [router]);
   // `user` is now read into state in the effect above to avoid accessing
@@ -60,7 +58,6 @@ export default function DashboardClient() {
       } else {
         toast.error(res.data.message || "Logout failed");
         setShowMenu(false)
-        router.push("/login");
 
       }
     } catch (error: any) {
@@ -81,6 +78,7 @@ export default function DashboardClient() {
           {/* Header (Mobile/Desktop) - Used for User and Notifications */}
           <header className="flex justify-between items-center mb-8 pb-4 border-b border-gray-200">
             <div className="flex flex-row items-center space-x-3">
+              <PageHeader />
               <img
                 className="box shake-after-10s"
                 width="70"
@@ -158,7 +156,6 @@ export default function DashboardClient() {
           <FarmScoreCard />
           <ActionCenter onDiseaseClick={handleIdentifyDisease} />
           {/* <SensorMetrics /> */}
-          <ApplicationFeatures />
           {/* <CropOverview /> */}
         </main>
       </div>
