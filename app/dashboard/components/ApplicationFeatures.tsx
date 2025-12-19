@@ -8,7 +8,7 @@ export default function ApplicationFeatures() {
       <h2 className="text-xl font-bold text-gray-800 mb-0 p-3 border-bottom">Application Features</h2>
       <div className="bg-white rounded-2xl shadow-xl p-2">
         <div className="grid grid-cols-4 sm:grid-cols-4 lg:grid-cols-8 gap-1 text-center py-4">
-          <a href="#" className="flex flex-col items-center p-1 rounded-xl hover:bg-sky-50 transition duration-150 text-decoration-none hover:border border-sky-300 py-2">
+          <a href="/market" className="flex flex-col items-center p-1 rounded-xl hover:bg-sky-50 transition duration-150 text-decoration-none hover:border border-sky-300 py-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-sky-blue">
               <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
             </svg>
