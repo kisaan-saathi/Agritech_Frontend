@@ -39,82 +39,52 @@ interface HealthCardData {
   testResults: any[]; secondaryRecs: any[]; generalRecs: any; fertilizerRecs: any[]; forecast: any[]; tempAdvisories: any[]; moistureAdvisories: any[]; soilDepthLayers: any[]; 
 }
 
-// --- MAHARASHTRA STATIC DATA ---
+// --- Initial Data ---
 const INITIAL_DATA: HealthCardData = {
-  cardNo: "MH/NSK/2025/10432", 
-  farmerNameSidebar: "Sanjay Vitthal Patil", 
-  validFrom: "2025", 
-  validTo: "2028",
-  name: "Sanjay Vitthal Patil", 
-  address: "Gat No. 422, Near Gram Panchayat Office", 
-  village: "Pimpalgaon Baswant", 
-  subDistrict: "Niphad", 
-  district: "Nashik", 
-  pin: "422301", 
-  aadhaar: "XXXX-XXXX-9988", 
-  mobile: "9422001122",
-  sampleNo: "NSK-SOI-2025-09", 
-  sampleDate: "10/01/2025", 
-  surveyNo: "214/2", 
-  khasraNo: "102/B", 
-  farmSize: "2.5 Hectare", 
-  gpsLat: "20.1705° N", 
-  gpsLong: "73.9841° E", 
-  irrigationType: "Irrigated (Drip/Well)",
+  cardNo: "", farmerNameSidebar: "", validFrom: "", validTo: "",
+  name: "", address: "", village: "", subDistrict: "", district: "", pin: "", aadhaar: "", mobile: "",
+  sampleNo: "", sampleDate: "", surveyNo: "", khasraNo: "", farmSize: "", gpsLat: "", gpsLong: "", irrigationType: "",
   testResults: [
-    { id: 1, parameter: "pH", value: "7.8", unit: "-", rating: "Slightly Alkaline" },
-    { id: 2, parameter: "EC", value: "0.32", unit: "dS/m", rating: "Normal" },
-    { id: 3, parameter: "Organic Carbon (OC)", value: "0.52", unit: "%", rating: "Medium" },
-    { id: 4, parameter: "Available Nitrogen (N)", value: "210", unit: "kg/ha", rating: "Low" },
-    { id: 5, parameter: "Available Phosphorus (P)", value: "12.5", unit: "kg/ha", rating: "Medium" },
-    { id: 6, parameter: "Available Potassium (K)", value: "340.0", unit: "kg/ha", rating: "High" },
-    { id: 7, parameter: "Available Sulphur (S)", value: "9.2", unit: "ppm", rating: "Deficient" },
-    { id: 8, parameter: "Available Zinc (Zn)", value: "0.48", unit: "ppm", rating: "Deficient" },
-    { id: 9, parameter: "Available Boron (B)", value: "0.45", unit: "ppm", rating: "Medium" },
-    { id: 10, parameter: "Available Iron (Fe)", value: "4.8", unit: "ppm", rating: "Sufficient" },
-    { id: 11, parameter: "Available Manganese (Mn)", value: "3.1", unit: "ppm", rating: "Sufficient" },
-    { id: 12, parameter: "Available Copper (Cu)", value: "0.40", unit: "ppm", rating: "Sufficient" },
+    { id: 1, parameter: "pH", value: "", unit: "", rating: "" },
+    { id: 2, parameter: "EC", value: "", unit: "dS/m", rating: "" },
+    { id: 3, parameter: "Organic Carbon (OC)", value: "", unit: "%", rating: "" },
+    { id: 4, parameter: "Available Nitrogen (N)", value: "", unit: "kg/ha", rating: "" },
+    { id: 5, parameter: "Available Phosphorus (P)", value: "", unit: "kg/ha", rating: "" },
+    { id: 6, parameter: "Available Potassium (K)", value: "", unit: "kg/ha", rating: "" },
+    { id: 7, parameter: "Available Sulphur (S)", value: "", unit: "ppm", rating: "" },
+    { id: 8, parameter: "Available Zinc (Zn)", value: "", unit: "ppm", rating: "" },
+    { id: 9, parameter: "Available Boron (B)", value: "", unit: "ppm", rating: "" },
+    { id: 10, parameter: "Available Iron (Fe)", value: "", unit: "ppm", rating: "" },
+    { id: 11, parameter: "Available Manganese (Mn)", value: "", unit: "ppm", rating: "" },
+    { id: 12, parameter: "Available Copper (Cu)", value: "", unit: "ppm", rating: "" },
   ],
   secondaryRecs: [
-    { id: 1, parameter: "Sulphur (S)", recommendation: "Apply 25 kg/ha Bensulf (Elemental Sulphur)" },
-    { id: 2, parameter: "Zinc (Zn)", recommendation: "Apply 20 kg/ha Zinc Sulphate (Chelated preferred)" },
-    { id: 3, parameter: "Boron (B)", recommendation: "Foliar spray of Solubor (0.1%) during flowering" },
-    { id: 4, parameter: "Iron (Fe)", recommendation: "Not required" },
-    { id: 5, parameter: "Manganese (Mn)", recommendation: "Not required" },
-    { id: 6, parameter: "Copper (Cu)", recommendation: "Not required" },
+    { id: 1, parameter: "Sulphur (S)", recommendation: "" },
+    { id: 2, parameter: "Zinc (Zn)", recommendation: "" },
+    { id: 3, parameter: "Boron (B)", recommendation: "" },
+    { id: 4, parameter: "Iron (Fe)", recommendation: "" },
+    { id: 5, parameter: "Manganese (Mn)", recommendation: "" },
+    { id: 6, parameter: "Copper (Cu)", recommendation: "" },
   ],
-  generalRecs: { 
-    manure: "Apply 20 Cart-loads of Farm Yard Manure (FYM) or Press-mud.", 
-    biofertiliser: "Use Acetobacter (for Sugarcane) or PSB (2.5 kg/ha).", 
-    lime: "Not required (Soil is slightly alkaline; focus on Gypsum if needed)." 
-  },
-  fertilizerRecs: [
-    { id: 1, crop: "Onion (Kanda)", refYield: "300 q/ha", combo1: "Urea: 220kg, SSP: 315kg, MOP: 85kg", combo2: "10:26:26: 200kg + Urea: 180kg" },
-    { id: 2, crop: "Sugarcane (Adsali)", refYield: "120 t/ha", combo1: "Urea: 850kg, SSP: 600kg, MOP: 350kg", combo2: "24:24:0: 400kg + Urea: 600kg + MOP: 350kg" },
-    { id: 3, crop: "Grapes (Export)", refYield: "25 t/ha", combo1: "Drip: Water Soluble 19:19:19 and 0:0:50 as per schedule", combo2: "Organic Manure: 40 t/ha + 10:26:26: 300kg" },
-    { id: 4, crop: "Soybean", refYield: "25 q/ha", combo1: "Urea: 55kg, SSP: 375kg, MOP: 50kg", combo2: "12:32:16: 150kg + Sulphur: 20kg" },
-    { id: 5, crop: "Bajra (Kharif)", refYield: "20 q/ha", combo1: "Urea: 130kg, SSP: 125kg, MOP: 35kg", combo2: "DAP: 50kg + Urea: 110kg" },
-    { id: 6, crop: "", refYield: "", combo1: "", combo2: "" },
-  ],
+  generalRecs: { manure: "", biofertiliser: "", lime: "" },
+  fertilizerRecs: Array(6).fill(null).map((_, i) => ({ id: i + 1, crop: "", refYield: "", combo1: "", combo2: "" })),
   forecast: [
-    { day: "Mon", temp: 31.2, moisture: 35 }, { day: "Tue", temp: 32.5, moisture: 32 }, { day: "Wed", temp: 30.8, moisture: 30 },
-    { day: "Thu", temp: 33.5, moisture: 28 }, { day: "Fri", temp: 34.0, moisture: 25 }, { day: "Sat", temp: 32.1, moisture: 30 }, { day: "Sun", temp: 31.5, moisture: 33 },
+    { day: "Mon", temp: 24.5, moisture: 45 }, { day: "Tue", temp: 25.2, moisture: 42 }, { day: "Wed", temp: 23.8, moisture: 40 },
+    { day: "Thu", temp: 26.5, moisture: 38 }, { day: "Fri", temp: 28.0, moisture: 50 }, { day: "Sat", temp: 26.1, moisture: 55 }, { day: "Sun", temp: 24.5, moisture: 52 },
   ],
   soilDepthLayers: [
-    { id: 1, label: "0 - 10", unit: "cm", color: "#3E2723" }, 
-    { id: 2, label: "10 - 30", unit: "cm", color: "#4E342E" },
-    { id: 3, label: "30 - 60", unit: "cm", color: "#5D4037" }, 
-    { id: 4, label: "60 - 100", unit: "cm", color: "#6D4C41" },
+    { id: 1, label: "0 - 10", unit: "cm", color: "#3b82f6" }, { id: 2, label: "10 - 30", unit: "cm", color: "#22c55e" },
+    { id: 3, label: "30 - 60", unit: "cm", color: "#eab308" }, { id: 4, label: "60 - 100", unit: "cm", color: "#ef4444" },
   ],
   tempAdvisories: [
-    { id: 1, range: "25 – 30", risk: "Low", message: "Ideal for Onion bulb development." },
-    { id: 2, range: "30 – 35", risk: "Medium", message: "Increase drip frequency; monitor Thrips." },
-    { id: 3, range: "> 35", risk: "High", message: "High evaporation; apply mulch to save moisture." },
+    { id: 1, range: "20 – 25", risk: "Low", message: "Optimal temperature for most crops." },
+    { id: 2, range: "25 – 30", risk: "Medium", message: "Monitor soil moisture regularly." },
+    { id: 3, range: "> 30", risk: "High", message: "Consider mulching to reduce heat." },
   ],
   moistureAdvisories: [
-    { id: 1, range: "30 – 50", risk: "Low", message: "Moisture levels are adequate." },
-    { id: 2, range: "15 – 30", risk: "Medium", message: "Plan irrigation cycle within 12 hours." },
-    { id: 3, range: "< 15", risk: "High", message: "Wilting risk; immediate irrigation needed." },
+    { id: 1, range: "40 – 60", risk: "Low", message: "Conditions are ideal." },
+    { id: 2, range: "20 – 40", risk: "Medium", message: "Plan irrigation within 24 hours." },
+    { id: 3, range: "< 20", risk: "High", message: "Immediate irrigation required." },
   ]
 };
 
@@ -128,20 +98,36 @@ const chartOptions = {
 
 export default function SoilHealthCardPage() {
   const [data, setData] = useState<HealthCardData>(INITIAL_DATA);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const componentRef = useRef<HTMLDivElement>(null);
 
-  const handlePrint = useReactToPrint({
-    contentRef: componentRef,
-    documentTitle: `Soil_Health_Card_Maharashtra_${data.cardNo.replace(/\//g, '_')}`,
-  });
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch("/api/soil/health-card");
+        if (res.ok) {
+          const jsonData = await res.json();
+          setData((prev) => ({ ...prev, ...jsonData }));
+        }
+      } catch (error) { console.error("Backend fetch failed. Using mock data.", error); } finally { setLoading(false); }
+    };
+    fetchData();
+  }, []);
 
+  // --- FIX 1: Updated ReactToPrint Hook Syntax ---
+  const handlePrint = useReactToPrint({
+  contentRef: componentRef, // Pass the ref object directly
+  documentTitle: `Soil_Health_Card_${data.cardNo || "Report"}`,
+});
   const handleChange = (path: string, value: string) => { setData((prev) => { const newData = { ...prev }; const keys = path.split("."); let current: any = newData; for (let i = 0; i < keys.length - 1; i++) current = current[keys[i]]; current[keys[keys.length - 1]] = value; return newData; }); };
   const handleArrayChange = (arrayName: "testResults" | "secondaryRecs" | "fertilizerRecs", index: number, field: string, value: string) => { setData((prev) => { const newArray = [...prev[arrayName]]; // @ts-ignore
       newArray[index] = { ...newArray[index], [field]: value }; return { ...prev, [arrayName]: newArray }; }); };
 
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><Loader2 className="w-8 h-8 animate-spin text-green-700" /></div>;
+
   return (
     <div className="h-screen w-full overflow-auto bg-gray-100 p-4 md:p-8 text-black">
+      {/* --- FIX 2: Enhanced Print Styles --- */}
       <style>{`
         @media print {
           @page { size: A4 landscape; margin: 0; }
@@ -151,9 +137,14 @@ export default function SoilHealthCardPage() {
             -webkit-print-color-adjust: exact !important; 
             print-color-adjust: exact !important; 
           }
+          /* Ensure breaks work reliably */
           .print-break-after { break-after: page; page-break-after: always; }
           .print-break-before { break-before: page; page-break-before: always; }
+          
+          /* Hide non-printable elements */
           .no-print { display: none !important; }
+          
+          /* Ensure the wrapper is block, not flex, to allow pagination */
           .print-block { display: block !important; }
         }
         .form-input { width: 100%; height: 100%; background: transparent; border: none; padding: 0 4px; font-size: 8px; font-weight: 600; outline: none; }
@@ -166,32 +157,38 @@ export default function SoilHealthCardPage() {
 
       {/* Control Bar */}
       <div className="max-w-[297mm] mx-auto mb-6 flex flex-col md:flex-row justify-between items-center bg-white p-4 rounded shadow-sm border border-gray-300 gap-4 no-print">
-        <div><h1 className="text-xl font-bold text-gray-800">Maharashtra Soil Analytics</h1><p className="text-xs text-gray-500">Government of Maharashtra Standard Format</p></div>
-        <button onClick={() => handlePrint && handlePrint()} className="flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white px-5 py-2.5 rounded shadow-sm text-sm font-bold transition-colors"><Printer className="w-4 h-4" /> Download Maharashtra SHC</button>
+        <div><h1 className="text-xl font-bold text-gray-800">Soil Health Card & Analytics</h1><p className="text-xs text-gray-500">Government of India Standard Format</p></div>
+        <button onClick={() => handlePrint && handlePrint()} className="flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white px-5 py-2.5 rounded shadow-sm text-sm font-bold transition-colors"><Printer className="w-4 h-4" /> Download Full PDF</button>
       </div>
 
+      {/* --- PRINTABLE CANVAS --- */}
       <div className="w-full flex justify-center">
+        
+        {/* FIX 3: Changed Wrapper to 'block' for printing (print-block) to support pagination */}
         <div ref={componentRef} className="bg-white text-black box-border flex flex-col items-center print-block print:w-full">
           
           {/* ================= PAGE 1 ================= */}
           <div className="w-[297mm] h-[210mm] p-[5mm] bg-white print-break-after shadow-xl print:shadow-none relative box-border flex flex-col border border-[#1b5e20] overflow-hidden">
             
+            {/* 1. TOP SECTION (57% Height) */}
             <div className="flex w-full h-[57%] border-b border-[#1b5e20]">
-                {/* COL 1: Sidebar */}
+                
+                {/* COL 1: Sidebar (22%) */}
                 <div className={`w-[22%] h-full flex flex-col b-r ${C.SIDEBAR_BG}`}>
                     <div className="flex-1 p-2 flex flex-col items-center justify-start pt-3">
                         <div className="flex items-center gap-2 mb-2 w-full">
                             <img src="/images/gov-logo.png" className="h-9 w-auto object-contain"/>
-                            <div className="text-[7px] font-bold leading-tight">Dept. of Agriculture & Cooperation<br/>Ministry of Agriculture<br/>Government of India</div>
+                            <div className="text-[7px] font-bold leading-tight">Department of Agriculture & Cooperation<br/>Ministry of Agriculture & Farmers Welfare<br/>Government of India</div>
                         </div>
                         <div className="flex items-center gap-2 mb-3 w-full">
                              <img src="/images/directorate-logo.png" className="h-9 w-auto object-contain"/>
-                            <div className="text-[7px] font-bold leading-tight">Directorate of Agriculture<br/>Government of Maharashtra</div>
+                            <div className="text-[7px] font-bold leading-tight">Directorate of Agriculture<br/>Government of Goa</div>
                         </div>
                         <div className="flex-1 flex justify-center items-center">
                             <img src="/images/soil-health-logo.png" className="w-20 h-auto object-contain drop-shadow-sm"/>
                         </div>
                     </div>
+                    {/* Bottom Fields */}
                     <div className="p-2 space-y-1.5 pb-3 text-[8px]">
                          <div className="flex flex-col">
                              <label className="font-bold text-green-900 leading-none mb-0.5">Soil Health Card No:</label>
@@ -204,23 +201,23 @@ export default function SoilHealthCardPage() {
                          <div className="flex items-end font-bold text-green-900 gap-1">
                              <span className="w-10">Validity</span>
                              <span className="mr-1">From</span>
-                             <input className="b-b border-green-900 w-8 text-center bg-transparent" value={data.validFrom} />
+                             <input className="b-b border-green-900 w-8 text-center bg-transparent" value={data.validFrom} onChange={e=>handleChange("validFrom",e.target.value)}/>
                              <span className="mx-1">To</span>
-                             <input className="b-b border-green-900 w-8 text-center bg-transparent" value={data.validTo} />
+                             <input className="b-b border-green-900 w-8 text-center bg-transparent" value={data.validTo} onChange={e=>handleChange("validTo",e.target.value)}/>
                          </div>
                     </div>
                 </div>
 
-                {/* COL 2: Middle (Maharashtra Details) */}
+                {/* COL 2: Middle (38%) */}
                 <div className="w-[38%] h-full flex flex-col b-r">
-                    <div className={`${C.HEADER_GREEN} text-white text-center font-bold text-[9px] py-0.5 b-b`}>SOIL HEALTH CARD (MAHARASHTRA)</div>
+                    <div className={`${C.HEADER_GREEN} text-white text-center font-bold text-[9px] py-0.5 b-b`}>SOIL HEALTH CARD</div>
                     <div className={`${C.HEADER_YELLOW} text-center font-bold text-[8px] b-b py-0.5`}>Farmer's Details</div>
                     <table className="card-table">
                         <tbody>
                             {[
-                                {l:"Farmer Name",k:"name"},{l:"Address/Gat No.",k:"address"},{l:"Village",k:"village"},
-                                {l:"Taluka",k:"subDistrict"},{l:"District",k:"district"},{l:"PIN Code",k:"pin"},
-                                {l:"Aadhaar No.",k:"aadhaar"},{l:"Mobile No.",k:"mobile"}
+                                {l:"Name",k:"name"},{l:"Address",k:"address"},{l:"Village",k:"village"},
+                                {l:"Sub-District",k:"subDistrict"},{l:"District",k:"district"},{l:"PIN",k:"pin"},
+                                {l:"Aadhaar Number",k:"aadhaar"},{l:"Mobile Number",k:"mobile"}
                             ].map(row=>(
                                 <tr key={row.k} className="h-[17px]">
                                     <td className="w-[35%] bg-white px-1 font-bold text-[8px]">{row.l}</td>
@@ -230,60 +227,60 @@ export default function SoilHealthCardPage() {
                         </tbody>
                     </table>
                     <div className="flex flex-col flex-1 border-t border-[#1b5e20]">
-                         <div className={`${C.HEADER_YELLOW} text-center font-bold text-[8px] b-b py-0.5`}>Soil Sample & Land Details</div>
+                         <div className={`${C.HEADER_YELLOW} text-center font-bold text-[8px] b-b py-0.5`}>Soil Sample Details</div>
                          <table className="card-table h-full">
                             <tbody>
                                 {[
-                                    {l:"Sample Number",k:"sampleNo"},{l:"Collection Date",k:"sampleDate"},
-                                    {l:"Survey/Gat No.",k:"surveyNo"},{l:"Khasra/Dag No.",k:"khasraNo"},{l:"Total Area (Ha)",k:"farmSize"}
+                                    {l:"Soil Sample Number",k:"sampleNo"},{l:"Sample Collected on",k:"sampleDate"},
+                                    {l:"Survey No.",k:"surveyNo"},{l:"Khasra No. / Dag No.",k:"khasraNo"},{l:"Farm Size",k:"farmSize"}
                                 ].map(row=>(
                                     <tr key={row.k} className="h-[17px]">
                                         <td className="w-[45%] bg-white px-1 font-bold text-[8px]">{row.l}</td>
-                                        <td className="bg-white" colSpan={3}><input className="form-input" value={(data as any)[row.k]} /></td>
+                                        <td className="bg-white" colSpan={3}><input className="form-input" value={(data as any)[row.k]} onChange={e=>handleChange(row.k,e.target.value)}/></td>
                                     </tr>
                                 ))}
                                 <tr className="h-[17px]">
-                                    <td className="w-[45%] bg-white px-1 font-bold text-[8px]">GPS Coordinates</td>
-                                    <td className="px-1 bg-white w-[10%] text-[8px] font-bold">Lat:</td>
-                                    <td className="bg-white"><input className="form-input" value={data.gpsLat} /></td>
-                                    <td className="px-1 bg-white w-[10%] text-[8px] font-bold">Long:</td>
-                                    <td className="bg-white"><input className="form-input" value={data.gpsLong} /></td>
+                                    <td className="w-[45%] bg-white px-1 font-bold text-[8px]">Geo Position (GPS)</td>
+                                    <td className="px-1 bg-white w-[10%] text-[8px] font-bold border-r-0">Lat:</td>
+                                    <td className="bg-white border-l-0 border-r-0"><input className="form-input" value={data.gpsLat} onChange={e=>handleChange("gpsLat",e.target.value)}/></td>
+                                    <td className="px-1 bg-white w-[10%] text-[8px] font-bold border-r-0 border-l-0">Long:</td>
+                                    <td className="bg-white border-l-0"><input className="form-input" value={data.gpsLong} onChange={e=>handleChange("gpsLong",e.target.value)}/></td>
                                 </tr>
                                 <tr className="h-[17px]">
-                                    <td className="w-[45%] bg-white px-1 font-bold text-[8px]">Source of Irrigation</td>
-                                    <td className="bg-white" colSpan={4}><input className="form-input" value={data.irrigationType} /></td>
+                                    <td className="w-[45%] bg-white px-1 font-bold text-[8px]">Irrigated / Rainfed</td>
+                                    <td className="bg-white" colSpan={4}><input className="form-input" value={data.irrigationType} onChange={e=>handleChange("irrigationType",e.target.value)}/></td>
                                 </tr>
                             </tbody>
                          </table>
                     </div>
                 </div>
 
-                {/* COL 3: Right (Test Results) */}
+                {/* COL 3: Right (40%) */}
                 <div className="w-[40%] h-full flex flex-col">
                     <div className="flex h-[24px] b-b">
-                        <div className={`w-[30%] px-1 text-[8px] font-bold b-r flex items-center leading-tight ${C.SIDEBAR_BG}`}>Laboratory Name</div>
-                        <div className={`flex-1 ${C.SIDEBAR_BG} flex items-center px-2 font-bold text-[8px]`}>District Soil Testing Lab, Nashik (MPKV)</div>
+                        <div className={`w-[30%] px-1 text-[8px] font-bold b-r flex items-center leading-tight ${C.SIDEBAR_BG}`}>Name of Laboratory</div>
+                        <div className={`flex-1 ${C.SIDEBAR_BG}`}><input className="form-input font-bold" placeholder="Central Lab"/></div>
                     </div>
-                    <div className={`${C.TABLE_HEADER_GREEN} text-center font-bold text-[9px] b-b py-0.5`}>SOIL TEST ANALYSIS</div>
+                    <div className={`${C.TABLE_HEADER_GREEN} text-center font-bold text-[9px] b-b py-0.5`}>SOIL TEST RESULTS</div>
                     <div className="flex-1">
                         <table className="card-table h-full text-[8px]">
                             <thead className={C.TABLE_HEADER_GREEN}>
                                 <tr className="h-[22px]">
-                                    <th className="w-8">Sr.</th>
-                                    <th className="text-left px-1">Nutrient Parameter</th>
-                                    <th className="w-12">Value</th>
+                                    <th className="w-8">S.No.</th>
+                                    <th className="text-left px-1">Parameter</th>
+                                    <th className="w-12">Test Value</th>
                                     <th className="w-10">Unit</th>
-                                    <th className="w-12">Status</th>
+                                    <th className="w-12">Rating</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {data.testResults.map((item, idx) => (
+                                {data.testResults.map((item) => (
                                     <tr key={item.id} className="h-[18px]">
                                         <td className="text-center bg-white">{item.id}</td>
-                                        <td className="px-1 font-medium bg-white">{item.parameter}</td>
-                                        <td className="bg-white"><input className="form-input text-center" value={item.value} /></td>
+                                        <td className="px-1 font-medium bg-white whitespace-nowrap">{item.parameter}</td>
+                                        <td className="bg-white"><input className="form-input text-center" value={item.value} onChange={(e)=>handleArrayChange("testResults", item.id-1, "value", e.target.value)}/></td>
                                         <td className="text-center text-[7px] bg-white">{item.unit}</td>
-                                        <td className="bg-white"><input className="form-input text-center" value={item.rating} /></td>
+                                        <td className="bg-white"><input className="form-input text-center" value={item.rating} onChange={(e)=>handleArrayChange("testResults", item.id-1, "rating", e.target.value)}/></td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -292,151 +289,156 @@ export default function SoilHealthCardPage() {
                 </div>
             </div>
 
-            {/* 2. BOTTOM SECTION */}
+            {/* 2. BOTTOM SECTION (43% Height) */}
             <div className="flex w-full h-[43%]">
+                
+                {/* COL 1: Recommendations (30%) */}
                 <div className="w-[30%] h-full flex flex-col b-r">
                     <div className="flex-1 flex flex-col">
-                        <div className="bg-[#00897b] text-white font-bold text-[8px] text-center py-0.5 b-b">Micro-Nutrient Advice</div>
+                        <div className="bg-[#00897b] text-white font-bold text-[8px] text-center py-0.5 b-b">Secondary & Micro Nutrients Recommendations</div>
                         <table className="card-table h-full">
                             <thead className={`${C.HEADER_YELLOW} text-[7px]`}>
                                 <tr className="h-[20px]">
-                                    <th className="w-8 text-center">Sr.</th>
-                                    <th className="text-center">Nutrient</th>
-                                    <th className="text-center px-1">Dose/Application Advice</th>
+                                    <th className="w-8 text-center">Sl. No.</th>
+                                    <th className="text-center">Parameter</th>
+                                    <th className="text-center leading-tight px-1">Recommendations for Soil Applications</th>
                                 </tr>
                             </thead>
                             <tbody className="text-[8px]">
-                                {data.secondaryRecs.map((row) => (
+                                {data.secondaryRecs.map((row, i) => (
                                     <tr key={row.id}>
                                         <td className="text-center bg-white">{row.id}</td>
                                         <td className="px-1 bg-white font-medium">{row.parameter}</td>
-                                        <td className="bg-white"><input className="form-input" value={row.recommendation} /></td>
+                                        <td className="bg-white"><input className="form-input" value={row.recommendation} onChange={(e)=>handleArrayChange("secondaryRecs", i, "recommendation", e.target.value)}/></td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
+                    {/* General Recs */}
                     <div className="h-auto border-t border-[#1b5e20] flex flex-col">
-                        <div className={`${C.HEADER_YELLOW} text-black font-bold text-[8px] text-center py-0.5 b-b`}>General Suggestions</div>
+                        <div className={`${C.HEADER_YELLOW} text-black font-bold text-[8px] text-center py-0.5 b-b`}>General Recommendations</div>
                         <table className="card-table text-[8px]">
                             <tbody>
                                 {[
-                                    {id:1, l:"Organic Manure", k:"manure"}, {id:2, l:"Bio-Fertilizer", k:"biofertiliser"}, {id:3, l:"Soil Conditioner", k:"lime"}
-                                ].map((row)=>(
+                                    {id:1, l:"Organic Manure", k:"manure"}, {id:2, l:"Biofertiliser", k:"biofertiliser"}, {id:3, l:"Lime / Gypsum", k:"lime"}
+                                ].map((row, i)=>(
                                     <tr key={row.id} className="h-[18px]">
                                         <td className="w-8 text-center bg-white">{row.id}</td>
                                         <td className="w-[40%] px-1 font-medium bg-white">{row.l}</td>
-                                        <td className="bg-white"><input className="form-input" value={(data.generalRecs as any)[row.k]} /></td>
+                                        <td className="bg-white"><input className="form-input" value={(data.generalRecs as any)[row.k]} onChange={(e)=>handleChange(`generalRecs.${row.k}`, e.target.value)}/></td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
+                    {/* Footer Logo Area */}
                     <div className="h-10 border-t border-[#1b5e20] flex justify-between items-center px-1 bg-white mt-auto">
-                        <div className="text-[6px] font-bold text-center leading-tight w-[30%]">स्वच्छ भारत<br/>अभियान</div>
+                        <div className="text-[6px] font-bold text-center leading-tight w-[30%]">International<br/>Year of Soils<br/>2015</div>
                         <div className="flex justify-center flex-1"><img src="/images/soil-health-logo.png" className="h-7 w-auto mix-blend-multiply" /></div>
-                        <div className="text-[6px] font-bold text-center leading-tight w-[30%]">Healthy Soils<br/>Maharashtra<br/>Prosperous Farmer</div>
+                        <div className="text-[6px] font-bold text-center leading-tight w-[30%]">Healthy Soils<br/>for<br/>a Healthy Life</div>
                     </div>
                 </div>
 
+                {/* COL 2: Fertilizer Recs (70%) */}
                 <div className="w-[70%] h-full flex flex-col">
                     <div className="bg-[#43a047] text-white text-center font-bold text-[9px] py-0.5 b-b">
-                        Maharashtra Crop-Specific Fertilizer Recommendations (Per Hectare)
+                        Fertilizer Recommendations for Reference Yield (with Organic Manure)
                     </div>
                     <table className="card-table text-[8px] h-full">
                         <thead>
                             <tr className={`h-[28px] ${C.COL_BROWN}`}>
-                                <th className="w-8">Sr.</th>
-                                <th className="w-[20%]">Crop & Variety</th>
-                                <th className={`w-[15%] ${C.COL_YELLOW}`}>Expected Yield</th>
-                                <th className={`w-[30%] ${C.COL_GREEN_1}`}>Fertilizer Option 1 (N:P:K)</th>
-                                <th className={`w-[30%] ${C.COL_GREEN_2}`}>Fertilizer Option 2 (Straight)</th>
+                                <th className={`w-8 ${C.COL_BROWN}`}>Sl. No.</th>
+                                <th className={`w-[20%] ${C.COL_BROWN}`}>Crop & Variety</th>
+                                <th className={`w-[15%] ${C.COL_YELLOW}`}>Reference Yield</th>
+                                <th className={`w-[30%] ${C.COL_GREEN_1}`}>Fertilizer Combination-1 for N P K</th>
+                                <th className={`w-[30%] ${C.COL_GREEN_2}`}>Fertilizer Combination-2 for N P K</th>
                             </tr>
                         </thead>
                         <tbody>
                              {data.fertilizerRecs.map((row, i) => (
                                 <tr key={row.id}>
                                     <td className={`text-center font-bold ${C.COL_BROWN}`}>{row.id}</td>
-                                    <td className={`${C.COL_BROWN}`}><textarea className="form-input pt-1 text-center" rows={2} value={row.crop} onChange={(e)=>handleArrayChange("fertilizerRecs", i, "crop", e.target.value)}/></td>
-                                    <td className={`${C.COL_YELLOW}`}><textarea className="form-input pt-1 text-center" rows={2} value={row.refYield} /></td>
-                                    <td className={`${C.COL_GREEN_1}`}><textarea className="form-input pt-1" rows={2} value={row.combo1} /></td>
-                                    <td className={`${C.COL_GREEN_2}`}><textarea className="form-input pt-1" rows={2} value={row.combo2} /></td>
+                                    <td className={`${C.COL_BROWN}`}><textarea className="form-input pt-2 text-center" rows={2} value={row.crop} onChange={(e)=>handleArrayChange("fertilizerRecs", i, "crop", e.target.value)}/></td>
+                                    <td className={`${C.COL_YELLOW}`}><textarea className="form-input pt-2 text-center" rows={2} value={row.refYield} onChange={(e)=>handleArrayChange("fertilizerRecs", i, "refYield", e.target.value)}/></td>
+                                    <td className={`${C.COL_GREEN_1}`}><textarea className="form-input pt-2" rows={2} value={row.combo1} onChange={(e)=>handleArrayChange("fertilizerRecs", i, "combo1", e.target.value)}/></td>
+                                    <td className={`${C.COL_GREEN_2}`}><textarea className="form-input pt-2" rows={2} value={row.combo2} onChange={(e)=>handleArrayChange("fertilizerRecs", i, "combo2", e.target.value)}/></td>
                                 </tr>
                              ))}
                         </tbody>
                     </table>
                 </div>
+
             </div>
           </div>
 
           {/* ================= PAGE 2 (Analytics) ================= */}
+          {/* FIX 4: print-break-before forces this content to start on page 2 */}
           <div className="w-[297mm] h-[210mm] p-[5mm] pt-4 bg-white shadow-xl print:shadow-none relative box-border flex flex-col overflow-hidden print-break-before">
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="border border-gray-300 rounded p-2 h-40 flex flex-col items-center justify-center bg-gray-50">
-                  <span className="text-xs font-bold text-gray-400">Maharashtra GIS Mapping</span>
+                  <span className="text-xs font-bold text-gray-400">Current Farm</span>
                   <div className="text-center mt-2">
-                    <span className="text-gray-500 font-bold text-sm block mb-1">Satellite Farm Plot #422</span>
-                    <span className="text-gray-400 font-mono text-[10px] bg-gray-100 px-2 py-0.5 rounded border border-gray-200">Nashik Region | Niphad Cluster</span>
+                    <span className="text-gray-500 font-bold text-sm block mb-1">Interactive Map</span>
+                    <span className="text-gray-400 font-mono text-[10px] bg-gray-100 px-2 py-0.5 rounded border border-gray-200">Lat: {data.gpsLat} | Long: {data.gpsLong}</span>
                   </div>
               </div>
               <div className="border border-gray-300 rounded p-2 h-40 flex flex-col items-center justify-center bg-emerald-50">
-                  <span className="text-xs font-bold text-emerald-600">Soil Saathi – Maharashtra Map</span>
+                  <span className="text-xs font-bold text-emerald-600">Soil Saathi – Soil Map</span>
                   <div className="text-center mt-2">
-                    <span className="text-emerald-700 font-bold text-sm block mb-1">Black Soil (Regur) Profile</span>
-                    <span className="text-emerald-600 text-[10px]">Alkalinity Risk: Medium</span>
+                    <span className="text-emerald-700 font-bold text-sm block mb-1">Soil Type Overlay</span>
+                    <span className="text-emerald-600 text-[10px]">Visualizing data from Backend</span>
                   </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-0 bg-white rounded-lg border border-gray-200 mb-4 shadow-sm overflow-hidden">
               <div className="flex flex-col items-center justify-center p-4 border-b md:border-b-0 md:border-r border-gray-200 bg-gray-50/30">
-                <h4 className="text-[10px] font-bold text-gray-800 mb-4 uppercase tracking-wide">Soil Depth (Nashik Black Soil)</h4>
+                <h4 className="text-[10px] font-bold text-gray-800 mb-4 uppercase tracking-wide">Soil Depth Profile</h4>
                 <div className="flex items-center justify-center w-full gap-6 pl-2">
                   <div style={{ width: '120px', height: '220px' }} className="flex-shrink-0 relative">
-                    <div className="absolute inset-0 flex flex-col">
-                        <div className="h-[15%] bg-[#3E2723] border-b border-white"></div>
-                        <div className="h-[25%] bg-[#4E342E] border-b border-white"></div>
-                        <div className="h-[30%] bg-[#5D4037] border-b border-white"></div>
-                        <div className="h-[30%] bg-[#6D4C41]"></div>
-                    </div>
+                    <img src="/images/soil.png" alt="Soil Layer Profile" className="w-full h-full object-contain mix-blend-multiply" onError={(e) => { e.currentTarget.style.display='none'; }}/>
                   </div>
                   <div className="flex flex-col justify-between py-4" style={{ height: '220px' }}>
-                    {data.soilDepthLayers.map((layer) => (
-                        <div key={layer.id} className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full border border-gray-300" style={{ backgroundColor: layer.color }}></div>
-                            <span className="text-[10px] font-bold text-gray-700 font-mono">{layer.label} {layer.unit}</span>
-                        </div>
-                    ))}
+                    {data.soilDepthLayers.map((layer, index) => {
+                        const customLabels = ["5 – 10", "15 – 30", "30 – 60", "60 – 100"];
+                        return (
+                            <div key={layer.id} className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full border border-gray-300 shadow-sm" style={{ backgroundColor: layer.color }}></div>
+                                <span className="text-[10px] font-bold text-gray-700 font-mono whitespace-nowrap">{customLabels[index] || layer.label} <span className="text-gray-500 font-normal">cm</span></span>
+                            </div>
+                        );
+                    })}
                   </div>
                 </div>
               </div>
               <div className="flex flex-col p-3 border-b md:border-b-0 md:border-r border-gray-200">
-                <h4 className="text-[10px] font-bold text-gray-800 mb-1 text-center uppercase tracking-wide">Nashik Temperature (°C)</h4>
+                <h4 className="text-[10px] font-bold text-gray-800 mb-1 text-center uppercase tracking-wide">7-Day Soil Temperature</h4>
                 <div className="relative h-60 w-full pt-2">
-                  <Line data={{labels: data.forecast.map((d) => d.day), datasets: [{label: 'Temp', data: data.forecast.map((d) => d.temp), borderColor: "#ea580c", backgroundColor: "rgba(234, 88, 12, 0.2)", fill: true, pointBackgroundColor: "#fff", pointBorderColor: "#ea580c", borderWidth: 2, tension: 0.4}],}} options={chartOptions} />
+                  <Line data={{labels: data.forecast.map((d) => d.day), datasets: [{label: 'Temperature', data: data.forecast.map((d) => d.temp), borderColor: "#ea580c", backgroundColor: "rgba(234, 88, 12, 0.2)", fill: true, pointBackgroundColor: "#fff", pointBorderColor: "#ea580c", borderWidth: 2, tension: 0.4}],}} options={{...chartOptions, scales: {x: {title: { display: true, text: 'Date', font: { size: 9, weight: 'bold' } }, grid: { display: false }, ticks: { font: { size: 8 }, color: '#374151' }}, y: {title: { display: true, text: 'Temp (°C)', font: { size: 9, weight: 'bold' } }, grid: { color: '#f3f4f6' }, ticks: { font: { size: 8 }, color: '#374151' }}} }} />
                 </div>
               </div>
               <div className="flex flex-col p-3">
-                <h4 className="text-[10px] font-bold text-gray-800 mb-1 text-center uppercase tracking-wide">Nashik Soil Moisture (%)</h4>
+                <h4 className="text-[10px] font-bold text-gray-800 mb-1 text-center uppercase tracking-wide">7-Day Soil Moisture</h4>
                 <div className="relative h-60 w-full pt-2">
-                  <Line data={{labels: data.forecast.map((d) => d.day), datasets: [{label: 'Moisture', data: data.forecast.map((d) => d.moisture), borderColor: "#0284c7", backgroundColor: "rgba(2, 132, 199, 0.2)", fill: true, pointBackgroundColor: "#fff", pointBorderColor: "#0284c7", borderWidth: 2, tension: 0.4}],}} options={chartOptions} />
+                  <Line data={{labels: data.forecast.map((d) => d.day), datasets: [{label: 'Moisture', data: data.forecast.map((d) => d.moisture), borderColor: "#0284c7", backgroundColor: "rgba(2, 132, 199, 0.2)", fill: true, pointBackgroundColor: "#fff", pointBorderColor: "#0284c7", borderWidth: 2, tension: 0.4}],}} options={{...chartOptions, scales: {x: {title: { display: true, text: 'Date', font: { size: 9, weight: 'bold' } }, grid: { display: false }, ticks: { font: { size: 8 }, color: '#374151' }}, y: {title: { display: true, text: 'Moisture (%)', font: { size: 9, weight: 'bold' } }, grid: { color: '#f3f4f6' }, ticks: { font: { size: 8 }, color: '#374151' }}} }} />
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4 text-[10px] mb-4">
                 <div className="border border-orange-200 rounded">
-                    <div className="bg-orange-100 px-2 py-1 font-bold text-orange-900">Weather Advisory (Maharashtra)</div>
+                    <div className="bg-orange-100 px-2 py-1 font-bold text-orange-900">Temp Advisory</div>
                     {data.tempAdvisories.map(row=>(<div key={row.id} className="flex justify-between px-2 py-1 border-b border-gray-100 last:border-0"><span>{row.range}°C</span><span className="text-gray-600">{row.message}</span></div>))}
                 </div>
                 <div className="border border-blue-200 rounded">
-                    <div className="bg-blue-100 px-2 py-1 font-bold text-blue-900">Irrigation Advice (Nashik Cluster)</div>
+                    <div className="bg-blue-100 px-2 py-1 font-bold text-blue-900">Moisture Advisory</div>
                     {data.moistureAdvisories.map(row=>(<div key={row.id} className="flex justify-between px-2 py-1 border-b border-gray-100 last:border-0"><span>{row.range}%</span><span className="text-gray-600">{row.message}</span></div>))}
                 </div>
             </div>
 
             <div className="mt-auto w-full text-center pb-8">
-              <h5 className="font-semibold text-[#000000] text-[10px] uppercase mb-1">Disclaimer: Soil Test Crop Response (STCR) data referenced from MPKV Rahuri & ICAR for Maharashtra region.</h5>
+              <h5 className="font-semibold text-[#000000] text-[10px] uppercase mb-1">DISCLAIMER : STCR formulae and other related information for generation of Soil Health Cards have been referenced from by Indian Council of Agricultural Research.</h5>
             </div>
           </div>
         </div>
