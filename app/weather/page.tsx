@@ -1,4 +1,3 @@
-// app/weather/page.tsx
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
@@ -15,7 +14,9 @@ import {
   Filler,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
-import Mithu, { MithuMood } from "components/Mithu";
+import Mithu, { MithuMood } from "@/components/Mithu";
+
+import { AlertTriangle } from "lucide-react";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler);
 
@@ -126,6 +127,14 @@ export default function WeatherPage() {
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /* Update advice automatically when data loads */
+  useEffect(() => {
+    if (data) {
+      setAdviceText(generateAdvice(data));
+      setShowAdvice(true);
+    }
+  }, [data]);
 
   /* fetching helpers */
   async function fetchWeatherFromBackend() {
@@ -260,11 +269,6 @@ export default function WeatherPage() {
 
   /* Mithu click handler */
   function onMithuClick() {
-    const adv = generateAdvice(data);
-    setAdviceText(adv);
-    setShowAdvice(true);
-
-    // trigger horizontal glide; then scroll to trends
     setGlideToTrend(true);
     setTimeout(() => {
       predictionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -273,7 +277,8 @@ export default function WeatherPage() {
   }
 
   return (
-    <div className="p-6 min-h-screen bg-gray-50">
+    // FIX APPLIED HERE: Changed from 'min-h-screen' to 'h-screen w-full overflow-y-auto'
+    <div className="h-screen w-full overflow-y-auto bg-gray-50 p-6">
       <header className="mb-6 flex items-center justify-between">
         <div>
           <div className="text-2xl font-bold text-slate-800">Weather Dashboard</div>
@@ -281,16 +286,7 @@ export default function WeatherPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <span className="text-xs text-gray-500">Realtime</span>
-          <button
-            onClick={() => setRealtime((r) => !r)}
-            className={`px-3 py-1 rounded-full text-xs font-semibold transform transition ${
-              realtime ? "bg-emerald-600 text-white shadow-lg" : "bg-gray-200 text-gray-700 hover:scale-105"
-            }`}
-          >
-            {realtime ? "ON" : "OFF"}
-          </button>
-
+    
           <button
             onClick={fetchWeather}
             disabled={loading}
@@ -303,89 +299,97 @@ export default function WeatherPage() {
 
       {error && <div className="mb-4 bg-red-100 text-red-700 p-3 rounded">{error}</div>}
 
-      {/* Current + Mithu */}
-      <section className="bg-white rounded-2xl shadow p-6 mb-6 group hover:shadow-2xl transform-gpu hover:scale-[1.007] transition-all">
-        <div className="flex gap-6 items-center">
+      {/* =====================================================================================
+          MAIN DASHBOARD CARD
+         ===================================================================================== */}
+      <section className="bg-white rounded-2xl shadow p-6 mb-6 group hover:shadow-2xl transition-all">
+        <div className="flex gap-6 items-stretch">
+          
+          {/* 1. TEMPERATURE CARD (Fixed Left) */}
           <div
-            className="w-36 h-36 rounded-xl flex flex-col items-center justify-center text-white"
-            style={{ background: "linear-gradient(90deg,#16a34a,#059669)" }}
+            className="w-36 rounded-xl flex flex-col items-center justify-center text-white flex-shrink-0 shadow-md"
+            style={{ background: "linear-gradient(135deg,#16a34a,#059669)" }}
           >
             <div className="text-4xl font-bold">{data && data.current.temperature != null ? Math.round(data.current.temperature) : "--"}°C</div>
-            <div className="text-sm opacity-90">{data?.current?.summary ?? "—"}</div>
+            <div className="text-sm opacity-90 font-medium">{data?.current?.summary ?? "—"}</div>
           </div>
 
-          <div className="flex-1 grid grid-cols-6 gap-4 items-center">
-            <div className="col-span-3">
-              <div className="text-xl font-semibold">{data?.location?.name ?? "—"}</div>
-              <div className="text-gray-500 text-sm mb-2">Timezone: {data?.location?.timezone ?? "—"}</div>
+          {/* 2. FLEX CONTAINER FOR MIDDLE CONTENT */}
+          <div className="flex-1 flex gap-6">
+              
+              {/* 2A. LOCATION & STATS GRID */}
+              <div className="flex-1 flex flex-col justify-between">
+                  <div>
+                    <div className="text-xl font-bold text-slate-800">{data?.location?.name ?? "—"}</div>
+                    <div className="text-gray-500 text-xs font-medium">Timezone: {data?.location?.timezone ?? "—"}</div>
+                  </div>
 
-              <div className="grid grid-cols-2 gap-3 mt-3">
-                <div className="p-3 rounded-lg shadow-sm border-l-4 border-emerald-500 bg-emerald-50">
-                  <div className="flex items-center gap-3">
-                    <div>
-                      <div className="text-xs text-gray-600">Humidity</div>
-                      <div className="font-semibold">
+                  <div className="grid grid-cols-2 gap-3 mt-auto">
+                    <div className="p-2.5 rounded-lg border border-emerald-100 bg-emerald-50/50">
+                      <div className="text-[10px] uppercase text-emerald-600 font-bold">Humidity</div>
+                      <div className="font-bold text-slate-700">
                         {data?.current?.humidity != null ? `${Math.round(data.current.humidity)}%` : "--"}
                       </div>
                     </div>
-                  </div>
-                </div>
 
-                <div className="p-3 rounded-lg shadow-sm border-l-4 border-sky-400 bg-sky-50">
-                  <div className="flex items-center gap-3">
-                    <div>
-                      <div className="text-xs text-gray-600">Wind</div>
-                      <div className="font-semibold">
+                    <div className="p-2.5 rounded-lg border border-sky-100 bg-sky-50/50">
+                      <div className="text-[10px] uppercase text-sky-600 font-bold">Wind</div>
+                      <div className="font-bold text-slate-700">
                         {data?.current?.windSpeed != null ? `${data.current.windSpeed.toFixed(1)} m/s` : "--"}
                       </div>
                     </div>
-                  </div>
-                </div>
 
-                <div className="p-3 rounded-lg shadow-sm border-l-4 border-amber-500 bg-amber-50">
-                  <div className="flex items-center gap-3">
-                    <div>
-                      <div className="text-xs text-gray-600">Precipitation</div>
-                      <div className="font-semibold">
+                    <div className="p-2.5 rounded-lg border border-amber-100 bg-amber-50/50">
+                      <div className="text-[10px] uppercase text-amber-600 font-bold">Rain</div>
+                      <div className="font-bold text-slate-700">
                         {data?.current?.precipitation != null ? `${data.current.precipitation.toFixed(1)} mm` : "--"}
                       </div>
                     </div>
-                  </div>
-                </div>
 
-                <div className="p-3 rounded-lg shadow-sm border-l-4 border-stone-400 bg-stone-50">
-                  <div className="flex items-center gap-3">
-                    <div>
-                      <div className="text-xs text-gray-600">Coords</div>
-                      <div className="font-semibold">{coordsLabel}</div>
+                    <div className="p-2.5 rounded-lg border border-stone-100 bg-stone-50/50">
+                      <div className="text-[10px] uppercase text-stone-500 font-bold">Coords</div>
+                      <div className="font-bold text-slate-700">{coordsLabel}</div>
                     </div>
                   </div>
-                </div>
               </div>
 
-              <div className="text-xs text-gray-400 mt-3">
-                Last updated:{" "}
-                {data?.current?.lastUpdated ? new Date(data.current.lastUpdated).toLocaleString() : "—"}
+              {/* 2B. ADVISORY BLOCK (CENTER) */}
+              <div className="w-72 bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex flex-col justify-center shadow-sm relative overflow-hidden">
+                 <div className="absolute top-0 right-0 w-16 h-16 bg-yellow-100 rounded-full blur-2xl -mr-8 -mt-8"></div>
+                 <div className="flex items-center gap-2 mb-2 relative z-10">
+                    <div className="p-1 bg-yellow-200 rounded-full"><AlertTriangle className="w-3 h-3 text-yellow-700" /></div>
+                    <span className="text-[10px] font-bold text-yellow-800 uppercase tracking-wider">Mithu's Advisory</span>
+                 </div>
+                 <div className="flex-1 flex items-center relative z-10">
+                    <p className="text-xs text-yellow-900 leading-relaxed font-medium">
+                      {adviceText}
+                    </p>
+                 </div>
               </div>
-            </div>
 
-            {/* Mithu on the right */}
-            <div className="col-span-3 flex items-center justify-center">
-              <div className="relative">
+              {/* 2C. PARROT (RIGHT) */}
+              <div className="w-auto flex-shrink-0 flex flex-col items-center justify-center pl-4 border-l border-dashed border-gray-200">
                 <Mithu
                   mood={mithuMoodFromSummary(data?.current?.summary)}
                   loop={true}
                   onClick={onMithuClick}
-                  advice={adviceText}
-                  showAdvice={showAdvice}
+                  advice={""} // Advice is handled in the block
+                  showAdvice={false}
                   glide={glideToTrend}
-                  size={160}
+                  size={140}
                 />
-
-                <div className="mt-2 text-center text-sm text-gray-600">Tap Mithu — he will guide you</div>
+                <div className="mt-1 text-[10px] text-gray-400 font-medium tracking-wide">Tap for Trends</div>
               </div>
-            </div>
+
           </div>
+
+        </div>
+        
+        {/* Footer Timestamp */}
+        <div className="mt-4 pt-3 border-t border-gray-100 flex justify-end">
+           <span className="text-[10px] text-gray-400">
+             Last updated: {data?.current?.lastUpdated ? new Date(data.current.lastUpdated).toLocaleString() : "—"}
+           </span>
         </div>
       </section>
 
