@@ -1,7 +1,7 @@
 import { useDiseaseId } from '../../../lib/hooks/dashboard';
 
 export default function ApplicationFeatures() {
-  const { diseaseIdOutput, loadingDisease, handleIdentifyDisease } = useDiseaseId();
+  const { handleIdentifyDisease } = useDiseaseId();
 
   return (
     <section className="mb-2 shadow rounded-2xl">
