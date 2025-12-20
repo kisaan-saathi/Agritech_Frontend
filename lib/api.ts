@@ -107,6 +107,7 @@ export async function fetchHeatmap(
   if (!response.ok) {
     throw new Error(`Failed to fetch heatmap: ${response.status}`);
   }
+  console.log("Fetching heatmap with URL:", response);
 
   const blob = await response.blob();
   return URL.createObjectURL(blob);
