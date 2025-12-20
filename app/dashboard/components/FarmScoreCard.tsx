@@ -6,7 +6,7 @@ export default function FarmScoreCard() {
   return (
     <section className="mb-5 h-100vh">
       {/* Main grid with scorecard and map below */}
-      <div className="grid grid-cols-6 lg:grid-cols-6 sm:grid-cols-6 gap-6 pb-3">
+      <div className="grid grid-cols-6 lg:grid-cols-6 sm:grid-cols-6 gap-6 pb-3 h-98">
         <div className="lg:col-span-1 md:col-span-2 sm:col-span-2 rounded-2xl shadow p-2">
           <h2 className="text-xl font-bold text-gray-800 p-3 border-bottom">
             Farm Balance Scorecard

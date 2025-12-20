@@ -535,7 +535,7 @@ export default function SoilPage() {
       )}
 
       {/* ================= FIELD MAP (Full Width) ================= */}
-      <div className="w-full mb-5 mt-4 bg-white rounded-lg p-0 shadow h-98">
+      <div className="w-full mt-4 h-98">
           <FarmMap
             title="Soil Map"
             initialLayer="savi"

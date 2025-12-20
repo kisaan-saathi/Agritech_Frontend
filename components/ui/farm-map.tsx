@@ -606,8 +606,8 @@ const FarmMap: React.FC<FarmMapProps> = ({ title, initialLayer = "ndvi" }) => {
           Draw a polygon on the map to add a field
         </div>
       )}
-      <div className="dashboard-container">
-        <div className="map-container" ref={mapContainer} />
+      <div className="dashboard-container rounded-bottom">
+        <div className="map-container rounded-bottom" ref={mapContainer} />
 
         {/* Map legend in the left bottom corner */}
         <div
@@ -643,9 +643,8 @@ const FarmMap: React.FC<FarmMapProps> = ({ title, initialLayer = "ndvi" }) => {
             /* Horizontal padding for left/right spacing */
             --dash-h-pad: 24px;
             padding: 0 var(--dash-h-pad);
-            box-sizing: border-box;
             width: 100%;
-            height: 90%;
+            height: 86%;
             overflow: hidden;
             background: #0a0a0a;
           }
@@ -655,7 +654,7 @@ const FarmMap: React.FC<FarmMapProps> = ({ title, initialLayer = "ndvi" }) => {
             /* Use container's padding box so the map is inset by the horizontal padding */
             left: 0;
             right: 0;
-            bottom: 50px;
+            bottom: 0;
           }
           :global(.mapboxgl-ctrl-logo),
           :global(.mapboxgl-ctrl-attrib) {
