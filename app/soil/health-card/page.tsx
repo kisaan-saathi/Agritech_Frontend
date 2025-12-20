@@ -39,43 +39,72 @@ interface HealthCardData {
   testResults: any[]; secondaryRecs: any[]; generalRecs: any; fertilizerRecs: any[]; forecast: any[]; tempAdvisories: any[]; moistureAdvisories: any[]; soilDepthLayers: any[]; 
 }
 
-// --- Initial Data ---
-const INITIAL_DATA: HealthCardData = {
-  cardNo: "", farmerNameSidebar: "", validFrom: "", validTo: "",
-  name: "", address: "", village: "", subDistrict: "", district: "", pin: "", aadhaar: "", mobile: "",
-  sampleNo: "", sampleDate: "", surveyNo: "", khasraNo: "", farmSize: "", gpsLat: "", gpsLong: "", irrigationType: "",
+// --- MOCK DATA FROM SOIL PAGE ---
+const STATIC_TEST_VALUES = {
+  pH: 5.7, EC: 0.03, OC: 0.6,
+  N: 254, P: 15, K: 191,
+  S: null, Zn: 0.56, B: 0.48, Fe: null, Mn: null, Cu: null
+};
+
+const DUMMY_FORECAST = [
+  { day: "Today", temp: 26, moisture: 45 },
+  { day: "Mon", temp: 26, moisture: 42 },
+  { day: "Tue", temp: 26, moisture: 40 },
+  { day: "Wed", temp: 25, moisture: 38 },
+  { day: "Thu", temp: 26, moisture: 35 },
+  { day: "Fri", temp: 27, moisture: 34 },
+  { day: "Sat", temp: 28, moisture: 32 },
+];
+
+const DUMMY_LAYERS = [
+  { id: 1, label: "5 – 10", value: 28, status: "Monitor", color: "#eab308" }, // Yellow
+  { id: 2, label: "15 – 30", value: 25, status: "Optimal", color: "#22c55e" }, // Green
+  { id: 3, label: "30 – 60", value: 18, status: "Good", color: "#3b82f6" },    // Blue
+  { id: 4, label: "60 – 100", value: 14, status: "Too Cold", color: "#ef4444" }, // Red
+];
+
+// --- Initial Data Populated with Mocks ---
+const MOCK_FULL_DATA: HealthCardData = {
+  cardNo: "SHC-2025-8842", farmerNameSidebar: "Rajesh Kumar", validFrom: "2024", validTo: "2027",
+  name: "Rajesh Kumar", address: "H.No 12, Green Fields", village: "Rampur", subDistrict: "Sardhana", district: "Meerut", pin: "250342", aadhaar: "XXXX-XXXX-1234", mobile: "+91 9876543210",
+  sampleNo: "SPL-2025/001", sampleDate: "20/12/2025", surveyNo: "442/A", khasraNo: "128", farmSize: "2.5 Hectares", gpsLat: "28.98", gpsLong: "77.70", irrigationType: "Irrigated",
+  
+  // Mapped from STATIC_TEST_VALUES
   testResults: [
-    { id: 1, parameter: "pH", value: "", unit: "", rating: "" },
-    { id: 2, parameter: "EC", value: "", unit: "dS/m", rating: "" },
-    { id: 3, parameter: "Organic Carbon (OC)", value: "", unit: "%", rating: "" },
-    { id: 4, parameter: "Available Nitrogen (N)", value: "", unit: "kg/ha", rating: "" },
-    { id: 5, parameter: "Available Phosphorus (P)", value: "", unit: "kg/ha", rating: "" },
-    { id: 6, parameter: "Available Potassium (K)", value: "", unit: "kg/ha", rating: "" },
-    { id: 7, parameter: "Available Sulphur (S)", value: "", unit: "ppm", rating: "" },
-    { id: 8, parameter: "Available Zinc (Zn)", value: "", unit: "ppm", rating: "" },
-    { id: 9, parameter: "Available Boron (B)", value: "", unit: "ppm", rating: "" },
-    { id: 10, parameter: "Available Iron (Fe)", value: "", unit: "ppm", rating: "" },
-    { id: 11, parameter: "Available Manganese (Mn)", value: "", unit: "ppm", rating: "" },
-    { id: 12, parameter: "Available Copper (Cu)", value: "", unit: "ppm", rating: "" },
+    { id: 1, parameter: "pH", value: STATIC_TEST_VALUES.pH.toString(), unit: "", rating: "Acidic" },
+    { id: 2, parameter: "EC", value: STATIC_TEST_VALUES.EC.toString(), unit: "dS/m", rating: "Normal" },
+    { id: 3, parameter: "Organic Carbon (OC)", value: STATIC_TEST_VALUES.OC.toString(), unit: "%", rating: "Medium" },
+    { id: 4, parameter: "Available Nitrogen (N)", value: STATIC_TEST_VALUES.N.toString(), unit: "kg/ha", rating: "Low" },
+    { id: 5, parameter: "Available Phosphorus (P)", value: STATIC_TEST_VALUES.P.toString(), unit: "kg/ha", rating: "Medium" },
+    { id: 6, parameter: "Available Potassium (K)", value: STATIC_TEST_VALUES.K.toString(), unit: "kg/ha", rating: "Medium" },
+    { id: 7, parameter: "Available Sulphur (S)", value: "--", unit: "ppm", rating: "Untested" },
+    { id: 8, parameter: "Available Zinc (Zn)", value: STATIC_TEST_VALUES.Zn.toString(), unit: "ppm", rating: "Sufficient" },
+    { id: 9, parameter: "Available Boron (B)", value: STATIC_TEST_VALUES.B.toString(), unit: "ppm", rating: "Deficient" },
+    { id: 10, parameter: "Available Iron (Fe)", value: "--", unit: "ppm", rating: "Untested" },
+    { id: 11, parameter: "Available Manganese (Mn)", value: "--", unit: "ppm", rating: "Untested" },
+    { id: 12, parameter: "Available Copper (Cu)", value: "--", unit: "ppm", rating: "Untested" },
   ],
   secondaryRecs: [
-    { id: 1, parameter: "Sulphur (S)", recommendation: "" },
-    { id: 2, parameter: "Zinc (Zn)", recommendation: "" },
-    { id: 3, parameter: "Boron (B)", recommendation: "" },
-    { id: 4, parameter: "Iron (Fe)", recommendation: "" },
-    { id: 5, parameter: "Manganese (Mn)", recommendation: "" },
-    { id: 6, parameter: "Copper (Cu)", recommendation: "" },
+    { id: 1, parameter: "Sulphur (S)", recommendation: "Apply Gypsum 20kg/acre" },
+    { id: 2, parameter: "Zinc (Zn)", recommendation: "Zinc Sulphate 5kg/acre" },
+    { id: 3, parameter: "Boron (B)", recommendation: "Borax 2kg/acre (Foliar)" },
+    { id: 4, parameter: "Iron (Fe)", recommendation: "--" },
+    { id: 5, parameter: "Manganese (Mn)", recommendation: "--" },
+    { id: 6, parameter: "Copper (Cu)", recommendation: "--" },
   ],
-  generalRecs: { manure: "", biofertiliser: "", lime: "" },
-  fertilizerRecs: Array(6).fill(null).map((_, i) => ({ id: i + 1, crop: "", refYield: "", combo1: "", combo2: "" })),
-  forecast: [
-    { day: "Mon", temp: 24.5, moisture: 45 }, { day: "Tue", temp: 25.2, moisture: 42 }, { day: "Wed", temp: 23.8, moisture: 40 },
-    { day: "Thu", temp: 26.5, moisture: 38 }, { day: "Fri", temp: 28.0, moisture: 50 }, { day: "Sat", temp: 26.1, moisture: 55 }, { day: "Sun", temp: 24.5, moisture: 52 },
+  generalRecs: { manure: "FYM @ 5 Tonnes/ha", biofertiliser: "Azotobacter / PSB", lime: "Apply 200kg Lime" },
+  fertilizerRecs: [
+    { id: 1, crop: "Wheat", refYield: "50 q/ha", combo1: "Urea: 120kg, DAP: 50kg, MOP: 40kg", combo2: "NPK(12:32:16): 150kg, Urea: 80kg" },
+    { id: 2, crop: "Paddy", refYield: "60 q/ha", combo1: "Urea: 110kg, SSP: 150kg, MOP: 40kg", combo2: "DAP: 60kg, Urea: 90kg, MOP: 40kg" },
+    { id: 3, crop: "Mustard", refYield: "20 q/ha", combo1: "Urea: 80kg, SSP: 120kg", combo2: "DAP: 40kg, Urea: 60kg" },
+    { id: 4, crop: "", refYield: "", combo1: "", combo2: "" },
+    { id: 5, crop: "", refYield: "", combo1: "", combo2: "" },
+    { id: 6, crop: "", refYield: "", combo1: "", combo2: "" },
   ],
-  soilDepthLayers: [
-    { id: 1, label: "0 - 10", unit: "cm", color: "#3b82f6" }, { id: 2, label: "10 - 30", unit: "cm", color: "#22c55e" },
-    { id: 3, label: "30 - 60", unit: "cm", color: "#eab308" }, { id: 4, label: "60 - 100", unit: "cm", color: "#ef4444" },
-  ],
+  // Mapped from dummyForecast7d
+  forecast: DUMMY_FORECAST,
+  // Mapped from DUMMY_SOIL_LAYERS
+  soilDepthLayers: DUMMY_LAYERS,
   tempAdvisories: [
     { id: 1, range: "20 – 25", risk: "Low", message: "Optimal temperature for most crops." },
     { id: 2, range: "25 – 30", risk: "Medium", message: "Monitor soil moisture regularly." },
@@ -97,28 +126,25 @@ const chartOptions = {
 };
 
 export default function SoilHealthCardPage() {
-  const [data, setData] = useState<HealthCardData>(INITIAL_DATA);
+  const [data, setData] = useState<HealthCardData>(MOCK_FULL_DATA);
   const [loading, setLoading] = useState(true);
   const componentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch("/api/soil/health-card");
-        if (res.ok) {
-          const jsonData = await res.json();
-          setData((prev) => ({ ...prev, ...jsonData }));
-        }
-      } catch (error) { console.error("Backend fetch failed. Using mock data.", error); } finally { setLoading(false); }
-    };
-    fetchData();
+    // Simulate a short load time, then use the static data
+    const timer = setTimeout(() => {
+      setData(MOCK_FULL_DATA);
+      setLoading(false);
+    }, 500);
+    
+    return () => clearTimeout(timer);
   }, []);
 
-  // --- FIX 1: Updated ReactToPrint Hook Syntax ---
   const handlePrint = useReactToPrint({
-  contentRef: componentRef, // Pass the ref object directly
-  documentTitle: `Soil_Health_Card_${data.cardNo || "Report"}`,
-});
+    contentRef: componentRef, 
+    documentTitle: `Soil_Health_Card_${data.cardNo || "Report"}`,
+  });
+  
   const handleChange = (path: string, value: string) => { setData((prev) => { const newData = { ...prev }; const keys = path.split("."); let current: any = newData; for (let i = 0; i < keys.length - 1; i++) current = current[keys[i]]; current[keys[keys.length - 1]] = value; return newData; }); };
   const handleArrayChange = (arrayName: "testResults" | "secondaryRecs" | "fertilizerRecs", index: number, field: string, value: string) => { setData((prev) => { const newArray = [...prev[arrayName]]; // @ts-ignore
       newArray[index] = { ...newArray[index], [field]: value }; return { ...prev, [arrayName]: newArray }; }); };
@@ -127,7 +153,6 @@ export default function SoilHealthCardPage() {
 
   return (
     <div className="h-screen w-full overflow-auto bg-gray-100 p-4 md:p-8 text-black">
-      {/* --- FIX 2: Enhanced Print Styles --- */}
       <style>{`
         @media print {
           @page { size: A4 landscape; margin: 0; }
@@ -137,14 +162,9 @@ export default function SoilHealthCardPage() {
             -webkit-print-color-adjust: exact !important; 
             print-color-adjust: exact !important; 
           }
-          /* Ensure breaks work reliably */
           .print-break-after { break-after: page; page-break-after: always; }
           .print-break-before { break-before: page; page-break-before: always; }
-          
-          /* Hide non-printable elements */
           .no-print { display: none !important; }
-          
-          /* Ensure the wrapper is block, not flex, to allow pagination */
           .print-block { display: block !important; }
         }
         .form-input { width: 100%; height: 100%; background: transparent; border: none; padding: 0 4px; font-size: 8px; font-weight: 600; outline: none; }
@@ -164,7 +184,6 @@ export default function SoilHealthCardPage() {
       {/* --- PRINTABLE CANVAS --- */}
       <div className="w-full flex justify-center">
         
-        {/* FIX 3: Changed Wrapper to 'block' for printing (print-block) to support pagination */}
         <div ref={componentRef} className="bg-white text-black box-border flex flex-col items-center print-block print:w-full">
           
           {/* ================= PAGE 1 ================= */}
@@ -373,7 +392,6 @@ export default function SoilHealthCardPage() {
           </div>
 
           {/* ================= PAGE 2 (Analytics) ================= */}
-          {/* FIX 4: print-break-before forces this content to start on page 2 */}
           <div className="w-[297mm] h-[210mm] p-[5mm] pt-4 bg-white shadow-xl print:shadow-none relative box-border flex flex-col overflow-hidden print-break-before">
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="border border-gray-300 rounded p-2 h-40 flex flex-col items-center justify-center bg-gray-50">
