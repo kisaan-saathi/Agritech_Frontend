@@ -29,6 +29,7 @@ import {
   ResponsiveContainer,
   CartesianGrid
 } from "recharts";
+import PageHeader from "@/components/layout/PageHeader";
 
 /* ================= 1. CONSTANTS & DATA LISTS ================= */
 
@@ -300,6 +301,7 @@ export default function MarketPage() {
         <div className="px-6 py-4 flex flex-col gap-4 max-w-7xl mx-auto">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
+              <PageHeader/>
               <img src="/images/mithu.jpg" alt="MarketSaathi Logo" className="h-8 w-8" />
               <div>
                 <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Market<span className="text-green-600">Saathi</span></h1>
