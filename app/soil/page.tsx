@@ -41,6 +41,7 @@ ChartJS.register(
 );
 
 const API_BASE = "http://localhost:4000";
+const SOIL_ROW_HEIGHT = "60px";
 
 // ===== STATIC DATA FOR FALLBACKS =====
 const INDIAN_LOCATIONS: { [key: string]: string[] } = {
@@ -355,7 +356,6 @@ export default function SoilPage() {
     : FALLBACK_SOIL_DATA.moistureLayers;
 
   // ✅ SHARED soil gradient palette (USED IN MULTIPLE PLACES)
-  const SOIL_ROW_HEIGHT = "80px"; // Height for each soil layer row
   const soilGradients = [
     "from-[#7b5a3a] to-[#6a4a2f]",
     "from-[#6a4a2f] to-[#5a3a25]",
