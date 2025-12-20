@@ -41,7 +41,7 @@ export default function DashboardClient() {
       const res = await apiCallWithRefresh(async () => {
         const token = localStorage.getItem("accessToken");
         console.log("Logging out with token:", token);
-        return await axios.get("http://localhost:4000/api/v1/auth/logout", {
+        return await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/auth/logout`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
