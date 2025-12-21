@@ -4,14 +4,14 @@ import FarmMap from "@/components/ui/farm-map";
 
 export default function FarmScoreCard() {
   return (
-    <section className="mb-5 h-100vh">
+    <section className="mb-5 h-100">
       {/* Main grid with scorecard and map below */}
       <div className="grid grid-cols-6 lg:grid-cols-6 sm:grid-cols-6 gap-6 pb-3 h-98">
         <div className="lg:col-span-1 md:col-span-2 sm:col-span-2 rounded-2xl shadow p-2">
           <h2 className="text-xl font-bold text-gray-800 p-3 border-bottom">
             Farm Balance Scorecard
           </h2>
-          <div className="farm-score-card h-64 rounded-2xl shadow-2xl mx-3 my-2 px-2 py-3 flex flex-col items-start md:items-center justify-between text-white relative overflow-hidden">
+          <div className="farm-score-card h-64 rounded-2xl shadow-2xl mx-3 my-2 px-2 py-3 flex flex-col items-start md:items-center justify-around text-white relative overflow-hidden">
             <div
               className="absolute inset-0 opacity-10 bg-cover bg-center"
               style={{
@@ -32,7 +32,7 @@ export default function FarmScoreCard() {
                 </p>
               </div>
             </div>
-            <div className="relative z-10 w-full p-2 bg-white/20 mt-3 rounded-lg">
+            <div className="relative z-10 w-full h-full justify-center items-center flex flex-col p-2 bg-white/20 mt-3 rounded-lg">
               <p className="text-sm font-semibold mb-1">
                 Score Trend (Last 7 Days)
               </p>
@@ -59,7 +59,7 @@ export default function FarmScoreCard() {
             </div>
           </div>
           <div className="grid grid-cols-3 gap-4 p-3">
-            <div className="col-span-3 bg-teal/20 p-2 place-items-center rounded-lg h- farm-score-card">
+            <div className="col-span-3 bg-teal/20 p-2 place-items-center rounded-lg farm-score-card  h-100">
               <p className="text-sm text-white font-semibold mb-2">Soil</p>
               <div className="w-20 h-20 flex items-center justify-center border-4 bg-white/20 border-white/50 rounded-full bg-transparent shadow-2xl flex-shrink-0">
                 <span className="text-3xl text-white font-extrabold">8.1</span>

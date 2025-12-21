@@ -181,6 +181,7 @@ main {
 }
 .farm-score-card {
     background-image: linear-gradient(135deg, #10B981, #059669);
+    height: 60%;
 }
 .ai-output {
     background-color: #EEEBFF;

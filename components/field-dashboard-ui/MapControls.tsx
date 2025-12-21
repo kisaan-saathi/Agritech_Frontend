@@ -271,8 +271,30 @@ export function MapLayerDropdown({
 
 export function MapLegend({ selectedLayer }: { selectedLayer: LayerKey }) {
   return (
-    <div className="map-controls-legend">
-      {/* unchanged */}
+    <div className="map-controls-legend p-2">
+      <div className="color-legend-label">
+        <label className="color-legend-label">{selectedLayer.toUpperCase()} SCALE</label>
+        
+        <div className="legend-gradient" />
+        
+        <div className="legend-labels">
+          {SCALE_LABELS.map((label) => (
+            <span key={label}>{label}</span>
+          ))}
+        </div>
+
+        <div className="legend-descriptions">
+          {LEGEND_ITEMS.map((item) => (
+            <div key={item.label} className="legend-item p-1 fs-10">
+              <span
+                className="legend-color"
+                style={{ backgroundColor: item.color }}
+              />
+              <span>{item.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -324,6 +346,7 @@ function PillStyles() {
       .pill-menu li:hover {
         background: #f3f4f6;
       }
+      
     `}</style>
   );
 }

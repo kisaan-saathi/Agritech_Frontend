@@ -610,16 +610,16 @@ const FarmMap: React.FC<FarmMapProps> = ({ title, initialLayer = "ndvi" }) => {
         <div className="map-container rounded-bottom" ref={mapContainer} />
 
         {/* Map legend in the left bottom corner */}
-        <div
+        {/* <div
           style={{
             position: "absolute",
             left: 20,
             bottom: 20,
             zIndex: 120,
           }}
-        >
+        > */}
           <MapLegend selectedLayer={selectedLayer} />
-        </div>
+        {/* </div> */}
 
         <CoordsDisplay selectedField={selectedField} />
 
@@ -644,7 +644,7 @@ const FarmMap: React.FC<FarmMapProps> = ({ title, initialLayer = "ndvi" }) => {
             --dash-h-pad: 24px;
             padding: 0 var(--dash-h-pad);
             width: 100%;
-            height: 86%;
+            height: 90%;
             overflow: hidden;
             background: #0a0a0a;
           }
