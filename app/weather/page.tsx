@@ -19,14 +19,29 @@ import Mithu, { MithuMood } from "@/components/Mithu";
 import { AlertTriangle } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 const POLL_INTERVAL = 60_000;
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
+// Fallback to localhost:4000 if env vars are missing
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  "http://localhost:4000";
+
 const DEFAULT_LAT = 18.5204;
 const DEFAULT_LON = 73.8567;
 
-/* -------------------- Types -------------------- */
+/* -------------------- Frontend Types (UI Expectation) -------------------- */
 type DailyRange = { date: string; min: number; max: number };
 type DailySeries = { dates?: string[]; values: number[] };
 
@@ -41,21 +56,115 @@ type WeatherCurrent = {
 };
 
 type WeatherAnalysisResponse = {
-  location: { name: string; latitude: number | string; longitude: number | string; timezone: string };
+  location: {
+    name: string;
+    latitude: number | string;
+    longitude: number | string;
+    timezone: string;
+  };
   current: WeatherCurrent;
-  forecast7d: { temperature: DailyRange[]; precipitation: DailySeries; humidity?: DailySeries };
-  history30d: { temperature: DailyRange[]; precipitation: DailySeries; humidity?: DailySeries };
+  forecast7d: {
+    temperature: DailyRange[];
+    precipitation: DailySeries;
+    humidity?: DailySeries;
+  };
+  history30d: {
+    temperature: DailyRange[];
+    precipitation: DailySeries;
+    humidity?: DailySeries;
+  };
+};
+
+/* -------------------- Backend Types (API Response) -------------------- */
+type BackendResponse = {
+  location: { latitude: number; longitude: number; timezone: string };
+  current: {
+    time: string;
+    temperature: number;
+    humidity: number;
+    rain: number;
+    wind: number;
+  };
+  forecast7d: Array<{
+    date: string;
+    minTemp: number;
+    maxTemp: number;
+    avgTemp: number;
+    avgHumidity: number;
+    rain: number;
+  }>;
+  trend7d: { avgTemp: number[]; rain: number[]; humidity: number[] };
+  trend30d: { avgTemp: number[]; rain: number[]; humidity: number[] };
+  temperatureTrend: { trend: string; change: number };
+  advisory: { label: string; title: string; message: string; advice: string[] };
+  generatedAt: string;
 };
 
 /* -------------------- Helpers -------------------- */
+
+// DATA TRANSFORMER: Converts Backend JSON -> Frontend Object
+function transformBackendData(data: BackendResponse): WeatherAnalysisResponse {
+  const historyDates = Array.from({ length: 30 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (30 - i));
+    return d.toISOString().split("T")[0];
+  });
+
+  return {
+    location: {
+      name: data.location.timezone?.split("/")[1] || "My Location",
+      latitude: data.location.latitude,
+      longitude: data.location.longitude,
+      timezone: data.location.timezone,
+    },
+    current: {
+      temperature: data.current.temperature,
+      humidity: data.current.humidity,
+      rain: data.current.rain,
+      precipitation: data.current.rain,
+      windSpeed: data.current.wind,
+      summary: data.advisory?.title || "Clear",
+      lastUpdated: data.generatedAt,
+    },
+    forecast7d: {
+      temperature: data.forecast7d.map((d) => ({
+        date: d.date,
+        min: d.minTemp,
+        max: d.maxTemp,
+      })),
+      precipitation: {
+        values: data.forecast7d.map((d) => d.rain),
+        dates: data.forecast7d.map((d) => d.date),
+      },
+      humidity: {
+        values: data.forecast7d.map((d) => d.avgHumidity),
+      },
+    },
+    history30d: {
+      temperature: data.trend30d.avgTemp.map((temp, i) => ({
+        date: historyDates[i],
+        min: temp,
+        max: temp,
+      })),
+      precipitation: {
+        values: data.trend30d.rain,
+        dates: historyDates,
+      },
+      humidity: {
+        values: data.trend30d.humidity,
+      },
+    },
+  };
+}
+
 function mithuMoodFromSummary(summary?: string): MithuMood {
   if (!summary) return "default";
   const s = summary.toLowerCase();
-  if (s.includes("rain") || s.includes("shower") || s.includes("hail")) return "rainy";
-  if (s.includes("sun") || s.includes("clear")) return "sunny";
-  if (s.includes("hot") || s.includes("heat")) return "hot";
+  if (s.includes("rain") || s.includes("shower") || s.includes("wet")) return "rainy";
+  if (s.includes("sun") || s.includes("clear") || s.includes("favorable")) return "sunny";
+  if (s.includes("hot") || s.includes("heat") || s.includes("risk")) return "hot";
   if (s.includes("wind") || s.includes("breeze")) return "windy";
-  if (s.includes("cloud")) return "cloudy";
+  if (s.includes("cloud") || s.includes("caution")) return "cloudy";
   return "default";
 }
 
@@ -107,7 +216,10 @@ export default function WeatherPage() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
 
-  const [coords, setCoords] = useState<{ lat: number; lon: number }>({ lat: DEFAULT_LAT, lon: DEFAULT_LON });
+  const [coords, setCoords] = useState<{ lat: number; lon: number }>({
+    lat: DEFAULT_LAT,
+    lon: DEFAULT_LON,
+  });
   const predictionRef = useRef<HTMLDivElement | null>(null);
 
   /* initial fetch / geolocation */
@@ -137,28 +249,27 @@ export default function WeatherPage() {
     }
   }, [data]);
 
-  /* fetching helpers */
-  async function fetchWeatherFromBackend() {
-    const url = `${API_BASE_URL}/weather?lat=${coords.lat}&lon=${coords.lon}`;
-    const res = await fetch(url);
-    if (!res.ok) {
-      const txt = await res.text().catch(() => "");
-      let msg = `Backend fetch failed: ${res.status}`;
-      try {
-        const parsed = JSON.parse(txt);
-        if (parsed?.message) msg = parsed.message;
-      } catch {}
-      throw new Error(msg);
-    }
-    return (await res.json()) as WeatherAnalysisResponse;
-  }
-
-  async function fetchWeatherWithCoords(lat: number, lon: number) {
+  /* -------------------- Fixed Fetcher (Targeting /api/v1/weather) -------------------- */
+  async function fetchWithFallback(lat: number, lon: number) {
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-      setError(null);
-      const url = `${API_BASE_URL}/weather?lat=${lat}&lon=${lon}`;
-      const res = await fetch(url);
+      // FIX: Your backend 'main.ts' sets a global prefix 'api/v1'
+      // So we must fetch '/api/v1/weather', NOT just '/weather'
+      let url = `${API_BASE_URL}/api/v1/weather?lat=${lat}&lon=${lon}`;
+      
+      let res = await fetch(url);
+
+      // Fallback: If 'api/v1' fails (e.g. you removed the prefix from backend), try '/weather'
+      if (res.status === 404) {
+         console.warn("Got 404 on /api/v1/weather, trying /weather...");
+         const fallbackUrl = `${API_BASE_URL}/weather?lat=${lat}&lon=${lon}`;
+         const resFallback = await fetch(fallbackUrl);
+         if (resFallback.ok || resFallback.status !== 404) {
+           res = resFallback;
+         }
+      }
+
       if (!res.ok) {
         const txt = await res.text().catch(() => "");
         let msg = `Backend fetch failed: ${res.status}`;
@@ -166,29 +277,32 @@ export default function WeatherPage() {
           const parsed = JSON.parse(txt);
           if (parsed?.message) msg = parsed.message;
         } catch {}
+        
+        // Friendly error message
+        if (msg.includes("Cannot GET")) {
+          msg = "Backend route not found. Ensure backend is running and URL prefix matches (e.g., /api/v1).";
+        }
         throw new Error(msg);
       }
-      const json = (await res.json()) as WeatherAnalysisResponse;
-      setData(json);
+
+      const backendData = (await res.json()) as BackendResponse;
+      setData(transformBackendData(backendData));
     } catch (err: any) {
+      console.error(err);
       setError(err?.message ?? "Unknown error");
     } finally {
       setLoading(false);
     }
   }
 
-  async function fetchWeather() {
-    try {
-      setLoading(true);
-      setError(null);
-      const resp = await fetchWeatherFromBackend();
-      setData(resp);
-    } catch (err: any) {
-      setError(err?.message ?? "Unknown error");
-    } finally {
-      setLoading(false);
-    }
+  async function fetchWeatherWithCoords(lat: number, lon: number) {
+    await fetchWithFallback(lat, lon);
   }
+
+  async function fetchWeather() {
+    await fetchWithFallback(coords.lat, coords.lon);
+  }
+  /* ----------------------------------------------------------------------------------- */
 
   /* SSE / Polling logic */
   useEffect(() => {
@@ -202,19 +316,22 @@ export default function WeatherPage() {
     }
 
     if (realtime) {
-      const url = `${API_BASE_URL}/weather/stream?lat=${coords.lat}&lon=${coords.lon}`;
+      // FIX: Also updated the stream URL to include /api/v1
+      const url = `${API_BASE_URL}/api/v1/weather/stream?lat=${coords.lat}&lon=${coords.lon}`;
       const es = new EventSource(url);
       eventSourceRef.current = es;
       es.onmessage = (ev) => {
         try {
           const parsed = JSON.parse(ev.data);
-          setData(parsed?.data ?? parsed);
+          const raw = parsed?.data ?? parsed;
+          setData(transformBackendData(raw));
         } catch {}
       };
       es.onerror = () => {
         try {
           es.close();
         } catch {}
+        // Fallback to polling on error
         timerRef.current = setInterval(fetchWeather, POLL_INTERVAL);
       };
     } else {
@@ -228,19 +345,40 @@ export default function WeatherPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [realtime, coords]);
 
-  /* Charts building - include humidity */
+  /* Charts building */
   const buildPredictionChart = () => {
     if (!data) return null;
     const labels = data.forecast7d.temperature.map((d) => d.date);
     const avg = data.forecast7d.temperature.map((d) => (d.min + d.max) / 2);
     const rain = data.forecast7d.precipitation.values;
-    const humidity = data.forecast7d.humidity?.values ?? new Array(labels.length).fill(NaN);
+    const humidity =
+      data.forecast7d.humidity?.values ?? new Array(labels.length).fill(NaN);
     return {
       labels,
       datasets: [
-        { label: "Avg Temp (°C)", data: avg, borderColor: "rgba(34,197,94,0.95)", tension: 0.25, fill: false, yAxisID: "y" },
-        { label: "Rain (mm)", data: rain, type: "bar" as const, backgroundColor: "rgba(245,158,11,0.36)", yAxisID: "y1" },
-        { label: "Humidity (%)", data: humidity, borderColor: "rgba(14,165,233,0.95)", tension: 0.25, fill: false, yAxisID: "y2" },
+        {
+          label: "Avg Temp (°C)",
+          data: avg,
+          borderColor: "rgba(34,197,94,0.95)",
+          tension: 0.25,
+          fill: false,
+          yAxisID: "y",
+        },
+        {
+          label: "Rain (mm)",
+          data: rain,
+          type: "bar" as const,
+          backgroundColor: "rgba(245,158,11,0.36)",
+          yAxisID: "y1",
+        },
+        {
+          label: "Humidity (%)",
+          data: humidity,
+          borderColor: "rgba(14,165,233,0.95)",
+          tension: 0.25,
+          fill: false,
+          yAxisID: "y2",
+        },
       ],
     };
   };
@@ -250,13 +388,34 @@ export default function WeatherPage() {
     const labels = data.history30d.temperature.map((d) => d.date);
     const avg = data.history30d.temperature.map((d) => (d.min + d.max) / 2);
     const rain = data.history30d.precipitation.values;
-    const humidity = data.history30d.humidity?.values ?? new Array(labels.length).fill(NaN);
+    const humidity =
+      data.history30d.humidity?.values ?? new Array(labels.length).fill(NaN);
     return {
       labels,
       datasets: [
-        { label: "Avg Temp (°C)", data: avg, borderColor: "rgba(34,197,94,0.95)", tension: 0.25, fill: false, yAxisID: "y" },
-        { label: "Rain (mm)", data: rain, type: "bar" as const, backgroundColor: "rgba(245,158,11,0.28)", yAxisID: "y1" },
-        { label: "Humidity (%)", data: humidity, borderColor: "rgba(14,165,233,0.95)", tension: 0.25, fill: false, yAxisID: "y2" },
+        {
+          label: "Avg Temp (°C)",
+          data: avg,
+          borderColor: "rgba(34,197,94,0.95)",
+          tension: 0.25,
+          fill: false,
+          yAxisID: "y",
+        },
+        {
+          label: "Rain (mm)",
+          data: rain,
+          type: "bar" as const,
+          backgroundColor: "rgba(245,158,11,0.28)",
+          yAxisID: "y1",
+        },
+        {
+          label: "Humidity (%)",
+          data: humidity,
+          borderColor: "rgba(14,165,233,0.95)",
+          tension: 0.25,
+          fill: false,
+          yAxisID: "y2",
+        },
       ],
     };
   };
@@ -265,30 +424,37 @@ export default function WeatherPage() {
   const historyChart = buildHistoryChart();
 
   const coordsLabel = data
-    ? `${Number(data.location.latitude ?? coords.lat).toFixed(2)}, ${Number(data.location.longitude ?? coords.lon).toFixed(2)}`
+    ? `${Number(data.location.latitude ?? coords.lat).toFixed(2)}, ${Number(
+        data.location.longitude ?? coords.lon
+      ).toFixed(2)}`
     : `${coords.lat.toFixed(2)}, ${coords.lon.toFixed(2)}`;
 
   /* Mithu click handler */
   function onMithuClick() {
     setGlideToTrend(true);
     setTimeout(() => {
-      predictionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      predictionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
       setGlideToTrend(false);
     }, 900);
   }
 
   return (
-    // FIX APPLIED HERE: Changed from 'min-h-screen' to 'h-screen w-full overflow-y-auto'
     <div className="h-screen w-full overflow-y-auto bg-gray-50 p-6">
       <header className="mb-6 flex items-center justify-between">
         <PageHeader />
         <div>
-          <div className="text-2xl font-bold text-slate-800">Weather Dashboard</div>
-          <div className="text-xs text-gray-500">Predictions & trends — Mithu guides you</div>
+          <div className="text-2xl font-bold text-slate-800">
+            Weather Dashboard
+          </div>
+          <div className="text-xs text-gray-500">
+            Predictions & trends — Mithu guides you
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
-    
           <button
             onClick={fetchWeather}
             disabled={loading}
@@ -299,107 +465,133 @@ export default function WeatherPage() {
         </div>
       </header>
 
-      {error && <div className="mb-4 bg-red-100 text-red-700 p-3 rounded">{error}</div>}
+      {error && (
+        <div className="mb-4 bg-red-100 text-red-700 p-3 rounded">{error}</div>
+      )}
 
-      {/* =====================================================================================
-          MAIN DASHBOARD CARD
-         ===================================================================================== */}
+      {/* ================= MAIN DASHBOARD CARD ================= */}
       <section className="bg-white rounded-2xl shadow p-6 mb-6 group hover:shadow-2xl transition-all">
         <div className="flex gap-6 items-stretch">
-          
-          {/* 1. TEMPERATURE CARD (Fixed Left) */}
+          {/* 1. TEMPERATURE CARD */}
           <div
             className="w-36 rounded-xl flex flex-col items-center justify-center text-white flex-shrink-0 shadow-md"
             style={{ background: "linear-gradient(135deg,#16a34a,#059669)" }}
           >
-            <div className="text-4xl font-bold">{data && data.current.temperature != null ? Math.round(data.current.temperature) : "--"}°C</div>
-            <div className="text-sm opacity-90 font-medium">{data?.current?.summary ?? "—"}</div>
+            <div className="text-4xl font-bold">
+              {data && data.current.temperature != null
+                ? Math.round(data.current.temperature)
+                : "--"}
+              °C
+            </div>
+            <div className="text-sm opacity-90 font-medium">
+              {data?.current?.summary ?? "—"}
+            </div>
           </div>
 
-          {/* 2. FLEX CONTAINER FOR MIDDLE CONTENT */}
+          {/* 2. MIDDLE CONTENT */}
           <div className="flex-1 flex gap-6">
-              
-              {/* 2A. LOCATION & STATS GRID */}
-              <div className="flex-1 flex flex-col justify-between">
-                  <div>
-                    <div className="text-xl font-bold text-slate-800">{data?.location?.name ?? "—"}</div>
-                    <div className="text-gray-500 text-xs font-medium">Timezone: {data?.location?.timezone ?? "—"}</div>
+            {/* 2A. LOCATION & STATS */}
+            <div className="flex-1 flex flex-col justify-between">
+              <div>
+                <div className="text-xl font-bold text-slate-800">
+                  {data?.location?.name ?? "—"}
+                </div>
+                <div className="text-gray-500 text-xs font-medium">
+                  Timezone: {data?.location?.timezone ?? "—"}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 mt-auto">
+                <div className="p-2.5 rounded-lg border border-emerald-100 bg-emerald-50/50">
+                  <div className="text-[10px] uppercase text-emerald-600 font-bold">
+                    Humidity
                   </div>
-
-                  <div className="grid grid-cols-2 gap-3 mt-auto">
-                    <div className="p-2.5 rounded-lg border border-emerald-100 bg-emerald-50/50">
-                      <div className="text-[10px] uppercase text-emerald-600 font-bold">Humidity</div>
-                      <div className="font-bold text-slate-700">
-                        {data?.current?.humidity != null ? `${Math.round(data.current.humidity)}%` : "--"}
-                      </div>
-                    </div>
-
-                    <div className="p-2.5 rounded-lg border border-sky-100 bg-sky-50/50">
-                      <div className="text-[10px] uppercase text-sky-600 font-bold">Wind</div>
-                      <div className="font-bold text-slate-700">
-                        {data?.current?.windSpeed != null ? `${data.current.windSpeed.toFixed(1)} m/s` : "--"}
-                      </div>
-                    </div>
-
-                    <div className="p-2.5 rounded-lg border border-amber-100 bg-amber-50/50">
-                      <div className="text-[10px] uppercase text-amber-600 font-bold">Rain</div>
-                      <div className="font-bold text-slate-700">
-                        {data?.current?.precipitation != null ? `${data.current.precipitation.toFixed(1)} mm` : "--"}
-                      </div>
-                    </div>
-
-                    <div className="p-2.5 rounded-lg border border-stone-100 bg-stone-50/50">
-                      <div className="text-[10px] uppercase text-stone-500 font-bold">Coords</div>
-                      <div className="font-bold text-slate-700">{coordsLabel}</div>
-                    </div>
+                  <div className="font-bold text-slate-700">
+                    {data?.current?.humidity != null
+                      ? `${Math.round(data.current.humidity)}%`
+                      : "--"}
                   </div>
+                </div>
+                <div className="p-2.5 rounded-lg border border-sky-100 bg-sky-50/50">
+                  <div className="text-[10px] uppercase text-sky-600 font-bold">
+                    Wind
+                  </div>
+                  <div className="font-bold text-slate-700">
+                    {data?.current?.windSpeed != null
+                      ? `${data.current.windSpeed.toFixed(1)} m/s`
+                      : "--"}
+                  </div>
+                </div>
+                <div className="p-2.5 rounded-lg border border-amber-100 bg-amber-50/50">
+                  <div className="text-[10px] uppercase text-amber-600 font-bold">
+                    Rain
+                  </div>
+                  <div className="font-bold text-slate-700">
+                    {data?.current?.precipitation != null
+                      ? `${data.current.precipitation.toFixed(1)} mm`
+                      : "--"}
+                  </div>
+                </div>
+                <div className="p-2.5 rounded-lg border border-stone-100 bg-stone-50/50">
+                  <div className="text-[10px] uppercase text-stone-500 font-bold">
+                    Coords
+                  </div>
+                  <div className="font-bold text-slate-700">{coordsLabel}</div>
+                </div>
               </div>
+            </div>
 
-              {/* 2B. ADVISORY BLOCK (CENTER) */}
-              <div className="w-72 bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex flex-col justify-center shadow-sm relative overflow-hidden">
-                 <div className="absolute top-0 right-0 w-16 h-16 bg-yellow-100 rounded-full blur-2xl -mr-8 -mt-8"></div>
-                 <div className="flex items-center gap-2 mb-2 relative z-10">
-                    <div className="p-1 bg-yellow-200 rounded-full"><AlertTriangle className="w-3 h-3 text-yellow-700" /></div>
-                    <span className="text-[10px] font-bold text-yellow-800 uppercase tracking-wider">Mithu's Advisory</span>
-                 </div>
-                 <div className="flex-1 flex items-center relative z-10">
-                    <p className="text-xs text-yellow-900 leading-relaxed font-medium">
-                      {adviceText}
-                    </p>
-                 </div>
+            {/* 2B. ADVISORY */}
+            <div className="w-72 bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex flex-col justify-center shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-16 h-16 bg-yellow-100 rounded-full blur-2xl -mr-8 -mt-8"></div>
+              <div className="flex items-center gap-2 mb-2 relative z-10">
+                <div className="p-1 bg-yellow-200 rounded-full">
+                  <AlertTriangle className="w-3 h-3 text-yellow-700" />
+                </div>
+                <span className="text-[10px] font-bold text-yellow-800 uppercase tracking-wider">
+                  Mithu's Advisory
+                </span>
               </div>
-
-              {/* 2C. PARROT (RIGHT) */}
-              <div className="w-auto flex-shrink-0 flex flex-col items-center justify-center pl-4 border-l border-dashed border-gray-200">
-                <Mithu
-                  mood={mithuMoodFromSummary(data?.current?.summary)}
-                  loop={true}
-                  onClick={onMithuClick}
-                  advice={""} // Advice is handled in the block
-                  showAdvice={false}
-                  glide={glideToTrend}
-                  size={140}
-                />
-                <div className="mt-1 text-[10px] text-gray-400 font-medium tracking-wide">Tap for Trends</div>
+              <div className="flex-1 flex items-center relative z-10">
+                <p className="text-xs text-yellow-900 leading-relaxed font-medium">
+                  {adviceText}
+                </p>
               </div>
+            </div>
 
+            {/* 2C. PARROT */}
+            <div className="w-auto flex-shrink-0 flex flex-col items-center justify-center pl-4 border-l border-dashed border-gray-200">
+              <Mithu
+                mood={mithuMoodFromSummary(data?.current?.summary)}
+                loop={true}
+                onClick={onMithuClick}
+                advice={""}
+                showAdvice={false}
+                glide={glideToTrend}
+                size={140}
+              />
+              <div className="mt-1 text-[10px] text-gray-400 font-medium tracking-wide">
+                Tap for Trends
+              </div>
+            </div>
           </div>
-
         </div>
-        
+
         {/* Footer Timestamp */}
         <div className="mt-4 pt-3 border-t border-gray-100 flex justify-end">
-           <span className="text-[10px] text-gray-400">
-             Last updated: {data?.current?.lastUpdated ? new Date(data.current.lastUpdated).toLocaleString() : "—"}
-           </span>
+          <span className="text-[10px] text-gray-400">
+            Last updated:{" "}
+            {data?.current?.lastUpdated
+              ? new Date(data.current.lastUpdated).toLocaleString()
+              : "—"}
+          </span>
         </div>
       </section>
 
-      {/* Prediction (anchor ref used by Mithu navigation) */}
+      {/* Prediction Table */}
       <section ref={predictionRef} className="grid grid-cols-12 gap-6 mb-6">
         <div className="col-span-12 lg:col-span-6 bg-white p-4 rounded-2xl shadow hover:shadow-lg transition-transform hover:scale-105">
           <div className="font-semibold text-lg mb-2">7-Day Prediction</div>
-
           <table className="w-full text-sm border rounded-xl overflow-hidden">
             <thead className="bg-gray-50">
               <tr>
@@ -416,7 +608,9 @@ export default function WeatherPage() {
                   <td className="p-2">{d.date}</td>
                   <td className="p-2 text-center">{d.min}</td>
                   <td className="p-2 text-center">{d.max}</td>
-                  <td className="p-2 text-center">{data.forecast7d.precipitation.values[i]}</td>
+                  <td className="p-2 text-center">
+                    {data.forecast7d.precipitation.values[i]}
+                  </td>
                   <td className="p-2 text-center">
                     {data.forecast7d.humidity?.values?.[i] != null
                       ? data.forecast7d.humidity.values[i]
@@ -431,9 +625,10 @@ export default function WeatherPage() {
         <div className="col-span-12 lg:col-span-6 bg-white p-4 rounded-2xl shadow hover:shadow-lg transition-transform hover:scale-105">
           <div className="flex items-center justify-between mb-3">
             <div className="font-semibold text-lg">7-Day Prediction Trend</div>
-            <div className="text-sm text-gray-500">Average Temp • Rain • Humidity</div>
+            <div className="text-sm text-gray-500">
+              Average Temp • Rain • Humidity
+            </div>
           </div>
-
           <div style={{ height: 300 }}>
             {predictionChart ? (
               <Line
@@ -445,8 +640,17 @@ export default function WeatherPage() {
                   interaction: { mode: "index", intersect: false },
                   scales: {
                     y: { title: { display: true, text: "Avg Temp (°C)" } },
-                    y1: { title: { display: true, text: "Rain (mm)" }, position: "right", grid: { drawOnChartArea: false } },
-                    y2: { title: { display: true, text: "Humidity (%)" }, position: "right", grid: { drawOnChartArea: false }, display: true },
+                    y1: {
+                      title: { display: true, text: "Rain (mm)" },
+                      position: "right",
+                      grid: { drawOnChartArea: false },
+                    },
+                    y2: {
+                      title: { display: true, text: "Humidity (%)" },
+                      position: "right",
+                      grid: { drawOnChartArea: false },
+                      display: true,
+                    },
                   },
                 }}
               />
@@ -461,9 +665,10 @@ export default function WeatherPage() {
       <section className="bg-white p-4 rounded-2xl shadow hover:shadow-lg transition-transform hover:scale-105">
         <div className="flex items-center justify-between mb-3">
           <div className="font-semibold text-lg">30-Day Average Trend</div>
-          <div className="text-sm text-gray-500">Avg Temp • Rain • Humidity</div>
+          <div className="text-sm text-gray-500">
+            Avg Temp • Rain • Humidity
+          </div>
         </div>
-
         <div style={{ height: 300 }}>
           {historyChart ? (
             <Line
@@ -475,7 +680,12 @@ export default function WeatherPage() {
                 scales: {
                   y: { title: { display: true, text: "Avg Temp (°C)" } },
                   y1: { display: false, position: "right" },
-                  y2: { title: { display: true, text: "Humidity (%)" }, position: "right", grid: { drawOnChartArea: false }, display: true },
+                  y2: {
+                    title: { display: true, text: "Humidity (%)" },
+                    position: "right",
+                    grid: { drawOnChartArea: false },
+                    display: true,
+                  },
                 },
               }}
             />
@@ -485,7 +695,6 @@ export default function WeatherPage() {
         </div>
       </section>
 
-      {/* small animations styles */}
       <style>{`
         .mithu-glide { animation: mithuGlide 0.9s cubic-bezier(.2,.9,.2,1) forwards; }
         @keyframes mithuGlide { 0% { transform: translateX(0) } 60% { transform: translateX(160px) } 100% { transform: translateX(220px) } }
