@@ -90,7 +90,7 @@ const ALL_CROPS = [
   "Cardamom", "Pepper", "Ginger", "Garlic", "Coriander", "Cumin", "Fennel", "Fenugreek"
 ];
 
-const API_BASE = "http://localhost:4000"; 
+const API_BASE = `${process.env.NEXT_PUBLIC_BACKEND_URL}`; 
 
 /* ================= 2. TYPES ================= */
 

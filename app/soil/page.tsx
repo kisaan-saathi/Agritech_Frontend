@@ -40,8 +40,7 @@ ChartJS.register(
   Legend
 );
 
-const API_BASE = "http://localhost:4000";
-const SOIL_ROW_HEIGHT = "60px";
+const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 // ===== STATIC DATA FOR FALLBACKS =====
 const INDIAN_LOCATIONS: { [key: string]: string[] } = {
@@ -535,7 +534,7 @@ export default function SoilPage() {
       )}
 
       {/* ================= FIELD MAP (Full Width) ================= */}
-      <div className="w-full mb-5 mt-4 bg-white rounded-lg p-0 shadow h-98">
+      <div className="w-full my-4 h-98">
           <FarmMap
             title="Soil Map"
             initialLayer="savi"
