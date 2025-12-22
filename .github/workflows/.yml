@@ -1,28 +1,36 @@
-name: Next.js Deploy (Build from Local)
+name: Next.js CI/CD
 
 on:
   push:
     branches: ["main"]
 
 jobs:
-  deploy:
+  build_production:
     runs-on: self-hosted
 
+    strategy:
+      matrix:
+        node-version: [20.x]
+
     steps:
-      # 1️⃣ Checkout latest code (includes .next)
-      - name: Checkout code
-        uses: actions/checkout@v3
+      # 1️⃣ Checkout repo
+      - uses: actions/checkout@v3
 
-      # 2️⃣ Sync project to live directory
-      - name: Sync files to /var/www/Agritech_Frontend
-        run: |
-          rsync -av --delete \
-          --exclude=node_modules \
-          --exclude=.git \
-          ./ /var/www/Agritech_Frontend/
+      # 2️⃣ Setup Node
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
 
-      # 3️⃣ Restart PM2 with updated build
-      - name: Restart Next.js app
+      # 3️⃣ Install dependencies
+      - name: Install dependencies
+        run: npm install
+
+      # 4️⃣ Build Next.js (uses .env.production automatically)
+      - name: Build Next.js
+        run: npm run build
+
+      # 5️⃣ Restart app with PM2
+      - name: Restart Next.js App
         run: |
-          pm2 restart Agritech_Frontend --update-env || \
-          pm2 start npm --name Agritech_Frontend -- start
+          pm2 restart Agritech_Frontend || pm2 start npm --name Agritech_Frontend -- start
