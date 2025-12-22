@@ -13,8 +13,8 @@ export default function ActionCenter({ onDiseaseClick }: ActionCenterProps) {
       <h2 className="text-xl font-bold text-gray-800 mb-4 p-3 border-bottom">
         Action Center & Quick Control
       </h2>
-      <div className="grid grid-cols-4 lg:grid-cols-4 gap-6 px-3 pb-3">
-        <div className="lg:col-span-2 md:col-span-2 sm:col-span-2 bg-white rounded-2xl shadow p-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 px-3 pb-3">
+        <div className="md:col-span-2 bg-white rounded-2xl shadow p-6">
           <h3 className="text-xl font-bold text-gray-800 mb-6 border-b pb-3">
             Critical Alerts & Tasks
           </h3>
@@ -130,7 +130,7 @@ export default function ActionCenter({ onDiseaseClick }: ActionCenterProps) {
             </div>
           </div>
         </div> */}
-        <div className="lg:col-span-2 md:col-span-2 sm:col-span-2 bg-white rounded-2xl shadow p-6">
+        <div className="md:col-span-2 bg-white rounded-2xl shadow p-6">
           <h3 className="text-xl font-bold text-gray-800 mb-6 border-b pb-3">
             Real-time Sensor Readings & Indices
           </h3>
