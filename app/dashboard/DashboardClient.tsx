@@ -76,10 +76,10 @@ export default function DashboardClient() {
         {/* Main Content Area */}
         <main className="flex-1 p-4 sm:p-8 overflow-y-auto">
           {/* Header (Mobile/Desktop) - Used for User and Notifications */}
-          <header className="flex justify-between items-center mb-8 pb-4 border-b border-gray-200">
-            <div className="flex flex-row items-center space-x-3">
+          <header className="flex flex-col sm:flex-row justify-between items-center mb-8 pb-4 border-b border-gray-200 gap-4 sm:gap-0">
+            <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3">
               <PageHeader />
-              <span className="text-3xl font-extrabold text-gray-800 mb-0 flex items-center gap-2">
+              <span className="text-2xl sm:text-3xl font-extrabold text-gray-800 mb-0 flex items-center gap-2">
                 Welcome, {user}
                 <Hand className="w-7 h-7  animate-wave" fill="#f5db75ff" />
               </span>

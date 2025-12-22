@@ -197,7 +197,7 @@ main {
   animation: shake 2s infinite;
 }
 .h-98 {
-  height: 85%;
+  height: 80%;
 }
 @keyframes shake {
   0%   { transform: translateX(0); }

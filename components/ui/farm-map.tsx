@@ -549,8 +549,8 @@ const FarmMap: React.FC<FarmMapProps> = ({ title, initialLayer = "ndvi" }) => {
       </Modal>
       {/* Top control bar above the map */}
       <div
-        className="w-full d-flex flex-row flex-wrap align-items-center justify-content-between px-3 py-1 bg-white rounded-t-2xl shadow"
-        style={{ zIndex: 10 }}
+        className="w-full d-flex flex-row flex-wrap align-items-center justify-between px-3 py-1 bg-white rounded-t-2xl shadow"
+        style={{ height: "10%" }}
       >
         <div className="flex flex-row flex-wrap align-items-center">
           <h2 className="text-xl font-bold text-gray-800 mb-0 mr-2">{title}</h2>
@@ -606,11 +606,12 @@ const FarmMap: React.FC<FarmMapProps> = ({ title, initialLayer = "ndvi" }) => {
           Draw a polygon on the map to add a field
         </div>
       )}
-      <div className="dashboard-container rounded-bottom">
-        <div className="map-container rounded-bottom" ref={mapContainer} />
+      <div style={{ height: "80%" }}>
+        <div className="dashboard-container p-0">
+          <div className="map-container" ref={mapContainer} />
 
-        {/* Map legend in the left bottom corner */}
-        {/* <div
+          {/* Map legend in the left bottom corner */}
+          {/* <div
           style={{
             position: "absolute",
             left: 20,
@@ -619,62 +620,62 @@ const FarmMap: React.FC<FarmMapProps> = ({ title, initialLayer = "ndvi" }) => {
           }}
         > */}
           <MapLegend selectedLayer={selectedLayer} />
-        {/* </div> */}
+          {/* </div> */}
 
-        <CoordsDisplay selectedField={selectedField} />
+          <CoordsDisplay selectedField={selectedField} />
 
-        <Timeline
-          dates={availableDates}
-          selectedDate={selectedDate}
-          onDateSelect={handleDateChange}
-          nextImageDate={nextImageDate}
-          isLoading={isLoadingScenes}
-        />
+          {selectedField && (
+            <HoverTooltip hoverInfo={hoverInfo} selectedLayer={selectedLayer} />
+          )}
 
-        {selectedField && (
-          <HoverTooltip hoverInfo={hoverInfo} selectedLayer={selectedLayer} />
-        )}
+          <LoadingOverlay isLoading={isLoadingHeatmap} />
 
-        <LoadingOverlay isLoading={isLoadingHeatmap} />
-
-        <style jsx>{`
-          .dashboard-container {
-            position: relative;
-            /* Horizontal padding for left/right spacing */
-            --dash-h-pad: 24px;
-            padding: 0 var(--dash-h-pad);
-            width: 100%;
-            height: 90%;
-            overflow: hidden;
-            background: #0a0a0a;
-          }
-          .map-container {
-            position: absolute;
-            top: 0;
-            /* Use container's padding box so the map is inset by the horizontal padding */
-            left: 0;
-            right: 0;
-            bottom: 0;
-          }
-          :global(.mapboxgl-ctrl-logo),
-          :global(.mapboxgl-ctrl-attrib) {
-            display: none !important;
-          }
-          :global(::-webkit-scrollbar) {
-            width: 6px;
-          }
-          :global(::-webkit-scrollbar-track) {
-            background: rgba(0, 0, 0, 0.2);
-          }
-          :global(::-webkit-scrollbar-thumb) {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 3px;
-          }
-          :global(::-webkit-scrollbar-thumb:hover) {
-            background: rgba(255, 255, 255, 0.3);
-          }
-        `}</style>
+          <style jsx>{`
+            .dashboard-container {
+              position: relative;
+              /* Horizontal padding for left/right spacing */
+              --dash-h-pad: 24px;
+              padding: 0 var(--dash-h-pad);
+              width: 100%;
+              height: 100%;
+              overflow: hidden;
+              background: #0a0a0a;
+              box-sizing: border-box;
+            }
+            .map-container {
+              width: 100%;
+              height: 100%;
+              overflow: hidden;
+              background: #0a0a0a;
+              box-sizing: border-box;
+            }
+            :global(.mapboxgl-ctrl-logo),
+            :global(.mapboxgl-ctrl-attrib) {
+              display: none !important;
+            }
+            :global(::-webkit-scrollbar) {
+              width: 6px;
+            }
+            :global(::-webkit-scrollbar-track) {
+              background: rgba(0, 0, 0, 0.2);
+            }
+            :global(::-webkit-scrollbar-thumb) {
+              background: rgba(255, 255, 255, 0.2);
+              border-radius: 3px;
+            }
+            :global(::-webkit-scrollbar-thumb:hover) {
+              background: rgba(255, 255, 255, 0.3);
+            }
+          `}</style>
+        </div>
       </div>
+      <Timeline
+        dates={availableDates}
+        selectedDate={selectedDate}
+        onDateSelect={handleDateChange}
+        nextImageDate={nextImageDate}
+        isLoading={isLoadingScenes}
+      />
     </>
   );
 };

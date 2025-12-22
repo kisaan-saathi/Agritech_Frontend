@@ -51,7 +51,9 @@ export default function Timeline({
           dates.map((date) => (
             <button
               key={date}
-              className={`timeline-date ${date === selectedDate ? "active" : ""}`}
+              className={`timeline-date ${
+                date === selectedDate ? "active" : ""
+              }`}
               onClick={() => onDateSelect(date)}
             >
               <span className="date-label">{formatDate(date)}</span>
@@ -79,17 +81,15 @@ export default function Timeline({
 
       <style jsx>{`
         .timeline-container {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          z-index: 100;
           display: flex;
           align-items: center;
           background: rgba(10, 22, 40, 0.95);
           border-top: 1px solid rgba(255, 255, 255, 0.1);
           padding: 8px 16px;
           gap: 8px;
+          height: 10%;
+          width: 100%;
+          box-sizing: border-box;
         }
 
         .timeline-nav {

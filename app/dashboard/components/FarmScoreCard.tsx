@@ -67,7 +67,7 @@ export default function FarmScoreCard() {
             </div>
           </div>
         </div>
-        <div className="lg:col-span-5 md:col-span-4 sm:col-span-4 shadow rounded-2xl">
+        <div className="lg:col-span-5 md:col-span-4 sm:col-span-4 shadow rounded-2xl overflow-hidden h-100">
           <FarmMap title="My Farm" />
         </div>
       </div>
