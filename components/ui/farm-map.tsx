@@ -81,8 +81,9 @@ function Modal({
         style={{
           background: "#fff",
           borderRadius: 10,
-          padding: 24,
-          minWidth: 320,
+          padding: 16,
+          minWidth: 280,
+          maxWidth: "95vw",
           boxShadow: "0 2px 12px rgba(0,0,0,0.18)",
         }}
       >
@@ -399,7 +400,7 @@ const FarmMap: React.FC<FarmMapProps> = ({ title, initialLayer = "ndvi" }) => {
   }, []);
 
   return (
-    <>
+    <div className="flex flex-col h-full">
       {/* Modal for field info */}
       <Modal
         open={showFieldModal}
@@ -549,36 +550,38 @@ const FarmMap: React.FC<FarmMapProps> = ({ title, initialLayer = "ndvi" }) => {
       </Modal>
       {/* Top control bar above the map */}
       <div
-        className="w-full d-flex flex-row flex-wrap align-items-center justify-content-between px-3 py-1 bg-white rounded-t-2xl shadow"
-        style={{ zIndex: 10 }}
+        className="w-full flex flex-col sm:flex-row sm:flex-wrap items-center justify-between px-2 sm:px-3 py-1 bg-white rounded-t-2xl shadow"
+        style={{ height: "auto", minHeight: "10%" }}
       >
-        <div className="flex flex-row flex-wrap align-items-center">
-          <h2 className="text-xl font-bold text-gray-800 mb-0 mr-2">{title}</h2>
+        <div className="flex flex-col sm:flex-row flex-wrap items-center w-full sm:w-auto">
+          <h2 className="text-sm sm:text-lg md:text-xl font-bold text-gray-800 mb-1 sm:mb-0 mr-0 sm:mr-2">{title}</h2>
           {title == "My Farm" && (
             <>
-              <MapSearch
-                onSearch={handleSearch}
-                onCurrentLocation={handleCurrentLocation}
-              />
-              <button
-                type="button"
-                className="btn btn-success ml-2"
-                style={{
-                  backgroundColor: "#10B981",
-                  color: "white",
-                  padding: "6px 16px",
-                  borderRadius: 6,
-                  fontWeight: 600,
-                  border: "none",
-                }}
-                onClick={handleCreatePolygon}
-              >
-                Create new field
-              </button>
+              <div className="flex flex-col sm:flex-row items-center w-full sm:w-auto mt-1 sm:mt-0">
+                <MapSearch
+                  onSearch={handleSearch}
+                  onCurrentLocation={handleCurrentLocation}
+                />
+                <button
+                  type="button"
+                  className="btn btn-success mt-1 sm:mt-0 sm:ml-2 w-full sm:w-auto"
+                  style={{
+                    backgroundColor: "#10B981",
+                    color: "white",
+                    padding: "6px 16px",
+                    borderRadius: 6,
+                    fontWeight: 600,
+                    border: "none",
+                  }}
+                  onClick={handleCreatePolygon}
+                >
+                  Create new field
+                </button>
+              </div>
             </>
           )}
         </div>
-        <div className="flex flex-row flex-wrap align-items-center">
+        <div className="flex flex-row flex-wrap items-center justify-center sm:justify-end w-full sm:w-auto mt-2 sm:mt-0">
           <FieldDropdown
             fields={fields}
             selectedField={selectedField}
@@ -595,10 +598,12 @@ const FarmMap: React.FC<FarmMapProps> = ({ title, initialLayer = "ndvi" }) => {
             onLayerChange={handleLayerChange}
             layers={title === "Soil Map" ? ["savi"] : SUPPORTED_LAYERS}
           />
-          <MapSourceDropdown
-            selectedSource={"sentinel2"}
-            onSourceChange={() => {}}
-          />
+          <div className="hidden sm:block">
+            <MapSourceDropdown
+              selectedSource={"sentinel2"}
+              onSourceChange={() => {}}
+            />
+          </div>
         </div>
       </div>
       {showDrawInstruction && (
@@ -606,11 +611,12 @@ const FarmMap: React.FC<FarmMapProps> = ({ title, initialLayer = "ndvi" }) => {
           Draw a polygon on the map to add a field
         </div>
       )}
-      <div className="dashboard-container rounded-bottom">
-        <div className="map-container rounded-bottom" ref={mapContainer} />
+      <div className="flex-1 min-h-0">
+        <div className="dashboard-container p-0 h-full">
+          <div className="map-container h-full" ref={mapContainer} />
 
-        {/* Map legend in the left bottom corner */}
-        {/* <div
+          {/* Map legend in the left bottom corner */}
+          {/* <div
           style={{
             position: "absolute",
             left: 20,
@@ -619,63 +625,72 @@ const FarmMap: React.FC<FarmMapProps> = ({ title, initialLayer = "ndvi" }) => {
           }}
         > */}
           <MapLegend selectedLayer={selectedLayer} />
-        {/* </div> */}
+          {/* </div> */}
 
-        <CoordsDisplay selectedField={selectedField} />
+          <CoordsDisplay selectedField={selectedField} />
 
-        <Timeline
-          dates={availableDates}
-          selectedDate={selectedDate}
-          onDateSelect={handleDateChange}
-          nextImageDate={nextImageDate}
-          isLoading={isLoadingScenes}
-        />
+          {selectedField && (
+            <HoverTooltip hoverInfo={hoverInfo} selectedLayer={selectedLayer} />
+          )}
 
-        {selectedField && (
-          <HoverTooltip hoverInfo={hoverInfo} selectedLayer={selectedLayer} />
-        )}
+          <LoadingOverlay isLoading={isLoadingHeatmap} />
 
-        <LoadingOverlay isLoading={isLoadingHeatmap} />
-
-        <style jsx>{`
-          .dashboard-container {
-            position: relative;
-            /* Horizontal padding for left/right spacing */
-            --dash-h-pad: 24px;
-            padding: 0 var(--dash-h-pad);
-            width: 100%;
-            height: 90%;
-            overflow: hidden;
-            background: #0a0a0a;
-          }
-          .map-container {
-            position: absolute;
-            top: 0;
-            /* Use container's padding box so the map is inset by the horizontal padding */
-            left: 0;
-            right: 0;
-            bottom: 0;
-          }
-          :global(.mapboxgl-ctrl-logo),
-          :global(.mapboxgl-ctrl-attrib) {
-            display: none !important;
-          }
-          :global(::-webkit-scrollbar) {
-            width: 6px;
-          }
-          :global(::-webkit-scrollbar-track) {
-            background: rgba(0, 0, 0, 0.2);
-          }
-          :global(::-webkit-scrollbar-thumb) {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 3px;
-          }
-          :global(::-webkit-scrollbar-thumb:hover) {
-            background: rgba(255, 255, 255, 0.3);
-          }
-        `}</style>
+          <style jsx>{`
+            .dashboard-container {
+              position: relative;
+              /* Horizontal padding for left/right spacing */
+              padding: 0 4px;
+              width: 100%;
+              height: 100%;
+              overflow: hidden;
+              background: #0a0a0a;
+              box-sizing: border-box;
+            }
+            @media (min-width: 480px) {
+              .dashboard-container {
+                padding: 0 8px;
+              }
+            }
+            @media (min-width: 640px) {
+              .dashboard-container {
+                padding: 0 24px;
+              }
+            }
+            .map-container {
+              width: 100%;
+              height: 100%;
+              overflow: hidden;
+              background: #0a0a0a;
+              box-sizing: border-box;
+            }
+            :global(.mapboxgl-ctrl-logo),
+            :global(.mapboxgl-ctrl-attrib) {
+              display: none !important;
+            }
+            :global(::-webkit-scrollbar) {
+              width: 6px;
+            }
+            :global(::-webkit-scrollbar-track) {
+              background: rgba(0, 0, 0, 0.2);
+            }
+            :global(::-webkit-scrollbar-thumb) {
+              background: rgba(255, 255, 255, 0.2);
+              border-radius: 3px;
+            }
+            :global(::-webkit-scrollbar-thumb:hover) {
+              background: rgba(255, 255, 255, 0.3);
+            }
+          `}</style>
+        </div>
       </div>
-    </>
+      <Timeline
+        dates={availableDates}
+        selectedDate={selectedDate}
+        onDateSelect={handleDateChange}
+        nextImageDate={nextImageDate}
+        isLoading={isLoadingScenes}
+      />
+    </div>
   );
 };
 

@@ -1,7 +1,8 @@
 "use client";
 
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetOverlay } from "@/components/ui/sheet";
 import { useDiseaseId } from '../../lib/hooks/dashboard';
+import { useEffect } from 'react';
 
 interface ApplicationDrawerProps {
   open: boolean;
@@ -13,8 +14,38 @@ export function ApplicationDrawer({
   onOpenChange,
 }: ApplicationDrawerProps) {
     const { handleIdentifyDisease } = useDiseaseId();
+    
+    useEffect(() => {
+      if (open) {
+        document.documentElement.style.overflow = 'hidden';
+        const mainContent = document.querySelector('main');
+        if (mainContent) {
+          mainContent.style.width = 'calc(100% - 320px)';
+          mainContent.style.transform = 'translateX(320px)';
+          mainContent.style.transition = 'width 0.3s ease-in-out, transform 0.3s ease-in-out';
+        }
+      } else {
+        document.documentElement.style.overflow = 'auto';
+        const mainContent = document.querySelector('main');
+        if (mainContent) {
+          mainContent.style.width = '100%';
+          mainContent.style.transform = 'translateX(0)';
+          mainContent.style.transition = 'width 0.3s ease-in-out, transform 0.3s ease-in-out';
+        }
+      }
+      return () => {
+        document.documentElement.style.overflow = 'auto';
+        const mainContent = document.querySelector('main');
+        if (mainContent) {
+          mainContent.style.width = '100%';
+          mainContent.style.transform = 'translateX(0)';
+        }
+      };
+    }, [open]);
+
     return (
     <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetOverlay className="!opacity-0" />
       <SheetContent side="left" className="w-80 bg-white z-[9999]">
         <div className="bg-white h-full p-4">
           <h2 className="text-xl font-bold text-gray-800 mb-4">

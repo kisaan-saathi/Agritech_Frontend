@@ -4,9 +4,9 @@ import FarmMap from "@/components/ui/farm-map";
 
 export default function FarmScoreCard() {
   return (
-    <section className="mb-5 h-100">
+    <section className="mb-5 flex-1">
       {/* Main grid with scorecard and map below */}
-      <div className="grid grid-cols-6 lg:grid-cols-6 sm:grid-cols-6 gap-6 pb-3 h-98">
+      <div className="grid grid-cols-1 sm:grid-cols-6 gap-6 pb-3 h-full">
         <div className="lg:col-span-1 md:col-span-2 sm:col-span-2 rounded-2xl shadow p-2">
           <h2 className="text-xl font-bold text-gray-800 p-3 border-bottom">
             Farm Balance Scorecard
@@ -67,7 +67,7 @@ export default function FarmScoreCard() {
             </div>
           </div>
         </div>
-        <div className="lg:col-span-5 md:col-span-4 sm:col-span-4 shadow rounded-2xl">
+        <div className="lg:col-span-5 md:col-span-4 sm:col-span-4 shadow rounded-2xl overflow-hidden h-full min-h-[400px]">
           <FarmMap title="My Farm" />
         </div>
       </div>

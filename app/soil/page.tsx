@@ -361,9 +361,7 @@ export default function SoilPage() {
     "from-[#5a3a25] to-[#4a2f1f]",
     "from-[#4a2f1f] to-[#3a2416]",
   ];
-
   const SOIL_ROW_HEIGHT = "60px";
-
   function SoilLayerStack({ layers }: { layers: any[] }) {
 
     return (
@@ -508,9 +506,9 @@ export default function SoilPage() {
 
   return (
     // ADDED: h-screen and overflow-y-auto to enable scrolling
-    <div className="p-5 h-screen overflow-y-auto bg-[#f3f7f6]">
+    <div className="p-4 sm:p-5 h-screen overflow-y-auto bg-[#f3f7f6]">
       {/* ================= MITHU TOP STRIP ================= */}
-      <div className="bg-white px-6 py-3 flex items-center justify-between border-b">
+      <div className="bg-white px-4 sm:px-6 py-3 flex flex-col sm:flex-row items-center justify-between border-b gap-3 sm:gap-0">
         <div className="flex items-center gap-3 bg-green-50 px-4 py-2 rounded-lg">
           <PageHeader />
           <img src="/images/mithu.jpg" className="w-10 h-10 object-contain" />
@@ -523,7 +521,7 @@ export default function SoilPage() {
         </div>
         <button
           onClick={() => location.reload()}
-          className="bg-green-700 text-white px-4 py-1.5 rounded-lg text-sm"
+          className="bg-green-700 text-white px-4 py-1.5 rounded-lg text-sm w-full sm:w-auto"
         >
           Refresh
         </button>
@@ -536,7 +534,7 @@ export default function SoilPage() {
       )}
 
       {/* ================= FIELD MAP (Full Width) ================= */}
-      <div className="w-full my-4 h-98">
+      <div className="w-full my-4 h-100 rounded-lg overflow-hidden shadow-lg border border-slate-200">
           <FarmMap
             title="Soil Map"
             initialLayer="savi"
@@ -687,14 +685,14 @@ export default function SoilPage() {
               7-day Forecast
             </div>
 
-            <div className="flex justify-between gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
               {finalForecast7d.map((d: any, i: number) => {
                 const weather = getWeatherUI(d.temp, d.moist);
                 return (
                   <div
                     key={i}
                     className={`
-            relative flex-1 rounded-2xl px-4 py-4 text-center
+            relative rounded-2xl px-4 py-4 text-center
             bg-gradient-to-b ${weather.bg}
             border border-white/60
             shadow-md
@@ -757,10 +755,10 @@ export default function SoilPage() {
                 <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">DIAGNOSTIC VIEW</div>
                 
                 {/* 1. Container: Height fixed at h-80 for alignment */}
-                <div className="flex gap-4 h-80 items-center">
-                  
+                <div className="flex gap-2 sm:gap-4 h-80 items-center">
+
                   {/* 2. Left: Depth Labels - 4 items, centered with equal spacing */}
-                  <div className="flex flex-col justify-center gap-10 w-20 flex-shrink-0 pr-2">
+                  <div className="hidden sm:flex flex-col justify-center gap-10 w-20 flex-shrink-0 pr-2">
                     {layers.map((l: any, i: number) => (
                       <div key={i} className="flex items-center justify-end text-sm text-gray-500 font-medium whitespace-nowrap h-6">
                         {l.label}
@@ -774,13 +772,13 @@ export default function SoilPage() {
                   </div>
 
                   {/* 4. Right: Value + Status - 4 items, centered with equal spacing */}
-                  <div className="flex flex-col justify-center gap-10 w-32 flex-shrink-0 pl-2">
+                  <div className="flex flex-col justify-center gap-10 w-24 sm:w-32 flex-shrink-0 pl-2">
                      {layers.map((l: any, i: number) => (
                        <div key={i} className="flex items-center w-full h-6">
-                         <DepthRowAligned 
-                            {...l} 
-                            label="" 
-                            value={<span className="font-bold text-gray-800">{l.value}°C</span>} 
+                         <DepthRowAligned
+                            {...l}
+                            label=""
+                            value={<span className="font-bold text-gray-800">{l.value}°C</span>}
                          />
                        </div>
                      ))}
@@ -828,10 +826,10 @@ export default function SoilPage() {
               <div className="mb-6 flex-1 flex flex-col justify-center">
                 <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">DIAGNOSTIC VIEW</div>
                 {/* Responsive container, h-80 for matching height */}
-                <div className="flex gap-4 h-80 items-center">
-                  
+                <div className="flex gap-2 sm:gap-4 h-80 items-center">
+
                   {/* LEFT: Depth Labels - 4 items, centered with equal spacing */}
-                  <div className="flex flex-col justify-center gap-10 w-20 flex-shrink-0 pr-2">
+                  <div className="hidden sm:flex flex-col justify-center gap-10 w-20 flex-shrink-0 pr-2">
                     {moistureLayers.map((l: any, i: number) => (
                       <div key={i} className="flex items-center justify-end text-sm text-gray-500 font-medium whitespace-nowrap h-6">
                         {l.label}
@@ -845,15 +843,15 @@ export default function SoilPage() {
                   </div>
 
                   {/* RIGHT: Percentage + Status - 4 items, centered with equal spacing */}
-                  <div className="flex flex-col justify-center gap-10 w-32 flex-shrink-0 pl-2">
+                  <div className="flex flex-col justify-center gap-10 w-24 sm:w-32 flex-shrink-0 pl-2">
                      {moistureLayers.map((l: any, i: number) => (
                        <div key={i} className="flex items-center w-full h-6">
-                         <DepthRowAligned 
-                            key={i} 
-                            label="" 
-                            value={<span className="font-bold text-gray-800">{l.value}%</span>} 
-                            status={l.status} 
-                            color={l.color} 
+                         <DepthRowAligned
+                            key={i}
+                            label=""
+                            value={<span className="font-bold text-gray-800">{l.value}%</span>}
+                            status={l.status}
+                            color={l.color}
                          />
                        </div>
                      ))}
@@ -944,9 +942,9 @@ export default function SoilPage() {
           </div>
 
           {/* TABLE */}
-          <div className="bg-white rounded-lg p-4 border shadow-sm">
+          <div className="bg-white rounded-lg p-4 border shadow-sm overflow-x-auto">
             <div className="px-4 py-2 border-b bg-green-50 font-semibold text-green-800">Recommendation</div>
-            <table className="w-full border text-sm">
+            <table className="w-full border text-sm min-w-[600px]">
               <thead className="bg-gray-100">
                 <tr>
                   <th className="p-2 border">Crop</th>

@@ -1100,7 +1100,7 @@ body {
 }
 .map-controls-legend {
   position: absolute;
-  top: 82%;
+  top: 90%;
   left: 4%;
   transform: translateY(-100%);
   background: rgba(10, 22, 40, 0.95);

@@ -67,7 +67,7 @@ export default function Login() {
             </button>
 
             <a href="/signup" className="btn fs-100 btn-link w-full my-3">
-              Don’t have an account? Sign up
+              Don’t have an account?? Sign up
             </a>
           </div>
         </form>

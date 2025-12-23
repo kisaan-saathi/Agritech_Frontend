@@ -1,43 +1,46 @@
-name: Next.js CI
+name: Next.js CI/CD
 
 on:
   push:
     branches: ["main"]
 
 jobs:
-  build_production:
+  deploy:
     runs-on: self-hosted
 
     strategy:
       matrix:
         node-version: [20.x]
 
-    if: github.ref == 'refs/heads/main'
-
     steps:
-      # 1️⃣ Checkout code
-      - uses: actions/checkout@v3
+      # 1️⃣ Checkout repo (inside runner workspace)
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      # 2️⃣ Setup Node.js
-      - name: Use Node.js ${{ matrix.node-version }}
+      # 2️⃣ Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
 
-      # 3️⃣ Copy repo code to frontend directory
-      - name: Copy code to frontend directory
-        run: |
-          cd
-          sudo cp -r /var/www/actions-runner/_work/Agritech_Frontend/Agritech_Frontend/* /var/www/Agritech_Frontend
+      # 3️⃣ Install dependencies
+      - name: Install dependencies
+        run: npm install
 
-      # 4️⃣ Install dependencies & build Next.js
-      - name: Install & Build Next.js
-        run: |
-          npm install
-          npm run build
-        working-directory: /var/www/Agritech_Frontend
+      # 4️⃣ Build Next.js
+      - name: Build Next.js
+        run: npm run build
 
-      # 5️⃣ Restart Next.js with PM2
-      - name: Restart Next.js Server
+      # 5️⃣ Deploy build to /var/www
+      - name: Deploy to server directory
         run: |
-          pm2 restart Agritech_Frontend || pm2 start npm --name Agritech_Frontend -- start
+          rsync -av --delete \
+          --exclude=node_modules \
+          --exclude=.git \
+          ./ /var/www/Agritech_Frontend/
+
+      # 6️⃣ Restart PM2
+      - name: Restart Next.js App
+        run: |
+          pm2 restart Agritech_Frontend --update-env || \
+          pm2 start npm --name Agritech_Frontend -- start
