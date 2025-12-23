@@ -1,6 +1,6 @@
 import axios from "axios";
 import { toast } from "react-toastify";
-const API_BASE = "http://localhost:4000/api/v1/auth";
+const API_BASE = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/auth`;
 
 export const sendOTP = async (email: string, name: string) => {
   try {
