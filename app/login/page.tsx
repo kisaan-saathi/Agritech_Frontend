@@ -6,6 +6,9 @@ import AuthLayout from "components/auth/AuthLayout";
 import FormField from "components/ui/form-field";
 import { login } from "lib/auth";
 
+import LoginScreen from "@/components/auth/LoginScreen";
+
+
 export default function Login() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -64,7 +67,7 @@ export default function Login() {
             </button>
 
             <a href="/signup" className="btn fs-100 btn-link w-full my-3">
-              Don’t have an account? Sign up
+              Don’t have an account?? Sign up
             </a>
           </div>
         </form>

@@ -361,7 +361,7 @@ export default function SoilPage() {
     "from-[#5a3a25] to-[#4a2f1f]",
     "from-[#4a2f1f] to-[#3a2416]",
   ];
-  const SOIL_ROW_HEIGHT = "80px";
+  const SOIL_ROW_HEIGHT = "60px";
   function SoilLayerStack({ layers }: { layers: any[] }) {
 
     return (
