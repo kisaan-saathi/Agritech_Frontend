@@ -29,6 +29,7 @@ const items = [
   { href: '/crop-guide', label: 'Crop Guide', icon: BookOpen },
   { href: '/advisories', label: 'Advisories', icon: AlertCircle },
   { href: '/farm-score', label: 'Farm Score', icon: Star }
+  
 ];
 
 export default function BottomNav() {
