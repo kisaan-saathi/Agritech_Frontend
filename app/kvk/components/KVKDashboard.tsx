@@ -1,12 +1,12 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import Header from '@/components/nav/Header';
-import StrategyView from '@/components/field-dashboard-ui/StrategyView';
-import ResearchHub from '@/components/research/ResearchHub';
-import { Metric, ResearchRecord, ScientistPerf, AIInsight, KVKTab, AdvisoryValidation, TrainingAnalytics } from "@/types";
+import Header from './Header';
+import StrategyView from "./StrategyView";
+import ResearchHub from "./ResearchHub";
+import { Metric, ResearchRecord, ScientistPerf, AIInsight, KVKTab, AdvisoryValidation, TrainingAnalytics } from '@/types';
 import { 
   LayoutGrid, Beaker, GraduationCap, MapPin, Shield, Map, ArrowUpRight, 
-  Download, CheckCircle2, UserCheck, Radio
+  Download, CheckCircle2, UserCheck, Radio, FileText // <--- 1. Added FileText import
 } from 'lucide-react';
 import { fetchStrategicInsights } from '@/lib/api';
 
@@ -33,7 +33,8 @@ const mockScientists: ScientistPerf[] = [
 ];
 
 const KVKDashboard: React.FC<KVKDashboardProps> = ({ onLogout }) => {
-    const [activeTab, setActiveTab] = useState<KVKTab>('strategy');
+    // Note: You might need to update your KVKTab type definition in @/types to include 'custom'
+    const [activeTab, setActiveTab] = useState<KVKTab | 'custom'>('strategy');
     const [aiInsights, setAiInsights] = useState<AIInsight[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -162,6 +163,20 @@ const KVKDashboard: React.FC<KVKDashboardProps> = ({ onLogout }) => {
                         </div>
                     </div>
                 );
+            // 2. Added this Case so the tab actually works
+            case 'custom':
+                return (
+                     <div className="max-w-4xl mx-auto bg-white p-16 rounded-[56px] shadow-2xl border border-slate-100 animate-fadeIn text-center">
+                        <div className="w-24 h-24 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-8">
+                            <FileText size={40} className="text-indigo-600" />
+                        </div>
+                        <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-4">Custom Report Generator</h2>
+                        <p className="text-slate-500 mb-8 max-w-lg mx-auto">Select specific metrics, date ranges, and crop cycles to generate a tailored PDF report.</p>
+                        <button className="bg-slate-900 text-white px-8 py-4 rounded-[28px] font-black text-xs uppercase tracking-widest shadow-xl hover:bg-slate-800 transition">
+                            Create New Configuration
+                        </button>
+                     </div>
+                );
             default: return null;
         }
     };
@@ -176,6 +191,8 @@ const KVKDashboard: React.FC<KVKDashboardProps> = ({ onLogout }) => {
                 <TabButton active={activeTab === 'extension'} onClick={() => setActiveTab('extension')} label="Extension Loop" icon={<GraduationCap size={20} />} />
                 <TabButton active={activeTab === 'outreach'} onClick={() => setActiveTab('outreach')} label="Outreach Ops" icon={<MapPin size={20} />} />
                 <TabButton active={activeTab === 'scorecard'} onClick={() => setActiveTab('scorecard')} label="ICAR Scorecard" icon={<Shield size={20} />} />
+                {/* 3. Updated this TabButton with correct FileText icon */}
+                <TabButton active={activeTab === 'custom'} onClick={() => setActiveTab('custom')} label="Custom Report" icon={<FileText size={20} />} />
             </div>
 
             {renderTabContent()}

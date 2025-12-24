@@ -1,4 +1,4 @@
-"use client";
+
 import React from 'react';
 import { BrainCircuit, Sparkles, ArrowUpRight, Calendar, Lightbulb, Target, History } from 'lucide-react';
 import { AIInsight, Metric } from "@/types";
@@ -11,10 +11,14 @@ interface StrategyViewProps {
   isLoading: boolean;
 }
 
-const StrategyView: React.FC<StrategyViewProps> = ({ insights, metrics, onRefresh, isLoading }) => {
+const StrategyView: React.FC<StrategyViewProps> = ({
+  insights = [],
+  metrics = [],
+  onRefresh,
+  isLoading,
+}) => {
   return (
-    // Changed: 'h-screen' forces height, 'overflow-y-auto' enables scroll, 'pb-32' prevents bottom cutoff
-    <div className="space-y-10 animate-fadeIn h-screen w-full overflow-y-auto pb-32">
+    <div className="space-y-10 animate-fadeIn">
       {/* Action Priorities */}
       <section className="bg-slate-900 rounded-[48px] p-8 lg:p-12 text-white shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[100px] -mr-32 -mt-32"></div>
@@ -36,7 +40,7 @@ const StrategyView: React.FC<StrategyViewProps> = ({ insights, metrics, onRefres
             </button>
           </div>
           <div className="lg:col-span-2 grid md:grid-cols-2 gap-6">
-            {insights?.map((insight, idx) => (
+            {Array.isArray(insights) && insights.map((insight, idx) => (
               <div key={idx} className="bg-slate-800/50 backdrop-blur-xl p-6 rounded-[32px] border border-slate-700/50 hover:border-indigo-500 transition-all">
                 <div className="flex justify-between items-start mb-4">
                   <span className="text-[10px] font-black bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full">{insight.category}</span>
