@@ -22,10 +22,10 @@ interface SensorMetricsProps {
     metrics: Metric[];
 }
 
-const SensorMetrics: React.FC<SensorMetricsProps> = ({ metrics }) => {
+const SensorMetrics: React.FC<SensorMetricsProps> = ({ metrics = [] }) => {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {metrics.map((metric) => (
+            {Array.isArray(metrics) && metrics.map((metric) => (
                 <div key={metric.id} className="bg-white rounded-[32px] p-6 shadow-soft border border-slate-100/60 hover:shadow-xl hover:border-indigo-100 transition-all duration-300 group">
                     <div className="flex items-center justify-between mb-4">
                         <div className={`p-3 rounded-2xl ${getBgColor(metric.iconType)} transition-colors duration-300`}>
