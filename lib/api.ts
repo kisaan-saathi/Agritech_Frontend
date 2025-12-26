@@ -4,8 +4,6 @@
 
 import type { FieldCollection, SelectedField, CreateFieldResponse } from "./types";
 
-import { GoogleGenAI, Type } from "@google/genai";
-import { AIInsight } from "@/types";
 
 
 const API_BASE = "/api";
@@ -205,64 +203,3 @@ function generateFallbackScenes(): ScenesResponse {
     message: "Using estimated dates",
   };
 }
-
-
-export const fetchStrategicInsights = async (district: string = "Varanasi"): Promise<AIInsight[]> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  
-  const prompt = `
-    Context: You are the backend intelligence service for an ICAR-aligned KVK (Krishi Vigyan Kendra).
-    District: ${district}.
-    Current Data:
-    - 142k farmers in database.
-    - Ongoing Mustard trials showing +22% yield.
-    - Pest alerts (Stem Borer) rising in northern blocks.
-    - Low mechanization adoption in smallholder clusters.
-    
-    Task: Generate 3 high-impact scientific intervention priorities.
-    Return a JSON array of objects with keys: title, summary, impact (High|Medium|Low), category (Weather|Pest|Yield|Logistics).
-  `;
-
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
-      config: { 
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              title: { type: Type.STRING },
-              summary: { type: Type.STRING },
-              impact: { type: Type.STRING },
-              category: { type: Type.STRING },
-            },
-            required: ["title", "summary", "impact", "category"]
-          }
-        }
-      }
-    });
-
-    return JSON.parse(response.text || "[]");
-  } catch (error) {
-    console.error("Backend Error fetching insights:", error);
-    // Fallback data simulating a successful backend response
-    return [
-      { 
-        title: 'Validate Pest Migration', 
-        summary: 'Satellite surveillance indicates rising stress in Shivpur block. SMS (Plant Protection) must validate Stem Borer incidence.', 
-        impact: 'High', 
-        category: 'Pest' 
-      },
-      { 
-        title: 'Refine Fertilizer Mix', 
-        summary: 'Soil health analysis suggests localized acidity. Update the Rabi NPK broadcast advisory for Arajiline cluster.', 
-        impact: 'Medium', 
-        category: 'Yield' 
-      }
-    ];
-  }
-};
-
