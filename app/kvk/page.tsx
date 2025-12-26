@@ -2,16 +2,22 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { ChevronDown } from 'lucide-react';
 import { 
-  Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement 
+  Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title 
 } from 'chart.js';
 import { Doughnut, Bar } from 'react-chartjs-2';
 import { 
   Calendar, Layers, MapPin, Activity, FileText, LogOut, ChevronRight, AlertTriangle 
 } from 'lucide-react';
 
-// Register Charts
-ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
+// Register Charts (Added 'Title' for axis labels)
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
+
+// --- STYLES (Replaced <style jsx> with constants) ---
+const TAB_RECTANGLE = "bg-white border border-gray-200 rounded-md p-2 shadow-sm relative cursor-pointer hover:border-green-400 hover:shadow-md transition-all flex flex-col justify-center";
+const TAB_LABEL = "flex items-center gap-1.5 text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-0.5";
+const TAB_SELECT = "w-full bg-transparent text-sm font-bold text-gray-800 outline-none appearance-none z-10 relative cursor-pointer";
 
 // --- CONSTANTS ---
 const SEASONS = ["Oct-Dec (2025-2026)", "Rabi 2025-2026", "Kharif 2025", "Zaid 2025"];
@@ -19,6 +25,20 @@ const PARAMETERS = [
   "NDVI Deviation", "NDVI (Vegetation)", "NDRE", "SAVI", 
   "Soil Moisture", "Rainfall Deviation", "Crop Stress Index"
 ];
+
+// --- HELPER: Get Axis Labels based on Parameter ---
+const getParameterAxisLabels = (param: string) => {
+    switch (param) {
+        case "NDVI Deviation": return { x: "Deviation (%)", y: "No. of Regions" };
+        case "NDVI (Vegetation)": return { x: "Vegetation Index (0-1)", y: "Field Count" };
+        case "NDRE": return { x: "Red Edge Index", y: "Field Count" };
+        case "SAVI": return { x: "Soil Adjusted Index", y: "Field Count" };
+        case "Soil Moisture": return { x: "Moisture Content (%)", y: "Sensor Count" };
+        case "Rainfall Deviation": return { x: "Deviation (mm)", y: "District Count" };
+        case "Crop Stress Index": return { x: "Stress Level (0-10)", y: "Farm Count" };
+        default: return { x: "Value Range", y: "Frequency" };
+    }
+};
 
 // --- HIERARCHICAL DATA ---
 const LOCATION_DATA: Record<string, Record<string, string[]>> = {
@@ -218,7 +238,6 @@ export default function KVKDashboard() {
   };
 
   // --- BLOCK RENDERING UNTIL AUTH IS CHECKED ---
-  // MOVED THIS TO THE END to prevent "Rendered fewer hooks than expected" error
   if (!isAuthorized) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-gray-50">
@@ -239,14 +258,18 @@ export default function KVKDashboard() {
     </div>
   );
 
+  // --- CHART OPTIONS WITH DYNAMIC LABELS ---
+  const axisLabels = getParameterAxisLabels(parameter);
+
   return (
     <div className="flex flex-col h-screen bg-gray-50 font-sans text-gray-900 overflow-hidden">
       
       {/* 1. HEADER */}
       <header className="bg-green-700 border-b-4 border-green-800 px-4 py-2 flex justify-between items-center shadow-md z-30">
         <div className="flex items-center gap-3">
-          <div className="bg-white text-green-700 p-2 rounded-lg shadow-sm">
-            <span className="font-extrabold text-xl tracking-tighter">KS</span>
+          {/* REPLACED WITH IMAGE PLACEHOLDER */}
+          <div className="bg-white p-1 rounded-lg shadow-sm h-10 w-10 flex items-center justify-center overflow-hidden">
+             <img src="https://placehold.co/100x100/png?text=Logo" alt="Logo" className="w-full h-full object-contain" />
           </div>
           <div className="leading-none">
             <h1 className="text-xl font-bold text-white">
@@ -277,79 +300,79 @@ export default function KVKDashboard() {
         <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
           
           {/* Season */}
-          <div className="tab-rectangle flex-1 min-w-[150px] group">
-             <label className="tab-label"><Calendar size={10} className="text-gray-400"/> Season</label>
+          <div className={`${TAB_RECTANGLE} flex-1 min-w-[150px] group`}>
+             <label className={TAB_LABEL}><Calendar size={10} className="text-gray-400"/> Season</label>
              <div className="relative">
-                <select value={season} onChange={e => setSeason(e.target.value)} className="tab-select">
+                <select value={season} onChange={e => setSeason(e.target.value)} className={TAB_SELECT}>
                   {SEASONS.map(s => <option key={s}>{s}</option>)}
                 </select>
-                
+                <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
              </div>
           </div>
 
           {/* Level */}
-          <div className="tab-rectangle flex-1 min-w-[110px] group">
-             <label className="tab-label"><Layers size={10} className="text-gray-400"/> Level</label>
+          <div className={`${TAB_RECTANGLE} flex-1 min-w-[110px] group`}>
+             <label className={TAB_LABEL}><Layers size={10} className="text-gray-400"/> Level</label>
              <div className="relative">
-                <select value={level} onChange={e => setLevel(e.target.value)} className="tab-select">
+                <select value={level} onChange={e => setLevel(e.target.value)} className={TAB_SELECT}>
                   <option value="State">State</option>
                   <option value="District">District</option>
                   <option value="Sub-District">Sub-District</option>
                 </select>
-                
+                <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
              </div>
           </div>
 
           {/* State */}
-          <div className="tab-rectangle flex-1 min-w-[140px] group">
-             <label className="tab-label"><MapPin size={10} className="text-gray-400"/> State</label>
+          <div className={`${TAB_RECTANGLE} flex-1 min-w-[140px] group`}>
+             <label className={TAB_LABEL}><MapPin size={10} className="text-gray-400"/> State</label>
              <div className="relative">
-                <select value={state} onChange={e => setState(e.target.value)} className="tab-select">
+                <select value={state} onChange={e => setState(e.target.value)} className={TAB_SELECT}>
                    {Object.keys(LOCATION_DATA).sort().map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
-                
+                <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
              </div>
           </div>
 
           {/* District */}
-          <div className={`tab-rectangle flex-1 min-w-[140px] group transition-all ${level === 'State' ? 'opacity-40 pointer-events-none bg-gray-50' : 'opacity-100'}`}>
-             <label className="tab-label"><MapPin size={10} className="text-gray-400"/> District</label>
+          <div className={`${TAB_RECTANGLE} flex-1 min-w-[140px] group transition-all ${level === 'State' ? 'opacity-40 pointer-events-none bg-gray-50' : 'opacity-100'}`}>
+             <label className={TAB_LABEL}><MapPin size={10} className="text-gray-400"/> District</label>
              <div className="relative">
-                <select value={district} onChange={e => setDistrict(e.target.value)} className="tab-select">
+                <select value={district} onChange={e => setDistrict(e.target.value)} className={TAB_SELECT}>
                   {level === 'State' && <option>All Districts</option>}
                   {Object.keys(LOCATION_DATA[state] || {}).sort().map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
-                
+                <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
              </div>
           </div>
 
           {/* Sub-District */}
-          <div className={`tab-rectangle flex-1 min-w-[140px] group transition-all ${level === 'Sub-District' ? 'opacity-100' : 'opacity-40 pointer-events-none bg-gray-50'}`}>
-             <label className="tab-label"><MapPin size={10} className="text-gray-400"/> Sub-Dist</label>
+          <div className={`${TAB_RECTANGLE} flex-1 min-w-[140px] group transition-all ${level === 'Sub-District' ? 'opacity-100' : 'opacity-40 pointer-events-none bg-gray-50'}`}>
+             <label className={TAB_LABEL}><MapPin size={10} className="text-gray-400"/> Sub-Dist</label>
              <div className="relative">
-                <select value={subDistrict} onChange={e => setSubDistrict(e.target.value)} className="tab-select">
+                <select value={subDistrict} onChange={e => setSubDistrict(e.target.value)} className={TAB_SELECT}>
                   {getSubDistricts(state, district).map(sd => <option key={sd} value={sd}>{sd}</option>)}
                 </select>
-                
+                <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
              </div>
           </div>
 
           {/* Parameter */}
-          <div className="tab-rectangle flex-[1.5] min-w-[220px] group border-l-4 border-l-green-600 bg-green-50/30">
-             <label className="tab-label text-green-700"><Activity size={10}/> Parameter</label>
+          <div className={`${TAB_RECTANGLE} flex-[1.5] min-w-[220px] group border-l-4 border-l-green-600 bg-green-50/30`}>
+             <label className={`${TAB_LABEL} text-green-700`}><Activity size={10}/> Parameter</label>
              <div className="relative">
-                <select value={parameter} onChange={e => setParameter(e.target.value)} className="tab-select text-green-900">
+                <select value={parameter} onChange={e => setParameter(e.target.value)} className={`${TAB_SELECT} text-green-900`}>
                   {PARAMETERS.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
-                
+                <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
              </div>
           </div>
 
           {/* Date */}
-          <div className="tab-rectangle flex-1 min-w-[130px] group">
-             <label className="tab-label"><Calendar size={10} className="text-gray-400"/> Date</label>
+          <div className={`${TAB_RECTANGLE} flex-1 min-w-[130px] group`}>
+             <label className={TAB_LABEL}><Calendar size={10} className="text-gray-400"/> Date</label>
              <div className="relative">
-                <input type="date" value={date} onChange={e => setDate(e.target.value)} className="tab-select uppercase" />
+                <input type="date" value={date} onChange={e => setDate(e.target.value)} className={`${TAB_SELECT} uppercase`} />
              </div>
           </div>
 
@@ -400,7 +423,7 @@ export default function KVKDashboard() {
           
           {/* MAP */}
           <div className="lg:w-[65%] bg-white border border-gray-300 rounded-lg shadow-sm relative flex flex-col overflow-hidden group">
-             {/* Map Controls & Placeholder (Same as before) */}
+             {/* Map Controls & Placeholder */}
              <div className="absolute top-3 left-3 z-10 flex flex-col gap-1">
                 <button className="bg-white w-8 h-8 rounded border border-gray-300 shadow hover:bg-gray-100 font-bold text-gray-600 text-lg flex items-center justify-center">+</button>
                 <button className="bg-white w-8 h-8 rounded border border-gray-300 shadow hover:bg-gray-100 font-bold text-gray-600 text-lg flex items-center justify-center">-</button>
@@ -432,7 +455,7 @@ export default function KVKDashboard() {
           {/* CHARTS COLUMN */}
           <div className="lg:w-[35%] flex flex-col gap-3 overflow-y-auto pr-1">
              
-             {/* DONUT CHART (FIXED CENTERING) */}
+             {/* DONUT CHART */}
              <div className="flex-1 bg-white border border-gray-200 rounded-lg shadow-sm p-3 min-h-[220px]">
                 <div className="flex justify-between items-center mb-2 border-b pb-1 border-gray-100">
                   <h4 className="font-bold text-gray-700 text-xs uppercase">
@@ -440,10 +463,9 @@ export default function KVKDashboard() {
                   </h4>
                 </div>
                 
-                {/* Custom Layout: Chart Left, Legend Right */}
                 <div className="flex flex-row items-center h-[180px]">
                    
-                   {/* 1. The Chart Container (Relative for centering text) */}
+                   {/* 1. The Chart Container */}
                    <div className="relative h-full flex-1">
                       <Doughnut 
                         data={{
@@ -457,18 +479,17 @@ export default function KVKDashboard() {
                         }}
                         options={{
                           maintainAspectRatio: false,
-                          cutout: '70%', // Thinner donut for cleaner look
-                          plugins: { legend: { display: false } } // Disable default legend
+                          cutout: '70%',
+                          plugins: { legend: { display: false } }
                         }}
                       />
-                      {/* 2. The Text Overlay (Perfectly Centered in flex container) */}
                       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                          <span className="text-2xl font-bold text-gray-800 leading-none">{stats.total}</span>
                          <span className="text-[10px] font-bold text-gray-500 uppercase mt-1">Total</span>
                       </div>
                    </div>
 
-                   {/* 3. Custom Legend (Right Side) */}
+                   {/* 2. Custom Legend */}
                    <div className="flex flex-col justify-center gap-2 pl-4 pr-2 text-[10px] font-bold text-gray-600 border-l border-dashed border-gray-200 ml-2 min-w-[90px]">
                       <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-sm bg-[#7f1d1d]"></span> Extreme</div>
                       <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-sm bg-[#dc2626]"></span> Severe</div>
@@ -500,33 +521,33 @@ export default function KVKDashboard() {
                        maintainAspectRatio: false,
                        plugins: { legend: { display: false } },
                        scales: { 
-                         y: { beginAtZero: true, grid: { color: '#f3f4f6' }, ticks: { font: { size: 10 } } },
-                         x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+                         y: { 
+                             beginAtZero: true, 
+                             grid: { color: '#f3f4f6' }, 
+                             ticks: { font: { size: 10 } },
+                             title: {
+                                display: true,
+                                text: axisLabels.y,
+                                font: { size: 10, weight: 'bold' }
+                             }
+                         },
+                         x: { 
+                             grid: { display: false }, 
+                             ticks: { font: { size: 10 } },
+                             title: {
+                                display: true,
+                                text: axisLabels.x,
+                                font: { size: 10, weight: 'bold' }
+                             }
+                         }
                        }
                      }}
                    />
                 </div>
              </div>
-
           </div>
         </div>
       </div>
-      
-      {/* Styles for the Tab/Rectangle filters */}
-      <style jsx global>{`
-        .tab-rectangle {
-          @apply bg-white border border-gray-200 rounded-md p-2 shadow-sm relative cursor-pointer hover:border-green-400 hover:shadow-md transition-all flex flex-col justify-center;
-        }
-        .tab-label {
-          @apply flex items-center gap-1.5 text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-0.5;
-        }
-        .tab-select {
-          @apply w-full bg-transparent text-sm font-bold text-gray-800 outline-none appearance-none z-10 relative cursor-pointer;
-        }
-        .tab-icon {
-          @apply absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-green-600 transition-colors;
-        }
-      `}</style>
     </div>
   );
 }
