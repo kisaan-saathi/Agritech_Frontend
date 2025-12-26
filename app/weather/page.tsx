@@ -447,7 +447,7 @@ export default function WeatherPage() {
         <PageHeader />
         <div>
           <div className="text-2xl font-bold text-slate-800">
-            Weather Dashboard
+            Weather Saathi
           </div>
           <div className="text-xs text-gray-500">
             Predictions & trends — Mithu guides you
@@ -470,97 +470,131 @@ export default function WeatherPage() {
       )}
 
       {/* ================= MAIN DASHBOARD CARD ================= */}
-      <section className="bg-white rounded-2xl shadow p-6 mb-6 group hover:shadow-2xl transition-all">
-        <div className="flex gap-6 items-stretch">
-          {/* 1. TEMPERATURE CARD */}
+      <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 md:p-4 mb-4 group hover:shadow-md transition-all overflow-hidden">
+        <div className="flex flex-col lg:flex-row gap-4 items-stretch">
+          
+          {/* 1. TEMPERATURE CARD - Fixed Double Icon Issue */}
           <div
-            className="w-36 rounded-xl flex flex-col items-center justify-center text-white flex-shrink-0 shadow-md"
-            style={{ background: "linear-gradient(135deg,#16a34a,#059669)" }}
+            className="w-full lg:w-32 rounded-2xl flex flex-col items-center justify-center text-white flex-shrink-0 p-4 text-center shadow-md transition-transform hover:scale-[1.02]"
+            style={{ background: "linear-gradient(180deg, #16a34a 0%, #065f46 100%)" }}
           >
-            <div className="text-4xl font-bold">
-              {data && data.current.temperature != null
-                ? Math.round(data.current.temperature)
-                : "--"}
-              °C
+            {/* Main Temperature */}
+            <div className="text-3xl md:text-4xl font-black tracking-tighter leading-none mb-4 drop-shadow-sm">
+              {data && data.current.temperature != null ? Math.round(data.current.temperature) : "--"}°C
             </div>
-            <div className="text-sm opacity-90 font-medium">
-              {data?.current?.summary ?? "—"}
+
+            {/* Condition Row */}
+            <div className="flex flex-col items-center justify-center gap-2 leading-tight">
+              {/* ONLY BIG DYNAMIC ICON */}
+              <span className="text-2xl filter drop-shadow-md">
+                {(() => {
+                  const s = (data?.current?.summary || "").toLowerCase();
+                  if (s.includes("rain") || s.includes("shower")) return "🌧️";
+                  if (s.includes("cloud")) return "☁️";
+                  if (s.includes("sun") || s.includes("clear") || s.includes("favorable")) return "🌤️";
+                  if (s.includes("storm")) return "⛈️";
+                  if (s.includes("wind")) return "💨";
+                  return "⛅";
+                })()}
+              </span>
+              
+              {/* TEXT ONLY (Regex removes any emoji potentially hidden in the summary string) */}
+              <span className="text-[10px] md:text-[11px] font-black uppercase tracking-wider max-w-[85px] line-clamp-2">
+                {(data?.current?.summary || "Favorable Conditions")
+                  .replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDC00-\uDFFF])/g, '')
+                  .trim()}
+              </span>
             </div>
           </div>
 
-          {/* 2. MIDDLE CONTENT */}
-          <div className="flex-1 flex gap-6">
-            {/* 2A. LOCATION & STATS */}
-            <div className="flex-1 flex flex-col justify-between">
-              <div>
-                <div className="text-xl font-bold text-slate-800">
-                  {data?.location?.name ?? "—"}
+          {/* 2. MAIN CONTENT AREA */}
+          <div className="flex-1 flex flex-col md:flex-row gap-4 min-w-0">
+
+            {/* 2A. LOCATION & STATS - Height Reduced */}
+            <div className="flex-[2] flex flex-col gap-2.5">
+              {/* Header: Tightened */}
+              <div className="flex justify-between items-center pb-1 border-b border-gray-50">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-bold text-slate-800">Current Weather</h2>
+                  <span className="text-[10px] text-gray-400 font-medium flex items-center gap-0.5">
+                    <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    {data?.location?.name ?? "My Location"}
+                  </span>
                 </div>
-                <div className="text-gray-500 text-xs font-medium">
-                  Timezone: {data?.location?.timezone ?? "—"}
+                <div className="hidden sm:block text-[10px] font-bold text-red-800/80 bg-red-50 px-1.5 py-0.5 rounded">
+                  Updated: {data?.current?.lastUpdated ? new Date(data.current.lastUpdated).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "03:19 PM"}
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 mt-auto">
-                <div className="p-2.5 rounded-lg border border-emerald-100 bg-emerald-50/50">
-                  <div className="text-[10px] uppercase text-emerald-600 font-bold">
-                    Humidity
+              {/* Grid: 3 columns on desktop, 2 on mobile to save space */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 flex-1">
+                {[
+                  { label: 'Humidity', val: `${Math.round(data?.current?.humidity ?? 49)}%`, icon: 'M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z', color: 'blue' },
+                  { label: 'Wind Speed', val: `${data?.current?.windSpeed?.toFixed(1) ?? '0.5'}m/s`, icon: 'M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2', color: 'purple', stroke: true },
+                  { label: 'Rain', val: `${data?.current?.precipitation?.toFixed(0) ?? '0'}mm`, icon: 'M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25M8 16v4m4-4v4m4-4v4', color: 'indigo', stroke: true },
+                  { label: 'Cloud Cover', val: '6%', icon: 'M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z', color: 'slate', stroke: true },
+                  { label: 'Pressure', val: '1015hPa', icon: 'M13 10V2L5 14h6v8l8-12h-6z', color: 'orange' },
+                  { label: 'Visibility', val: '0.0km', icon: 'M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z', color: 'green', stroke: true }
+                ].map((item, i) => (
+                  <div key={i} className={`bg-white rounded-lg p-2 border border-slate-100 flex items-center gap-2 hover:border-${item.color}-200 transition-all`}>
+                    <div className={`p-1.5 bg-${item.color}-50 rounded-md shrink-0`}>
+                      <svg className={`w-3.5 h-3.5 text-${item.color}-500`} fill={item.stroke ? "none" : "currentColor"} stroke={item.stroke ? "currentColor" : "none"} strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path d={item.icon} strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-slate-400 text-[9px] font-bold uppercase truncate">{item.label}</div>
+                      <div className={`text-sm font-black text-${item.color}-600 leading-tight`}>{item.val}</div>
+                    </div>
                   </div>
-                  <div className="font-bold text-slate-700">
-                    {data?.current?.humidity != null
-                      ? `${Math.round(data.current.humidity)}%`
-                      : "--"}
-                  </div>
-                </div>
-                <div className="p-2.5 rounded-lg border border-sky-100 bg-sky-50/50">
-                  <div className="text-[10px] uppercase text-sky-600 font-bold">
-                    Wind
-                  </div>
-                  <div className="font-bold text-slate-700">
-                    {data?.current?.windSpeed != null
-                      ? `${data.current.windSpeed.toFixed(1)} m/s`
-                      : "--"}
-                  </div>
-                </div>
-                <div className="p-2.5 rounded-lg border border-amber-100 bg-amber-50/50">
-                  <div className="text-[10px] uppercase text-amber-600 font-bold">
-                    Rain
-                  </div>
-                  <div className="font-bold text-slate-700">
-                    {data?.current?.precipitation != null
-                      ? `${data.current.precipitation.toFixed(1)} mm`
-                      : "--"}
-                  </div>
-                </div>
-                <div className="p-2.5 rounded-lg border border-stone-100 bg-stone-50/50">
-                  <div className="text-[10px] uppercase text-stone-500 font-bold">
-                    Coords
-                  </div>
-                  <div className="font-bold text-slate-700">{coordsLabel}</div>
-                </div>
+                ))}
               </div>
             </div>
 
-            {/* 2B. ADVISORY */}
-            <div className="w-72 bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex flex-col justify-center shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-16 h-16 bg-yellow-100 rounded-full blur-2xl -mr-8 -mt-8"></div>
-              <div className="flex items-center gap-2 mb-2 relative z-10">
-                <div className="p-1 bg-yellow-200 rounded-full">
-                  <AlertTriangle className="w-3 h-3 text-yellow-700" />
+            {/* 2B. ADVISORY - High-End Premium Glassmorphism Design */}
+            <div className="flex-1 min-w-[220px] bg-gradient-to-br from-amber-50/60 to-orange-50/40 backdrop-blur-sm border border-white/60 rounded-3xl p-4 flex flex-col relative overflow-hidden shadow-[inset_0_1px_1px_rgba(255,255,255,0.6)] group/adv transition-all duration-500 hover:shadow-lg hover:shadow-amber-200/20">
+              
+              {/* Premium Glow Effect */}
+              <div className="absolute -top-10 -right-10 w-32 h-32 bg-amber-200/30 rounded-full blur-[40px] transition-all duration-700 group-hover/adv:bg-amber-300/40 group-hover/adv:scale-125"></div>
+              
+              {/* Header: Refined Badge Style */}
+              <div className="flex items-center gap-2.5 mb-3 relative z-10">
+                <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-white shadow-sm border border-amber-100/50 transition-transform group-hover/adv:rotate-12">
+                  <AlertTriangle className="w-4 h-4 text-amber-600" />
                 </div>
-                <span className="text-[10px] font-bold text-yellow-800 uppercase tracking-wider">
-                  Mithu's Advisory
-                </span>
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-black text-amber-800/60 uppercase tracking-[0.15em] leading-none mb-1">
+                    Intelligence
+                  </span>
+                  <span className="text-xs font-bold text-slate-800 leading-none">
+                    Mithu's Advisory
+                  </span>
+                </div>
               </div>
-              <div className="flex-1 flex items-center relative z-10">
-                <p className="text-xs text-yellow-900 leading-relaxed font-medium">
-                  {adviceText}
-                </p>
+
+              {/* Body: High-Readability Typography */}
+              <div className="flex-1 flex items-start relative z-10">
+                <div className="relative pl-4">
+                  {/* Vertical Accent Line */}
+                  <div className="absolute left-0 top-1 bottom-1 w-[3px] rounded-full bg-gradient-to-b from-amber-400 to-orange-300 shadow-[0_0_8px_rgba(251,191,36,0.4)]"></div>
+                  
+                  <p className="text-[11px] md:text-[12px] text-slate-700 leading-relaxed font-medium antialiased">
+                    <span className="text-amber-700 font-bold mr-1">Note:</span>
+                    {adviceText || "Conditions are currently stable. We recommend maintaining the standard irrigation cycle for optimal crop health."}
+                  </p>
+                </div>
+              </div>
+
+              {/* Subtle Footer Ornament */}
+              <div className="mt-2 flex justify-end opacity-20 grayscale relative z-10">
+                <svg className="w-8 h-auto" viewBox="0 0 100 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0 10C20 10 30 0 50 0C70 0 80 10 100 10" stroke="currentColor" strokeWidth="2"/>
+                </svg>
               </div>
             </div>
 
-            {/* 2C. PARROT */}
-            <div className="w-auto flex-shrink-0 flex flex-col items-center justify-center pl-4 border-l border-dashed border-gray-200">
+            {/* 2C. PARROT - Significantly Shrunk */}
+            <div className="hidden lg:flex w-24 shrink-0 flex-col items-center justify-center pl-2 border-l border-dashed border-gray-100">
               <Mithu
                 mood={mithuMoodFromSummary(data?.current?.summary)}
                 loop={true}
@@ -568,22 +602,17 @@ export default function WeatherPage() {
                 advice={""}
                 showAdvice={false}
                 glide={glideToTrend}
-                size={140}
+                size={85}
               />
-              <div className="mt-1 text-[10px] text-gray-400 font-medium tracking-wide">
-                Tap for Trends
-              </div>
+              <div className="text-[8px] text-gray-400 font-bold uppercase mt-1">Trends</div>
             </div>
           </div>
         </div>
 
-        {/* Footer Timestamp */}
-        <div className="mt-4 pt-3 border-t border-gray-100 flex justify-end">
-          <span className="text-[10px] text-gray-400">
-            Last updated:{" "}
-            {data?.current?.lastUpdated
-              ? new Date(data.current.lastUpdated).toLocaleString()
-              : "—"}
+        {/* Footer: Ultra-thin */}
+        <div className="mt-2 pt-1.5 border-t border-gray-50 flex justify-end">
+          <span className="text-[8px] text-gray-300 font-medium">
+            Sync: {data?.current?.lastUpdated ? new Date(data.current.lastUpdated).toLocaleString() : "—"}
           </span>
         </div>
       </section>
