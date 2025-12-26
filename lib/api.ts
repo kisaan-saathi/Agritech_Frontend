@@ -5,8 +5,6 @@
 import type { FieldCollection, SelectedField, CreateFieldResponse } from "./types";
 
 
-import { AIInsight } from "@/types";
-
 
 const API_BASE = "/api";
 
@@ -204,32 +202,4 @@ function generateFallbackScenes(): ScenesResponse {
     nextImage: nextImage.toISOString().split("T")[0],
     message: "Using estimated dates",
   };
-}
-
-
-/**
- * This service simulates a Node.js backend logic for the KVK Intelligence System.
- * In a real Next.js app, this would reside in /app/api/ routes.
- */
-
-
-/**
- * Client-side helper.
- * This ONLY calls the server API.
- */
-export async function fetchStrategicInsights(
-  district: string = "Varanasi"
-): Promise<AIInsight[]> {
-  const res = await fetch("http://localhost:4000/api/v1/kvk/strategy", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ district }),
-  });
-
-  if (!res.ok) {
-    throw new Error("Failed to fetch strategic insights");
-  }
-
-  const data = await res.json();
-  return Array.isArray(data.insights) ? data.insights : [];
 }
