@@ -18,27 +18,53 @@ export function ApplicationDrawer({
     useEffect(() => {
       if (open) {
         document.documentElement.style.overflow = 'hidden';
-        const mainContent = document.querySelector('main');
-        if (mainContent) {
-          mainContent.style.width = 'calc(100% - 320px)';
-          mainContent.style.transform = 'translateX(320px)';
-          mainContent.style.transition = 'width 0.3s ease-in-out, transform 0.3s ease-in-out';
+        // Look for main, or fallback to direct main-layout child divs
+        let target = document.querySelector('main');
+        if (!target) {
+          target = document.querySelector('[role="main"]');
+        }
+        // Fallback: target the first large scrollable div (for pages not using main)
+        if (!target) {
+          const divs = document.querySelectorAll('div[class*="h-screen"]');
+          if (divs.length > 0) target = divs[0] as HTMLElement;
+        }
+        
+        if (target) {
+          (target as HTMLElement).style.width = 'calc(100% - 320px)';
+          (target as HTMLElement).style.transform = 'translateX(320px)';
+          (target as HTMLElement).style.transition = 'width 0.3s ease-in-out, transform 0.3s ease-in-out';
         }
       } else {
         document.documentElement.style.overflow = 'auto';
-        const mainContent = document.querySelector('main');
-        if (mainContent) {
-          mainContent.style.width = '100%';
-          mainContent.style.transform = 'translateX(0)';
-          mainContent.style.transition = 'width 0.3s ease-in-out, transform 0.3s ease-in-out';
+        let target = document.querySelector('main');
+        if (!target) {
+          target = document.querySelector('[role="main"]');
+        }
+        if (!target) {
+          const divs = document.querySelectorAll('div[class*="h-screen"]');
+          if (divs.length > 0) target = divs[0] as HTMLElement;
+        }
+        
+        if (target) {
+          (target as HTMLElement).style.width = '100%';
+          (target as HTMLElement).style.transform = 'translateX(0)';
+          (target as HTMLElement).style.transition = 'width 0.3s ease-in-out, transform 0.3s ease-in-out';
         }
       }
       return () => {
         document.documentElement.style.overflow = 'auto';
-        const mainContent = document.querySelector('main');
-        if (mainContent) {
-          mainContent.style.width = '100%';
-          mainContent.style.transform = 'translateX(0)';
+        let target = document.querySelector('main');
+        if (!target) {
+          target = document.querySelector('[role="main"]');
+        }
+        if (!target) {
+          const divs = document.querySelectorAll('div[class*="h-screen"]');
+          if (divs.length > 0) target = divs[0] as HTMLElement;
+        }
+        
+        if (target) {
+          (target as HTMLElement).style.width = '';
+          (target as HTMLElement).style.transform = '';
         }
       };
     }, [open]);
