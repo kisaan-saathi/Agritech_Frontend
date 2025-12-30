@@ -227,25 +227,44 @@ export function ApplicationDrawer({
             </a>
             <a
               href="#"
-              className="flex items-center p-3 rounded-lg hover:bg-orange-50 transition duration-150 text-decoration-none hover:border border-orange-500"
+              className="flex items-center p-3 rounded-lg hover:bg-cyan-50 transition duration-150 text-decoration-none hover:border border-cyan-500"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"
                 height="24"
                 viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="text-orange-500 mr-3"
+                className="mr-3"
               >
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <path d="M14 2v6h6" />
-                <line x1="16" y1="13" x2="8" y2="13" />
-                <line x1="16" y1="17" x2="8" y2="17" />
-                <line x1="10" y1="9" x2="10" y2="9" />
+                {/* Lens */}
+                <circle
+                  cx="10"
+                  cy="10"
+                  r="6"
+                  fill="#e0f2fe"          /* light blue glass */
+                  stroke="#0284c7"        /* blue border */
+                  strokeWidth="2"
+                />
+
+                {/* Highlight */}
+                <path
+                  d="M7 7c1-1 2-2 4-2"
+                  stroke="#ffffff"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  fill="none"
+                />
+
+                {/* Handle */}
+                <line
+                  x1="14.5"
+                  y1="14.5"
+                  x2="21"
+                  y2="21"
+                  stroke="#475569"        /* slate/gray handle */
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                />
               </svg>
               <span className="text-sm font-bold text-gray-900">Scouting</span>
             </a>
@@ -293,7 +312,7 @@ export function ApplicationDrawer({
               <span className="text-sm font-bold text-gray-900">Services</span>
             </a>
             <a
-              href="/kvk"
+              href="/disease"
               className="flex items-center p-3 rounded-lg hover:bg-green-50 transition duration-150 text-decoration-none hover:border border-green-600"
             >
               <svg
@@ -308,13 +327,55 @@ export function ApplicationDrawer({
                 strokeLinejoin="round"
                 className="text-green-600 mr-3"
               >
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <path d="M14 2v6h6" />
-                <line x1="16" y1="13" x2="8" y2="13" />
-                <line x1="16" y1="17" x2="8" y2="17" />
-                <line x1="10" y1="9" x2="10" y2="9" />
+                {/* Leaf outline */}
+                <path d="M20 3C9 4 4 9 4 15a5 5 0 0 0 5 5c6 0 11-5 11-16z" />
+                
+                {/* Leaf vein */}
+                <path d="M4 15c4-1 8-4 12-8" />
               </svg>
-              <span className="text-sm font-bold text-gray-900">Krishi Vigyan Kendra</span>
+
+              <span className="text-sm font-bold text-gray-900">
+                Plant Disease
+              </span>
+            </a>
+            <a
+              href="/kvk"
+              className="flex items-center gap-3 p-3 rounded-lg hover:bg-orange-50 transition duration-150 text-decoration-none hover:border border-orange-500"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <defs>
+                  <linearGradient id="bar1" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#22c55e" />
+                    <stop offset="100%" stopColor="#16a34a" />
+                  </linearGradient>
+                  <linearGradient id="bar2" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#3b82f6" />
+                    <stop offset="100%" stopColor="#2563eb" />
+                  </linearGradient>
+                  <linearGradient id="bar3" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#f59e0b" />
+                    <stop offset="100%" stopColor="#d97706" />
+                  </linearGradient>
+                </defs>
+
+                {/* Axis */}
+                <line x1="3" y1="21" x2="21" y2="21" stroke="#9ca3af" strokeWidth="2" />
+
+                {/* Bars */}
+                <rect x="5" y="12" width="3" height="9" rx="1" fill="url(#bar1)" />
+                <rect x="10.5" y="8" width="3" height="13" rx="1" fill="url(#bar2)" />
+                <rect x="16" y="4" width="3" height="17" rx="1" fill="url(#bar3)" />
+              </svg>
+
+              <span className="text-sm font-bold text-gray-900">
+                Krishi Vigyan Kendra
+              </span>
             </a>
           </div>
         </div>
