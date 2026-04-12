@@ -1,179 +1,108 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import FarmMap from "@/components/ui/farm-map";
-import { TrendingUp, IndianRupee, Sprout, Activity } from "lucide-react";
+import Sparkline from "./Sparkline";
+import { fetchFarmScore } from "@/lib/api";
+import { SelectedField } from "@/lib/types";
 
-/* ------------------ DYNAMIC DATA MODEL ------------------ */
-const farmScoreData = {
-  region: "India Region",
-  overallScore: 7.8,
-  advice: "Increase irrigation in Field 3 due to local heat wave.",
-  trend: {
-    label: "Stable",
-    change: "+0.3 WoW",
-  },
-  seasonOutlook: {
-    yield: {
-      value: 18.5,
-      unit: "q/ac",
-    },
-    profit: {
-      value: "₹84.2k",
-    },
-  },
-  metrics: [
-    {
-      label: "Soil Health",
-      value: "8.1",
-      color: "emerald",
-    },
-    {
-      label: "Risk Score",
-      value: "2.4",
-      color: "orange",
-    },
-  ],
+export default function FarmScoreCard( {severity, avgSoilMoisture, soilMoisture7d, selectedDate, onFieldSelect}: {severity: string, avgSoilMoisture: number | null, soilMoisture7d: number[]; selectedDate: string | null, onFieldSelect?: (field: SelectedField | null) => void} ) {
+  const [farmScore, setFarmScore] = useState<number>(0.0);
+  const [selectedField, setSelectedField] = useState<SelectedField | null>(null);
+
+  const fetchFarmScoreData = async () => {
+  if (!selectedDate) return;
+
+  try {
+    const data = await fetchFarmScore(
+      undefined,   // state
+      undefined,   // district
+      undefined,   // parameters
+      selectedDate // from (DATE)
+    );
+    console.log("Farm score date:", selectedDate);
+
+
+    if (data?.farm_score !== undefined) {
+      setFarmScore(Number(data.farm_score.toFixed(1)));
+    }  else {
+      setFarmScore(0);
+    }
+  } catch (error) {
+    console.error("Failed to fetch farm score:", error);
+  }
+
 };
 
-/* ------------------ COMPONENT ------------------ */
-export default function FarmScoreCard() {
+useEffect(() => {
+  if (selectedDate) {
+    fetchFarmScoreData();
+  }
+}, [selectedField, selectedDate]);
+    
   return (
-    <section className="mb-4 flex-1 font-sans">
-      <div className="grid grid-cols-1 sm:grid-cols-6 gap-4 pb-2 h-full items-stretch">
-
-        {/* LEFT PANEL */}
-        <div className="lg:col-span-1 md:col-span-2 sm:col-span-2 bg-white border-8 border-white rounded-[2.5rem] shadow-xl flex flex-col overflow-hidden max-h-[620px]">
-
-          {/* HEADER */}
-          <div className="px-3 py-2 flex justify-between items-center border-b border-slate-50">
-            <div>
-              <h2 className="text-lg font-black text-slate-800 leading-none tracking-tight">
-                Farm Balance
-              </h2>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                Scorecard • {farmScoreData.region}
-              </p>
-            </div>
-            <Activity size={14} className="text-emerald-500" />
-          </div>
-
-          {/* CONTENT */}
-          <div className="px-2 pt-2 pb-3 space-y-2 flex-1 bg-white overflow-hidden">
-
-            {/* MAIN SCORE */}
-            <div className="relative rounded-[1.8rem] bg-gradient-to-br from-emerald-500 to-emerald-600 p-3 text-white shadow-lg shadow-emerald-100/30 animate-[fadeUp_0.6s_ease-out]">
-              <div className="flex flex-col items-center">
-
-                <div className="w-16 h-16 mb-1 flex items-center justify-center rounded-full border-[3px] border-white/40 bg-white/10 backdrop-blur-md animate-[softPulse_3s_ease-in-out_infinite]">
-                  <span className="text-2xl font-black">
-                    {farmScoreData.overallScore}
-                  </span>
-                </div>
-
-                <h3 className="text-[11px] font-bold uppercase tracking-wider">
-                  Overall Farm Score
-                </h3>
-
-                {/* ADVICE */}
-                <div className="w-full mt-2 rounded-xl bg-black/10 p-2 text-center">
-                  <p className="text-[10px] leading-tight font-medium text-emerald-50">
-                    <span className="mr-1 inline-block rounded bg-white px-1 text-[8px] font-black uppercase text-emerald-700">
-                      Advice
-                    </span>
-                    {farmScoreData.advice}
-                  </p>
-                </div>
-
-                {/* TREND */}
-                <div className="w-full mt-2 rounded-xl bg-white/10 p-2 flex flex-col items-center transition-all duration-300 hover:bg-white/15 hover:-translate-y-0.5">
-                  <span className="text-[9px] font-bold uppercase opacity-80 mb-0.5">
-                    Score Trend (Last 7 Days)
-                  </span>
-
-                  <svg viewBox="0 0 100 30" className="w-full h-4">
-                    <path
-                      d="M0,22 Q15,10 30,22 T60,18 T100,22"
-                      fill="none"
-                      stroke="white"
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                    />
-                    <circle cx="100" cy="22" r="2.5" fill="white" />
-                  </svg>
-
-                  <span className="text-[10px] font-black mt-0.5">
-                    {farmScoreData.trend.label} ({farmScoreData.trend.change})
-                  </span>
-                </div>
+    <section className="mb-5 flex-1">
+      {/* Main grid with scorecard and map below */}
+      <div className="grid grid-cols-1 sm:grid-cols-6 gap-6 pb-3 h-full">
+        {/*
+        <div className="lg:col-span-1 md:col-span-2 sm:col-span-2 rounded-2xl shadow p-2">
+          <h2 className="text-xl font-bold text-gray-800 p-3 border-bottom">
+            Farm Balance Scorecard
+          </h2>
+          <div className="farm-score-card h-64 rounded-2xl shadow-2xl mx-3 my-2 px-2 py-3 flex flex-col items-start md:items-center justify-around text-white relative overflow-hidden">
+            <div
+              className="absolute inset-0 opacity-10 bg-cover bg-center"
+              style={{
+                backgroundImage:
+                  "url('https://placehold.co/800x200/FFFFFF/059669/png?text=AI+Pattern')",
+                opacity: 0.1,
+                transform: "rotate(10deg) scale(1.5)",
+              }}
+            ></div>
+            <div className="flex flex-col items-center space-x-6 relative z-10 md:mb-2">
+              <div className="w-28 h-28 flex items-center justify-center border-4 border-white/50 rounded-full bg-transparent shadow-2xl flex-shrink-0 mb-2">
+                <span className="text-3xl font-extrabold">{farmScore}</span>
               </div>
-            </div>
-
-            {/* SEASON OUTLOOK */}
-            <div className="rounded-[1.5rem] border border-slate-100 bg-white p-2.5 shadow-sm transition-all duration-300 hover:shadow-md">
-              <div className="mb-1 flex items-center justify-between px-0.5">
-                <p className="text-[8px] font-extrabold uppercase tracking-wide text-slate-500">
-                  Season Yield & Profit Outlook
+              <div>
+                <p className="text-2xl font-bold">Farm Score</p>
+                <p className="mt-1 text-sm font-medium opacity-90">
+                  Recommendations: Monitor soil moisture in this Field.
                 </p>
-                <TrendingUp size={10} className="text-emerald-500" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-
-                {/* Yield */}
-                <div className="rounded-xl border border-slate-100 bg-slate-50 p-2 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
-                  <p className="text-[8px] font-extrabold uppercase text-emerald-700 flex items-center gap-1">
-                    <Sprout size={8} /> Est. Yield
-                  </p>
-                  <p className="mt-0.5 text-sm font-black text-slate-900 leading-none tracking-tight">
-                    {farmScoreData.seasonOutlook.yield.value}
-                    <span className="ml-0.5 text-[7px] text-slate-500">
-                      {farmScoreData.seasonOutlook.yield.unit}
-                    </span>
-                  </p>
-                </div>
-
-                {/* Profit */}
-                <div className="rounded-xl border border-slate-100 bg-slate-50 p-2 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
-                  <p className="text-[8px] font-extrabold uppercase text-amber-700 flex items-center gap-1">
-                    <IndianRupee size={8} /> Est. Profit
-                  </p>
-                  <p className="mt-0.5 text-sm font-black text-slate-900 leading-none tracking-tight">
-                    {farmScoreData.seasonOutlook.profit.value}
-                  </p>
-                </div>
-
               </div>
             </div>
-
-            {/* METRICS */}
-            <div className="grid grid-cols-2 gap-2">
-              {farmScoreData.metrics.map((metric) => (
-                <div
-                  key={metric.label}
-                  className="flex flex-col items-center rounded-2xl border border-slate-100 bg-white p-2 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
-                >
-                  <p className="mb-1 text-[8px] font-bold uppercase text-slate-400">
-                    {metric.label}
-                  </p>
-                  <div
-                    className={`w-10 h-10 rounded-full border-[3px] border-${metric.color}-500 bg-${metric.color}-50 flex items-center justify-center shadow-inner`}
-                  >
-                    <span className={`text-[11px] font-black text-${metric.color}-700`}>
-                      {metric.value}
-                    </span>
-                  </div>
-                </div>
-              ))}
+            <div className="relative z-10 w-full h-full justify-center items-center flex flex-col p-2 bg-white/20 mt-3 rounded-lg">
+              <p className="text-sm font-semibold mb-1">
+                Score Trend (Last 7 Days)
+              </p>
+              <Sparkline data={soilMoisture7d} color="rgba(255, 255, 255, 0.5)"/>
+              <span className="text-xs font-medium mt-1 inline-block text-white/90">
+                Stable (+0.3 WoW)
+              </span>
             </div>
-
+          </div>
+          <div className="grid grid-cols-3 gap-4 p-3">
+            <div className="col-span-3 bg-teal/20 p-2 place-items-center rounded-lg farm-score-card  h-100">
+              <p className="text-sm text-white font-semibold mb-2">Soil</p>
+              <div className="w-20 h-20 flex items-center justify-center border-4 bg-white/20 border-white/50 rounded-full bg-transparent shadow-2xl flex-shrink-0">
+                <span className="text-3xl text-white font-extrabold">{avgSoilMoisture}</span>
+              </div>
+            </div>
           </div>
         </div>
-
-        {/* RIGHT PANEL */}
-        <div className="lg:col-span-5 md:col-span-4 sm:col-span-4 rounded-[2.5rem] border-8 border-white bg-white shadow-xl overflow-hidden min-h-[500px] animate-[fadeUp_0.6s_ease-out]">
-          <FarmMap title="My Farm" />
+        */}
+        <div className="lg:col-span-6 md:col-span-6 sm:col-span-6 w-full my-4 h-[560px] md:h-[680px] rounded-lg overflow-hidden shadow-lg border border-slate-200">
+          <FarmMap 
+            title="My Farm" 
+            onFieldSelect={(field) => {
+               if (!field) return;
+              setSelectedField(field);
+              localStorage.setItem("selectedFieldId", field.id);
+              if (onFieldSelect) {
+                onFieldSelect(field);
+              }
+            }}
+          />
         </div>
-
       </div>
     </section>
   );

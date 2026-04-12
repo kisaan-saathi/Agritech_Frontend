@@ -1,6 +1,12 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  fetchWeatherData,
+  createWeatherStream,
+  BackendResponse,
+} from "../../lib/weather";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -17,7 +23,7 @@ import { Line } from "react-chartjs-2";
 import Mithu, { MithuMood } from "@/components/Mithu";
 
 import { AlertTriangle } from "lucide-react";
-import PageHeader from "@/components/layout/PageHeader";
+import Image from "next/image";
 
 ChartJS.register(
   CategoryScale,
@@ -32,12 +38,6 @@ ChartJS.register(
 );
 
 const POLL_INTERVAL = 60_000;
-// Fallback to localhost:4000 if env vars are missing
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ||
-  process.env.NEXT_PUBLIC_BACKEND_URL ||
-  "http://localhost:4000";
-
 const DEFAULT_LAT = 18.5204;
 const DEFAULT_LON = 73.8567;
 
@@ -76,43 +76,58 @@ type WeatherAnalysisResponse = {
 };
 
 /* -------------------- Backend Types (API Response) -------------------- */
-type BackendResponse = {
-  location: { latitude: number; longitude: number; timezone: string };
-  current: {
-    time: string;
-    temperature: number;
-    humidity: number;
-    rain: number;
-    wind: number;
-  };
-  forecast7d: Array<{
-    date: string;
-    minTemp: number;
-    maxTemp: number;
-    avgTemp: number;
-    avgHumidity: number;
-    rain: number;
-  }>;
-  trend7d: { avgTemp: number[]; rain: number[]; humidity: number[] };
-  trend30d: { avgTemp: number[]; rain: number[]; humidity: number[] };
-  temperatureTrend: { trend: string; change: number };
-  advisory: { label: string; title: string; message: string; advice: string[] };
-  generatedAt: string;
-};
+// Moved to lib/weather.ts
 
 /* -------------------- Helpers -------------------- */
 
 // DATA TRANSFORMER: Converts Backend JSON -> Frontend Object
 function transformBackendData(data: BackendResponse): WeatherAnalysisResponse {
+  const formatDateLocal = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
+
   const historyDates = Array.from({ length: 30 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (30 - i));
-    return d.toISOString().split("T")[0];
+    return formatDateLocal(d);
   });
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const backendForecastDates = data.forecast7d.map((d) => d.date);
+  const parsedForecastDates = backendForecastDates.map((raw) => {
+    const dt = new Date(raw);
+    return Number.isNaN(dt.getTime()) ? null : dt;
+  });
+
+  // If backend sends old/invalid forecast dates, rebase to today..today+N.
+  const shouldRebaseForecastDates =
+    parsedForecastDates.some((d) => d == null) ||
+    (() => {
+      const lastValid = parsedForecastDates
+        .filter((d): d is Date => d instanceof Date)
+        .sort((a, b) => a.getTime() - b.getTime())
+        .pop();
+      if (!lastValid) return true;
+      lastValid.setHours(0, 0, 0, 0);
+      return lastValid < today;
+    })();
+
+  const normalizedForecastDates = shouldRebaseForecastDates
+    ? Array.from({ length: data.forecast7d.length }, (_, i) => {
+        const d = new Date(today);
+        d.setDate(today.getDate() + i);
+        return formatDateLocal(d);
+      })
+    : backendForecastDates;
 
   return {
     location: {
-      name: data.location.timezone?.split("/")[1] || "My Location",
+      name: data.location.timezone || "UTC",
       latitude: data.location.latitude,
       longitude: data.location.longitude,
       timezone: data.location.timezone,
@@ -127,14 +142,14 @@ function transformBackendData(data: BackendResponse): WeatherAnalysisResponse {
       lastUpdated: data.generatedAt,
     },
     forecast7d: {
-      temperature: data.forecast7d.map((d) => ({
-        date: d.date,
+      temperature: data.forecast7d.map((d, i) => ({
+        date: normalizedForecastDates[i] ?? d.date,
         min: d.minTemp,
         max: d.maxTemp,
       })),
       precipitation: {
         values: data.forecast7d.map((d) => d.rain),
-        dates: data.forecast7d.map((d) => d.date),
+        dates: normalizedForecastDates,
       },
       humidity: {
         values: data.forecast7d.map((d) => d.avgHumidity),
@@ -160,9 +175,12 @@ function transformBackendData(data: BackendResponse): WeatherAnalysisResponse {
 function mithuMoodFromSummary(summary?: string): MithuMood {
   if (!summary) return "default";
   const s = summary.toLowerCase();
-  if (s.includes("rain") || s.includes("shower") || s.includes("wet")) return "rainy";
-  if (s.includes("sun") || s.includes("clear") || s.includes("favorable")) return "sunny";
-  if (s.includes("hot") || s.includes("heat") || s.includes("risk")) return "hot";
+  if (s.includes("rain") || s.includes("shower") || s.includes("wet"))
+    return "rainy";
+  if (s.includes("sun") || s.includes("clear") || s.includes("favorable"))
+    return "sunny";
+  if (s.includes("hot") || s.includes("heat") || s.includes("risk"))
+    return "hot";
   if (s.includes("wind") || s.includes("breeze")) return "windy";
   if (s.includes("cloud") || s.includes("caution")) return "cloudy";
   return "default";
@@ -172,9 +190,15 @@ function generateAdvice(data: WeatherAnalysisResponse | null): string {
   if (!data) return "I don't have weather data yet. Click Mithu for tips.";
   const cur = data.current;
   const avg7 = data.forecast7d.temperature.map((d) => (d.min + d.max) / 2);
-  const avg7Mean = avg7.length ? avg7.reduce((s, v) => s + v, 0) / avg7.length : null;
-  const total7Rain = data.forecast7d.precipitation.values.reduce((s, v) => s + v, 0);
-  const avg7Humidity = data.forecast7d.humidity?.values.reduce((s, v) => s + v, 0) ?? 0;
+  const avg7Mean = avg7.length
+    ? avg7.reduce((s, v) => s + v, 0) / avg7.length
+    : null;
+  const total7Rain = data.forecast7d.precipitation.values.reduce(
+    (s, v) => s + v,
+    0
+  );
+  const avg7Humidity =
+    data.forecast7d.humidity?.values.reduce((s, v) => s + v, 0) ?? 0;
 
   if ((cur.precipitation ?? 0) >= 6) {
     return "Immediate Alert: Heavy rain expected. Protect seedlings and avoid fertilizer application for 24 hours.";
@@ -185,7 +209,11 @@ function generateAdvice(data: WeatherAnalysisResponse | null): string {
   if ((cur.temperature ?? 0) >= 38) {
     return "Heat Alert: High temperature — increase irrigation during early morning and evening.";
   }
-  if (avg7Mean !== null && avg7Mean > (cur.temperature ?? 0) + 3 && total7Rain < 5) {
+  if (
+    avg7Mean !== null &&
+    avg7Mean > (cur.temperature ?? 0) + 3 &&
+    total7Rain < 5
+  ) {
     return "Prediction: Temperatures rising over next 7 days and low rain — consider earlier irrigation to maintain soil moisture.";
   }
   if (total7Rain >= 20) {
@@ -213,7 +241,8 @@ export default function WeatherPage() {
   const [adviceText, setAdviceText] = useState("Tap Mithu for advice.");
   const [glideToTrend, setGlideToTrend] = useState(false);
 
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const cleanupRef = useRef<(() => void) | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
 
   const [coords, setCoords] = useState<{ lat: number; lon: number }>({
@@ -221,23 +250,19 @@ export default function WeatherPage() {
     lon: DEFAULT_LON,
   });
   const predictionRef = useRef<HTMLDivElement | null>(null);
-
-  /* initial fetch / geolocation */
+  const router = useRouter();
   useEffect(() => {
-    if (!navigator?.geolocation) {
-      fetchWeather();
-      return;
+    const token = globalThis.window
+      ? localStorage.getItem("accessToken")
+      : null;
+    if (!token) {
+      router.push("/login");
     }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude });
-        fetchWeatherWithCoords(pos.coords.latitude, pos.coords.longitude);
-      },
-      () => {
-        fetchWeather();
-      },
-      { enableHighAccuracy: false, timeout: 6000 }
-    );
+  }, [router]);
+
+  /* initial fetch */
+  useEffect(() => {
+    fetchWeather();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -249,58 +274,32 @@ export default function WeatherPage() {
     }
   }, [data]);
 
-  /* -------------------- Fixed Fetcher (Targeting /api/v1/weather) -------------------- */
-  async function fetchWithFallback(lat: number, lon: number) {
+  /* -------------------- Weather Fetcher -------------------- */
+  async function fetchWeather() {
     setLoading(true);
     setError(null);
     try {
-      // FIX: Your backend 'main.ts' sets a global prefix 'api/v1'
-      // So we must fetch '/api/v1/weather', NOT just '/weather'
-      let url = `${API_BASE_URL}/api/v1/weather?lat=${lat}&lon=${lon}`;
-      
-      let res = await fetch(url);
+      const backendData = await fetchWeatherData();
+      const transformedData = transformBackendData(backendData);
+      setData(transformedData);
 
-      // Fallback: If 'api/v1' fails (e.g. you removed the prefix from backend), try '/weather'
-      if (res.status === 404) {
-         console.warn("Got 404 on /api/v1/weather, trying /weather...");
-         const fallbackUrl = `${API_BASE_URL}/weather?lat=${lat}&lon=${lon}`;
-         const resFallback = await fetch(fallbackUrl);
-         if (resFallback.ok || resFallback.status !== 404) {
-           res = resFallback;
-         }
+      // Update coords from backend response
+      if (
+        transformedData.location.latitude &&
+        transformedData.location.longitude
+      ) {
+        setCoords({
+          lat: Number(transformedData.location.latitude),
+          lon: Number(transformedData.location.longitude),
+        });
+        setRealtime(true);
       }
-
-      if (!res.ok) {
-        const txt = await res.text().catch(() => "");
-        let msg = `Backend fetch failed: ${res.status}`;
-        try {
-          const parsed = JSON.parse(txt);
-          if (parsed?.message) msg = parsed.message;
-        } catch {}
-        
-        // Friendly error message
-        if (msg.includes("Cannot GET")) {
-          msg = "Backend route not found. Ensure backend is running and URL prefix matches (e.g., /api/v1).";
-        }
-        throw new Error(msg);
-      }
-
-      const backendData = (await res.json()) as BackendResponse;
-      setData(transformBackendData(backendData));
     } catch (err: any) {
-      console.error(err);
+      console.error("Weather fetch error:", err);
       setError(err?.message ?? "Unknown error");
     } finally {
       setLoading(false);
     }
-  }
-
-  async function fetchWeatherWithCoords(lat: number, lon: number) {
-    await fetchWithFallback(lat, lon);
-  }
-
-  async function fetchWeather() {
-    await fetchWithFallback(coords.lat, coords.lon);
   }
   /* ----------------------------------------------------------------------------------- */
 
@@ -314,26 +313,60 @@ export default function WeatherPage() {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
+    if (cleanupRef.current) {
+      cleanupRef.current();
+      cleanupRef.current = null;
+    }
 
     if (realtime) {
-      // FIX: Also updated the stream URL to include /api/v1
-      const url = `${API_BASE_URL}/api/v1/weather/stream?lat=${coords.lat}&lon=${coords.lon}`;
-      const es = new EventSource(url);
-      eventSourceRef.current = es;
-      es.onmessage = (ev) => {
-        try {
-          const parsed = JSON.parse(ev.data);
-          const raw = parsed?.data ?? parsed;
-          setData(transformBackendData(raw));
-        } catch {}
-      };
-      es.onerror = () => {
-        try {
-          es.close();
-        } catch {}
-        // Fallback to polling on error
-        timerRef.current = setInterval(fetchWeather, POLL_INTERVAL);
-      };
+      createWeatherStream(
+        (backendData) => {
+          try {
+            if (backendData == null) return;
+
+            let payload: any = backendData;
+
+            // Support legacy SSE string format and new object payload format.
+            if (typeof backendData === "string") {
+              const sseData = backendData
+                .split("\n")
+                .find((line: string) => line.startsWith("data:"))
+                ?.replace("data:", "")
+                .trim();
+              const raw = sseData && sseData.length ? sseData : backendData;
+              payload = JSON.parse(raw);
+            }
+
+            const normalizedPayload =
+              payload?.data?.data ??
+              payload?.data ??
+              payload;
+
+            const transformedData = transformBackendData(normalizedPayload);
+          setData(transformedData);
+
+          // Update coords from response
+          if (
+            transformedData.location.latitude &&
+            transformedData.location.longitude
+          ) {
+            setCoords({
+              lat: Number(transformedData.location.latitude),
+              lon: Number(transformedData.location.longitude),
+            });
+          }
+          } catch (parseErr) {
+            console.error("Weather stream parse error:", parseErr, backendData);
+          }
+        },
+        () => {
+          // Fallback to polling on error
+          timerRef.current = setInterval(fetchWeather, POLL_INTERVAL);
+        },
+        POLL_INTERVAL
+      ).then((cleanup) => {
+        cleanupRef.current = cleanup;
+      });
     } else {
       timerRef.current = setInterval(fetchWeather, POLL_INTERVAL);
     }
@@ -341,6 +374,7 @@ export default function WeatherPage() {
     return () => {
       if (eventSourceRef.current) eventSourceRef.current.close();
       if (timerRef.current) clearInterval(timerRef.current);
+      if (cleanupRef.current) cleanupRef.current();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [realtime, coords]);
@@ -443,10 +477,19 @@ export default function WeatherPage() {
 
   return (
     <div className="h-screen w-full overflow-y-auto bg-gray-50 p-6">
-      <header className="mb-6 flex items-center justify-between">
-        <PageHeader />
+      <header className="mb-6 flex items-center gap-4">
+        <div className="h-14 w-14 flex items-center justify-center">
+          <Image
+            src="/images/weather-mithu.png"
+            alt="MarketSaathi"
+            width={64}
+            height={64}
+            className="object-contain"
+            priority
+          />
+        </div>
         <div>
-          <div className="text-2xl font-bold text-slate-800">
+          <div className="text-2xl font-bold text-blue-400">
             Weather Saathi
           </div>
           <div className="text-xs text-gray-500">
@@ -454,15 +497,7 @@ export default function WeatherPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={fetchWeather}
-            disabled={loading}
-            className="px-4 py-2 bg-amber-600 text-white rounded-full shadow hover:scale-105 transition"
-          >
-            {loading ? "Loading..." : "Refresh"}
-          </button>
-        </div>
+
       </header>
 
       {error && (
@@ -515,8 +550,8 @@ export default function WeatherPage() {
               {/* Header: Tightened */}
               <div className="flex justify-between items-center pb-1 border-b border-gray-50">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-base font-bold text-slate-800">Current Weather</h2>
-                  <span className="text-[10px] text-gray-400 font-medium flex items-center gap-0.5">
+                  <h2 className="text-base font-bold text-slate-800 mb-0">Current Weather</h2>
+                  <span className="text-[10px] text-teal-600 font-medium flex items-center gap-0.5">
                     <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                     {data?.location?.name ?? "My Location"}
                   </span>
@@ -578,7 +613,7 @@ export default function WeatherPage() {
                   {/* Vertical Accent Line */}
                   <div className="absolute left-0 top-1 bottom-1 w-[3px] rounded-full bg-gradient-to-b from-amber-400 to-orange-300 shadow-[0_0_8px_rgba(251,191,36,0.4)]"></div>
                   
-                  <p className="text-[11px] md:text-[12px] text-slate-700 leading-relaxed font-medium antialiased">
+                  <p className="text-[11px] md:text-[12px] mb-1 text-slate-700 leading-snug font-medium antialiased">
                     <span className="text-amber-700 font-bold mr-1">Note:</span>
                     {adviceText || "Conditions are currently stable. We recommend maintaining the standard irrigation cycle for optimal crop health."}
                   </p>
@@ -593,7 +628,7 @@ export default function WeatherPage() {
               </div>
             </div>
 
-            {/* 2C. PARROT - Significantly Shrunk */}
+            {/*
             <div className="hidden lg:flex w-24 shrink-0 flex-col items-center justify-center pl-2 border-l border-dashed border-gray-100">
               <Mithu
                 mood={mithuMoodFromSummary(data?.current?.summary)}
@@ -606,12 +641,13 @@ export default function WeatherPage() {
               />
               <div className="text-[8px] text-gray-400 font-bold uppercase mt-1">Trends</div>
             </div>
+            */}
           </div>
         </div>
 
         {/* Footer: Ultra-thin */}
         <div className="mt-2 pt-1.5 border-t border-gray-50 flex justify-end">
-          <span className="text-[8px] text-gray-300 font-medium">
+          <span className="text-[9px] text-gray-400 font-medium">
             Sync: {data?.current?.lastUpdated ? new Date(data.current.lastUpdated).toLocaleString() : "—"}
           </span>
         </div>
@@ -619,8 +655,9 @@ export default function WeatherPage() {
 
       {/* Prediction Table */}
       <section ref={predictionRef} className="grid grid-cols-12 gap-6 mb-6">
-        <div className="col-span-12 lg:col-span-6 bg-white p-4 rounded-2xl shadow hover:shadow-lg transition-transform hover:scale-105">
-          <div className="font-semibold text-lg mb-2">7-Day Prediction</div>
+        <div className="col-span-12 lg:col-span-6 bg-white p-0 rounded-2xl shadow hover:shadow-lg transition-transform hover:scale-105">
+          <div className="font-semibold text-lg mb-2 border-b p-3">7-Day Prediction</div>
+          <div className="p-3">
           <table className="w-full text-sm border rounded-xl overflow-hidden">
             <thead className="bg-gray-50">
               <tr>
@@ -649,16 +686,17 @@ export default function WeatherPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
 
-        <div className="col-span-12 lg:col-span-6 bg-white p-4 rounded-2xl shadow hover:shadow-lg transition-transform hover:scale-105">
-          <div className="flex items-center justify-between mb-3">
-            <div className="font-semibold text-lg">7-Day Prediction Trend</div>
-            <div className="text-sm text-gray-500">
+        <div className="col-span-12 lg:col-span-6 bg-white p-0 rounded-2xl shadow hover:shadow-lg transition-transform hover:scale-105">
+          <div className="flex items-center justify-between mb-2 border-b">
+            <div className="font-semibold text-lg p-3">7-Day Prediction Trend</div>
+            <div className="text-sm text-gray-500 pr-3">
               Average Temp • Rain • Humidity
             </div>
           </div>
-          <div style={{ height: 300 }}>
+          <div className="p-3" style={{ height: 300 }}>
             {predictionChart ? (
               <Line
                 data={predictionChart as any}
@@ -691,14 +729,15 @@ export default function WeatherPage() {
       </section>
 
       {/* 30-Day History */}
-      <section className="bg-white p-4 rounded-2xl shadow hover:shadow-lg transition-transform hover:scale-105">
-        <div className="flex items-center justify-between mb-3">
+      <section className="bg-white p-0 rounded-2xl shadow hover:shadow-lg transition-transform hover:scale-105">
+        <div className="flex items-center justify-between mb-3 border-b p-3">
           <div className="font-semibold text-lg">30-Day Average Trend</div>
           <div className="text-sm text-gray-500">
-            Avg Temp • Rain • Humidity
+            Average Temp • Rain • Humidity
           </div>
         </div>
-        <div style={{ height: 300 }}>
+        <div className="p-3">
+        <div className="" style={{ height: 300 }}>
           {historyChart ? (
             <Line
               data={historyChart as any}
@@ -722,6 +761,7 @@ export default function WeatherPage() {
             <div className="text-gray-400 text-center">No data</div>
           )}
         </div>
+        </div>
       </section>
 
       <style>{`
@@ -731,6 +771,87 @@ export default function WeatherPage() {
           .mithu-glide { transform: none !important; animation: none !important; }
         }
       `}</style>
+
+      <section className="mt-12">
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+          <h2 className="text-lg font-bold text-gray-900 mb-4 text-left">
+            Sources & References
+          </h2>
+
+          <div className="text-sm text-gray-600 leading-relaxed text-left space-y-3">
+            <p>
+              This Weather Advisory and risk classification system is developed in
+              alignment with officially published guidelines of the Government of
+              India and the India Meteorological Department (IMD). The weather
+              classification logic follows standard IMD-defined thresholds for
+              temperature, rainfall, wind speed, and extreme weather events, as used
+              in national weather forecasting and disaster preparedness systems.
+            </p>
+
+            <p className="font-medium text-gray-700">
+              Official Government & Research Sources:
+            </p>
+
+            <ul className="list-disc list-inside space-y-1">
+              <li>
+                India Meteorological Department (IMD) – Weather forecasting standards,
+                extreme weather definitions, and advisory thresholds (
+                <a
+                  href="https://mausam.imd.gov.in"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-700 hover:underline"
+                >
+                  IMD Weather Portal
+                </a>
+                )
+              </li>
+
+              <li>
+                IMD Agrometeorological Advisory Services (AAS) – Weather-based
+                advisories for agriculture and rural planning (
+                <a
+                  href="https://imdagrimet.gov.in"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-700 hover:underline"
+                >
+                  IMD Agromet Portal
+                </a>
+                )
+              </li>
+
+              <li>
+                Ministry of Earth Sciences (MoES) – National climate monitoring,
+                forecasting, and meteorological research
+              </li>
+
+              <li>
+                National Disaster Management Authority (NDMA) – Heatwave, heavy rainfall,
+                cyclone, and disaster risk management guidelines (
+                <a
+                  href="https://ndma.gov.in"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-700 hover:underline"
+                >
+                  NDMA Guidelines
+                </a>
+                )
+              </li>
+            </ul>
+
+            <p className="mt-3 text-xs text-gray-500 italic">
+              Disclaimer: Weather advisories and risk indicators generated by this
+              system are indicative and advisory in nature. They are derived from
+              officially published IMD thresholds, historical datasets, and rule-based
+              classification models. Actual weather impacts may vary due to local
+              micro-climatic conditions. Users are advised to follow official IMD
+              bulletins and local authority advisories for critical decision-making.
+            </p>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

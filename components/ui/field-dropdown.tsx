@@ -1,19 +1,25 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { FieldFeature } from "@/lib/types";
+import { fetchFieldById } from "@/lib/api";
 
 interface SelectedField {
   id?: string;
+  properties?: {
+    name?: string;
+  };
 }
 
 interface FormData {
   name: string;
-  farmerName: string;
-  cropType: string;
-  season: string;
-  sowingDate: string;
-  harvestDate: string;
+  crop_name: string;
+  notes: string;
+  sowing_date: string;
+  soil_type: string;
+  fertilizer: string;
+  irrigation: string;
+  rainfall_pattern: string;
 }
 
 interface FieldDropdownProps {
@@ -26,6 +32,7 @@ interface FieldDropdownProps {
   setEditFieldId: (id: string | null) => void;
   setShowFieldModal: (show: boolean) => void;
   handleDeleteField: (id: string, event: React.MouseEvent) => void;
+  onClick?: () => void;
 }
 
 const FieldDropdown: React.FC<FieldDropdownProps> = ({
@@ -38,23 +45,18 @@ const FieldDropdown: React.FC<FieldDropdownProps> = ({
   setEditFieldId,
   setShowFieldModal,
   handleDeleteField,
+  onClick,
 }) => {
-  const [defaultFieldId, setDefaultFieldId] = useState<string | null>(null);
-
-  const handleSetDefault = (fieldId: string) => {
-    setDefaultFieldId(fieldId);
-    // Here you could also make an API call to persist the default field
-  };
   return (
     <div className="btn-group ml-2 my-2" style={{ position: "relative" }}>
       <button
         type="button"
         className="btn dropdown-toggle relative my-2"
-        onClick={() => setDropdownOpen(!dropdownOpen)}
+        onClick={() => {setDropdownOpen(!dropdownOpen); onClick?.();}}
         aria-expanded={dropdownOpen}
         style={{ backgroundColor: "#10B981", color: "white" }}
       >
-        My fields
+        {selectedField?.properties?.name || `Select Field`}
         {fields.length > 0 && (
           <span className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs rounded-full px-1 min-w-[18px] h-[18px] flex items-center justify-center">
             {fields.length}
@@ -81,11 +83,11 @@ const FieldDropdown: React.FC<FieldDropdownProps> = ({
             </a>
           </li>
         ) : (
-          fields.map((field) => {
+          fields.map((field, index) => {
             const fieldId = field.properties?.id;
             const isActive = selectedField?.id === fieldId?.toString();
             return (
-              <li key={fieldId || Math.random()}>
+              <li key={`${fieldId}-${index}`}>
                 <div
                   className={`dropdown-item bg-none`}
                   style={{
@@ -139,70 +141,42 @@ const FieldDropdown: React.FC<FieldDropdownProps> = ({
                     </div>
                   </div>
                   <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
-                    <div className="form-check">
-                      <input
-                        className="form-check-input"
-                        type="radio"
-                        name="defaultField"
-                        value={fieldId?.toString() || ""}
-                        checked={defaultFieldId === fieldId?.toString()}
-                        onChange={() => handleSetDefault(fieldId?.toString() || "")}
-                        title="Set as Default"
-                        style={{
-                          accentColor: '#3B82F6', // Blue color
-                          cursor: 'pointer',
-                          border: '2px solid #3B82F6', // Blue border
-                          borderRadius: '50%'
-                        }}
-                      />
-                    </div>
                     <button
                       className="btn btn-sm btn-outline-primary ms-2 action-btn"
                       onClick={async (e) => {
                         e.stopPropagation();
-                        // Fetch latest field data to ensure all properties are loaded
                         try {
-                          const res = await fetch(`/api/fields/${fieldId}`);
-                          if (res.ok) {
-                            const data = await res.json();
-                            const props = data.properties || {};
-                            setForm({
-                              name: props.name || "",
-                              farmerName: props.farmerName || "",
-                              cropType: props.cropType || "",
-                              season: props.season || "",
-                              sowingDate: props.sowingDate
-                                ? props.sowingDate.slice(0, 10)
-                                : "",
-                              harvestDate: props.harvestDate
-                                ? props.harvestDate.slice(0, 10)
-                                : "",
-                            });
-                          } else {
-                            // fallback to local properties if fetch fails
-                            setForm({
-                              name: field.properties?.name || "",
-                              farmerName: field.properties?.farmerName || "",
-                              cropType: field.properties?.cropType || "",
-                              season: field.properties?.season || "",
-                              sowingDate: field.properties?.sowingDate || "",
-                              harvestDate: field.properties?.harvestDate || "",
-                            });
-                          }
+                          const data = await fetchFieldById(fieldId?.toString() || "");
+                          const payload = data?.data ?? data;
+                          setForm({
+                            name: payload?.name || "",
+                            crop_name: payload?.crop_name || "",
+                            notes: payload?.notes || "",
+                            sowing_date: payload?.sowing_date
+                              ? payload.sowing_date.slice(0, 10)
+                              : "",
+                            soil_type: payload?.soil_type || "",
+                            fertilizer: payload?.fertilizer || "",
+                            irrigation: payload?.irrigation || "",
+                            rainfall_pattern: payload?.rainfall_pattern || "",
+                          });
                         } catch {
                           setForm({
                             name: field.properties?.name || "",
-                            farmerName: field.properties?.farmerName || "",
-                            cropType: field.properties?.cropType || "",
-                            season: field.properties?.season || "",
-                            sowingDate: field.properties?.sowingDate || "",
-                            harvestDate: field.properties?.harvestDate || "",
+                            crop_name: field.properties?.crop_name || "",
+                            notes: field.properties?.notes || "",
+                            sowing_date: field.properties?.sowing_date || "",
+                            soil_type: field.properties?.soil_type || "",
+                            fertilizer: field.properties?.fertilizer || "",
+                            irrigation: field.properties?.irrigation || "",
+                            rainfall_pattern: field.properties?.rainfall_pattern || "",
                           });
                         }
                         setEditFieldId(fieldId?.toString() || null);
                         setShowFieldModal(true);
                       }}
                       title="Edit field"
+                      disabled={isActive}
                     >
                       ✏️
                     </button>
@@ -213,6 +187,7 @@ const FieldDropdown: React.FC<FieldDropdownProps> = ({
                         handleDeleteField(fieldId?.toString() || "", e);
                       }}
                       title="Delete field"
+                      disabled={isActive}
                     >
                       🗑️
                     </button>

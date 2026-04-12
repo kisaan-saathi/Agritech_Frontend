@@ -3,8 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 // Global styles
 import "./globals.css";
-
-// Admin / custom styles
 import "./styles/styles.css";
 import "./styles/styles_custom.css";
 import "./styles/table-card.css";
@@ -12,11 +10,11 @@ import "./styles/table-card.css";
 // Bootstrap
 import "bootstrap/dist/css/bootstrap.min.css";
 
-// Mapbox CSS (REQUIRED)
+// Mapbox CSS
 import "mapbox-gl/dist/mapbox-gl.css";
 import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
+import ConditionalLayout from "./ConditionalLayout";
 
-// Fonts
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -27,9 +25,8 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// Metadata (merged meaningfully)
 export const metadata: Metadata = {
-  title: "Kissan Saathi",
+  title: "Kisaan Saathi",
   description: "AI-powered crop monitoring & Admin platform",
 };
 
@@ -39,11 +36,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full" suppressHydrationWarning>
+    <html
+      lang="en"
+      className="h-full"
+      data-scroll-behavior="smooth"
+      suppressHydrationWarning
+    >
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased h-full w-full overflow-hidden`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased h-full w-full overflow-visible`}
       >
-        {children}
+        <ConditionalLayout>{children}</ConditionalLayout>
       </body>
     </html>
   );

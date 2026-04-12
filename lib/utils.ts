@@ -1,15 +1,27 @@
 // lib/utils.ts
+
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import type { LayerKey, HealthLabel } from "./types";
-import { VEGETATION_THRESHOLDS, NDWI_THRESHOLDS, HEALTH_COLORS } from "./constants";
 
-/** ---------------- Tailwind helper ---------------- */
+import type { LayerKey, HealthLabel } from "@/lib/types";
+import {
+  VEGETATION_THRESHOLDS,
+  NDWI_THRESHOLDS,
+  HEALTH_COLORS,
+  INDEX_COLOR_RAMPS,
+} from "@/lib/constants";
+
+/* -------------------------------------------------------------------------- */
+/*                               Tailwind helper                               */
+/* -------------------------------------------------------------------------- */
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-/** ---------------- GIS / Agritech helpers ---------------- */
+/* -------------------------------------------------------------------------- */
+/*                           GIS / Agritech helpers                            */
+/* -------------------------------------------------------------------------- */
 
 /** Calculate bounding box for a GeoJSON polygon */
 export function getBBox(
@@ -20,7 +32,10 @@ export function getBBox(
   let maxX = -Infinity;
   let maxY = -Infinity;
 
-  const coords = geometry.type === "Polygon" ? [geometry.coordinates] : geometry.coordinates;
+  const coords =
+    geometry.type === "Polygon"
+      ? [geometry.coordinates]
+      : geometry.coordinates;
 
   for (const poly of coords) {
     for (const ring of poly) {
@@ -44,7 +59,7 @@ export async function maskImageToPolygon(
   width: number,
   height: number
 ): Promise<string> {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
 
@@ -53,8 +68,10 @@ export async function maskImageToPolygon(
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext("2d");
-
-      if (!ctx) return reject(new Error("Canvas context not available"));
+      if (!ctx) {
+        resolve(imageUrl);
+        return;
+      }
 
       const [minX, minY, maxX, maxY] = bbox;
       const geoWidth = maxX - minX;
@@ -66,7 +83,10 @@ export async function maskImageToPolygon(
         return [x, y];
       }
 
-      const rings = geometry.type === "Polygon" ? geometry.coordinates : geometry.coordinates.flat();
+      const rings =
+        geometry.type === "Polygon"
+          ? geometry.coordinates
+          : geometry.coordinates.flat();
 
       ctx.beginPath();
       for (const ring of rings) {
@@ -81,11 +101,11 @@ export async function maskImageToPolygon(
 
       ctx.clip();
       ctx.drawImage(img, 0, 0, width, height);
-
       resolve(canvas.toDataURL("image/png"));
     };
 
-    img.onerror = () => reject(new Error("Failed to load image for masking"));
+    // Fall back to raw image URL when masking cannot be applied (e.g. CORS/image decode issues).
+    img.onerror = () => resolve(imageUrl);
     img.src = imageUrl;
   });
 }
@@ -99,8 +119,12 @@ export function calculateImageDimensions(
   const bboxHeight = bbox[3] - bbox[1];
   const aspectRatio = bboxWidth / bboxHeight;
 
-  const width = aspectRatio >= 1 ? baseSize : Math.round(baseSize * aspectRatio);
-  const height = aspectRatio >= 1 ? Math.round(baseSize / aspectRatio) : baseSize;
+  const width =
+    aspectRatio >= 1 ? baseSize : Math.round(baseSize * aspectRatio);
+  const height =
+    aspectRatio >= 1
+      ? Math.round(baseSize / aspectRatio)
+      : baseSize;
 
   return [width, height];
 }
@@ -108,7 +132,11 @@ export function calculateImageDimensions(
 /** Format a date string for display */
 export function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
-  return d.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "2-digit" });
+  return d.toLocaleDateString("en-US", {
+    day: "2-digit",
+    month: "short",
+    year: "2-digit",
+  });
 }
 
 /** Format a date for API requests */
@@ -117,9 +145,84 @@ export function toISODate(date: Date | string): string {
   return d.toISOString().split("T")[0];
 }
 
-/** Convert RGB pixel color back to vegetation index value */
-export function rgbToIndexValue(r: number, g: number, b: number): number | null {
+/** Convert RGB pixel color back to vegetation index value (NDVI-like scale) */
+function hexToRgb(hex: string): [number, number, number] | null {
+  const normalized = hex.replace("#", "").trim();
+  if (normalized.length !== 6) return null;
+  const rr = parseInt(normalized.slice(0, 2), 16);
+  const gg = parseInt(normalized.slice(2, 4), 16);
+  const bb = parseInt(normalized.slice(4, 6), 16);
+  if ([rr, gg, bb].some((n) => Number.isNaN(n))) return null;
+  return [rr, gg, bb];
+}
+
+export function rgbToIndexValue(
+  r: number,
+  g: number,
+  b: number,
+  layer: LayerKey = "ndvi"
+): number | null {
   if (r === 0 && g === 0 && b === 0) return null;
+
+  const ramp = INDEX_COLOR_RAMPS[layer];
+  if (Array.isArray(ramp) && ramp.length > 0) {
+    const rampStops = ramp
+      .map((stop) => {
+        const rgb = hexToRgb(stop.color);
+        if (!rgb) return null;
+        return {
+          value: (stop.min + stop.max) / 2,
+          rgb,
+        };
+      })
+      .filter((s): s is { value: number; rgb: [number, number, number] } => s !== null);
+
+    if (rampStops.length > 0) {
+      const distanceTo = (rgb: [number, number, number]) =>
+        Math.sqrt((r - rgb[0]) ** 2 + (g - rgb[1]) ** 2 + (b - rgb[2]) ** 2);
+
+      let nearestIndex = 0;
+      let nearestDistance = Number.POSITIVE_INFINITY;
+
+      for (let i = 0; i < rampStops.length; i++) {
+        const d = distanceTo(rampStops[i].rgb);
+        if (d < nearestDistance) {
+          nearestDistance = d;
+          nearestIndex = i;
+        }
+      }
+
+      const nearest = rampStops[nearestIndex];
+      const left = nearestIndex > 0 ? rampStops[nearestIndex - 1] : null;
+      const right = nearestIndex < rampStops.length - 1 ? rampStops[nearestIndex + 1] : null;
+
+      let neighbor = left;
+      if (left && right) {
+        neighbor = distanceTo(left.rgb) <= distanceTo(right.rgb) ? left : right;
+      } else if (!left && right) {
+        neighbor = right;
+      }
+
+      if (!neighbor) {
+        return Number(nearest.value.toFixed(2));
+      }
+
+      const a = nearest.rgb;
+      const b2 = neighbor.rgb;
+      const ap: [number, number, number] = [r - a[0], g - a[1], b - a[2]];
+      const ab: [number, number, number] = [b2[0] - a[0], b2[1] - a[1], b2[2] - a[2]];
+      const abLen2 = ab[0] ** 2 + ab[1] ** 2 + ab[2] ** 2;
+
+      if (abLen2 <= 1e-6) {
+        return Number(nearest.value.toFixed(2));
+      }
+
+      const tRaw = (ap[0] * ab[0] + ap[1] * ab[1] + ap[2] * ab[2]) / abLen2;
+      const t = Math.max(0, Math.min(1, tRaw));
+      const interpolated = nearest.value + (neighbor.value - nearest.value) * t;
+      return Number(interpolated.toFixed(2));
+    }
+  }
 
   const stops = [
     { v: -0.3, color: [0, 0, 130] },
@@ -128,19 +231,24 @@ export function rgbToIndexValue(r: number, g: number, b: number): number | null 
     { v: 0.35, color: [255, 120, 0] },
     { v: 0.5, color: [255, 230, 0] },
     { v: 0.7, color: [120, 200, 60] },
-    { v: 0.9, color: [0, 90, 0] }
+    { v: 0.9, color: [0, 90, 0] },
   ];
 
   let bestMatch = { index: 0, distance: Infinity, t: 0 };
+
   for (let i = 0; i < stops.length - 1; i++) {
     const c1 = stops[i].color;
     const c2 = stops[i + 1].color;
+
     for (let t = 0; t <= 1; t += 0.05) {
-      const interpR = c1[0] + (c2[0] - c1[0]) * t;
-      const interpG = c1[1] + (c2[1] - c1[1]) * t;
-      const interpB = c1[2] + (c2[2] - c1[2]) * t;
-      const dist = Math.sqrt(Math.pow(r - interpR, 2) + Math.pow(g - interpG, 2) + Math.pow(b - interpB, 2));
-      if (dist < bestMatch.distance) bestMatch = { index: i, distance: dist, t };
+      const ir = c1[0] + (c2[0] - c1[0]) * t;
+      const ig = c1[1] + (c2[1] - c1[1]) * t;
+      const ib = c1[2] + (c2[2] - c1[2]) * t;
+      const dist = Math.sqrt(
+        (r - ir) ** 2 + (g - ig) ** 2 + (b - ib) ** 2
+      );
+      if (dist < bestMatch.distance)
+        bestMatch = { index: i, distance: dist, t };
     }
   }
 
@@ -149,38 +257,107 @@ export function rgbToIndexValue(r: number, g: number, b: number): number | null 
   return v1 + (v2 - v1) * bestMatch.t;
 }
 
-/** Get human-readable label and color for a vegetation index value */
-export function getVegetationLabel(value: number, layer: LayerKey): { label: string; color: string } {
+/* -------------------------------------------------------------------------- */
+/*                    Index interpretation (CRITICAL)                          */
+/* -------------------------------------------------------------------------- */
+
+/** Get human-readable label and color for an index value */
+export function getVegetationLabel(
+  value: number,
+  layer: LayerKey
+): { label: string; color: string } {
+
+  // NDWI — surface water
   if (layer === "ndwi") {
-    if (value > NDWI_THRESHOLDS.high) return { label: "High water content", color: "#3b82f6" };
-    if (value > NDWI_THRESHOLDS.moderate) return { label: "Moderate water", color: "#60a5fa" };
-    if (value > NDWI_THRESHOLDS.low) return { label: "Low water content", color: "#fbbf24" };
-    return { label: "Very dry", color: "#ef4444" };
+    if (value >= 0.4)
+      return { label: "High surface water", color: "#2563eb" };
+    if (value >= 0.1)
+      return { label: "Wet surface / moist zone", color: "#3b82f6" };
+    if (value >= -0.1)
+      return { label: "Transition zone", color: "#93c5fd" };
+    return { label: "Dry land / non-water", color: "#a16207" };
   }
 
-  if (value >= VEGETATION_THRESHOLDS.dense) return { label: "Dense vegetation", color: "#22c55e" };
-  if (value >= VEGETATION_THRESHOLDS.good) return { label: "Good vegetation", color: "#84cc16" };
-  if (value >= VEGETATION_THRESHOLDS.moderate) return { label: "Moderate vegetation", color: "#eab308" };
-  if (value >= VEGETATION_THRESHOLDS.sparse) return { label: "Sparse vegetation", color: "#f97316" };
-  if (value >= VEGETATION_THRESHOLDS.bare) return { label: "Very sparse/Bare soil", color: "#ef4444" };
-  return { label: "Water/No vegetation", color: "#3b82f6" };
+  // NDMI — water stress
+  if (layer === "ndmi") {
+    if (value >= 0.4)
+      return { label: "High canopy moisture", color: "#2563eb" };
+    if (value >= 0.1)
+      return { label: "Moderate crop moisture", color: "#38bdf8" };
+    if (value >= -0.1)
+      return { label: "Balanced moisture", color: "#94a3b8" };
+    return {
+      label: "Crop water stress",
+      color: "#b45309",
+    };
+  }
+
+  // GNDVI — nitrogen
+  if (layer === "gndvi") {
+    if (value < 0.4)
+      return { label: "Nitrogen deficient", color: "#fde047" };
+    if (value < 0.6)
+      return { label: "Adequate nitrogen", color: "#86efac" };
+    return { label: "Optimal nitrogen", color: "#166534" };
+  }
+
+  // SIPI — plant stress (higher = worse)
+  if (layer === "sipi") {
+    if (value > 0.8)
+      return { label: "Severe plant stress", color: "#dc2626" };
+    if (value > 0.6)
+      return { label: "Early stress detected", color: "#f97316" };
+    return { label: "Healthy crop", color: "#16a34a" };
+  }
+
+  // Default — NDVI, NDRE, EVI, SAVI
+  if (value >= VEGETATION_THRESHOLDS.dense)
+    return { label: "Dense vegetation", color: "#22c55e" };
+  if (value >= VEGETATION_THRESHOLDS.good)
+    return { label: "Good vegetation", color: "#84cc16" };
+  if (value >= VEGETATION_THRESHOLDS.moderate)
+    return { label: "Moderate vegetation", color: "#eab308" };
+  if (value >= VEGETATION_THRESHOLDS.sparse)
+    return { label: "Sparse vegetation", color: "#f97316" };
+  if (value >= VEGETATION_THRESHOLDS.bare)
+    return { label: "Very sparse / bare soil", color: "#ef4444" };
+
+  return { label: "Water / no vegetation", color: "#3b82f6" };
 }
 
-/** Get health score interpretation */
-export function getHealthLabel(score: number | undefined | null): HealthLabel {
-  if (score == null) return { label: "Processing", color: HEALTH_COLORS.processing };
-  if (score >= 75) return { label: "Excellent", color: HEALTH_COLORS.excellent };
-  if (score >= 55) return { label: "Good", color: HEALTH_COLORS.good };
-  if (score >= 35) return { label: "Moderate", color: HEALTH_COLORS.moderate };
+/* -------------------------------------------------------------------------- */
+/*                           Health & misc helpers                             */
+/* -------------------------------------------------------------------------- */
+
+export function getHealthLabel(
+  score: number | undefined | null
+): HealthLabel {
+  if (score == null)
+    return { label: "Processing", color: HEALTH_COLORS.processing };
+  if (score >= 75)
+    return { label: "Excellent", color: HEALTH_COLORS.excellent };
+  if (score >= 55)
+    return { label: "Good", color: HEALTH_COLORS.good };
+  if (score >= 35)
+    return { label: "Moderate", color: HEALTH_COLORS.moderate };
   return { label: "Poor", color: HEALTH_COLORS.poor };
 }
 
-/** Clamp a number between min and max */
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
 /** Check if a value is a valid LayerKey */
 export function isValidLayer(layer: string): layer is LayerKey {
-  return ["ndvi", "ndre", "evi", "ndwi", "savi"].includes(layer);
+  return [
+    "ndvi",
+    "ndre",
+    "evi",
+    "ndwi",
+    "savi",
+    "ndmi",
+    "gndvi",
+    "sipi",
+    "todays_image",
+  ].includes(layer);
 }

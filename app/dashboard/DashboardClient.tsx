@@ -4,23 +4,128 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { apiCallWithRefresh } from "../../lib/auth";
+import { apiCallWithRefresh, handleLogout } from "../../lib/auth";
 import FarmScoreCard from "./components/FarmScoreCard";
 import ActionCenter from "./components/ActionCenter";
-import PageHeader from "@/components/layout/PageHeader";
 import { useDiseaseId } from "../../lib/hooks/dashboard";
-import { Hand } from "lucide-react";
+import { fetchSoilData } from "@/lib/soil";
 
 export default function DashboardClient() {
   const router = useRouter();
   const [showMenu, setShowMenu] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [user, setUser] = useState<string>("");
+  const [soilMoisture7d, setSoilMoisture7d] = useState<number[]>([]);
+  const [avgSoilMoisture, setAvgSoilMoisture] = useState<number | null>(null);
+  const [severity, setSeverity] = useState<string>("");
+  const [moistActions, setMoistActions] = useState<any[]>([]);
+  const [tempActions, setTempActions] = useState<any[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
+
+  const readDashboardSnapshot = () => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = localStorage.getItem("soilHealthCardSnapshot");
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  };
+
   useEffect(() => {
-    const token =
-      globalThis.window
-        ? localStorage.getItem("accessToken")
-        : null;
+    // Fetch soil data immediately when dashboard opens.
+    fetchSoil();
+    // clear old selection when dashboard opens
+    localStorage.removeItem("selectedSceneDate");
+  }, []);
+
+  useEffect(() => {
+    // Refetch when field is selected
+    if (selectedFieldId) {
+      fetchSoil();
+    }
+  }, [selectedFieldId]);
+
+  /* -------------------- Weather Fetcher -------------------- */
+  
+  async function fetchSoil() {
+    try {
+      const snapshot = readDashboardSnapshot();
+      const fieldId =
+        selectedFieldId ||
+        localStorage.getItem('selectedFieldId') ||
+        snapshot?.selectedFieldId ||
+        '';
+      const backendData = await fetchSoilData(fieldId || undefined);
+      const snapshotSoil = snapshot?.soilData ?? null;
+      const normalizedData =
+        backendData?.data?.data && typeof backendData.data.data === 'object'
+          ? backendData.data.data
+          : backendData?.data && typeof backendData.data === 'object'
+            ? backendData.data
+            : backendData;
+      const prediction =
+        snapshotSoil?.prediction ??
+        snapshotSoil?.data?.prediction ??
+        normalizedData?.prediction ??
+        normalizedData?.data?.prediction ??
+        backendData?.prediction ??
+        backendData?.data?.prediction ??
+        {};
+      const forecast =
+        prediction?.forecast7d ??
+        snapshotSoil?.forecast7d ??
+        normalizedData?.forecast7d ??
+        normalizedData?.forecast ??
+        [];
+      const moistInsight =
+        prediction?.moistInsight ??
+        snapshotSoil?.moistInsight ??
+        normalizedData?.moistInsight ??
+        {};
+      const nextMoistActions =
+        prediction?.moistActions ??
+        snapshotSoil?.moistActions ??
+        normalizedData?.moistActions ??
+        [];
+      const nextTempActions =
+        prediction?.tempActions ??
+        snapshotSoil?.tempActions ??
+        normalizedData?.tempActions ??
+        [];
+
+      setSoilMoisture7d(
+        forecast
+          .map((x: any) => Number(x?.moisture))
+          .filter((v: any) => typeof v === "number" && !Number.isNaN(v))
+      );
+      const todayMoisture = forecast.find((x: any) => x?.day == "Today")?.moisture;
+      const fallbackMoisture = forecast.find((x: any) => typeof Number(x?.moisture) === "number" && !Number.isNaN(Number(x?.moisture)))?.moisture;
+      const resolvedMoisture =
+        typeof todayMoisture === "number" && !Number.isNaN(todayMoisture)
+          ? todayMoisture
+          : typeof Number(fallbackMoisture) === "number" && !Number.isNaN(Number(fallbackMoisture))
+            ? Number(fallbackMoisture)
+            : null;
+      setAvgSoilMoisture(resolvedMoisture !== null ? Math.round(resolvedMoisture) : null);
+      setSeverity(moistInsight?.severity ?? moistInsight?.label ?? "");
+      setMoistActions(Array.isArray(nextMoistActions) ? nextMoistActions : []);
+      setTempActions(Array.isArray(nextTempActions) ? nextTempActions : []);
+    } catch (error: any) {
+      console.error("Soil overview fetch failed:", error);
+      setSoilMoisture7d([]);
+      setAvgSoilMoisture(null);
+      setSeverity("");
+      setMoistActions([]);
+      setTempActions([]);
+      toast.error("Unable to load soil overview right now.");
+    }
+  }
+  useEffect(() => {
+    const token = globalThis.window
+      ? localStorage.getItem("accessToken")
+      : null;
     if (token) {
       setAuthChecked(true);
       // safely read userName from localStorage on the client
@@ -36,38 +141,9 @@ export default function DashboardClient() {
 
   if (!authChecked) return null;
 
-  const handleLogout = async () => {
-    try {
-      const res = await apiCallWithRefresh(async () => {
-        const token = localStorage.getItem("accessToken");
-        console.log("Logging out with token:", token);
-        return await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/auth/logout`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-      });
-      if (res.data.statusCode == 200) {
-        toast.success(res.data.message);
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        localStorage.removeItem("userName");
-        setShowMenu(false);
-        router.push("/login");
-      } else {
-        toast.error(res.data.message || "Logout failed");
-        setShowMenu(false)
-
-      }
-    } catch (error: any) {
-      console.log("logout error",error)
-      // // toast.error(error.res.data.message || "Logout failed");
-      // localStorage.removeItem("accessToken");
-      // localStorage.removeItem("refreshToken");
-      // localStorage.removeItem("userName");
-      setShowMenu(false);
-    }
+  const handleLogoutClick = async () => {
+    setShowMenu(false);
+    await handleLogout(router);
   };
 
   return (
@@ -78,10 +154,9 @@ export default function DashboardClient() {
           {/* Header (Mobile/Desktop) - Used for User and Notifications */}
           <header className="flex flex-col header-responsive justify-between items-center mb-8 pb-4 border-b border-gray-200 gap-4 sm:gap-0">
             <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3">
-              <PageHeader />
+    
               <span className="text-2xl sm:text-3xl font-extrabold text-gray-800 mb-0 flex items-center gap-2">
                 Welcome, {user}
-                <Hand className="w-7 h-7  animate-wave" fill="#f5db75ff" />
               </span>
             </div>
             <div className="flex items-center space-x-4">
@@ -136,7 +211,7 @@ export default function DashboardClient() {
                       Profile
                     </button>
                     <button
-                      onClick={handleLogout}
+                      onClick={handleLogoutClick}
                       className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
                     >
                       Logout
@@ -144,17 +219,22 @@ export default function DashboardClient() {
                   </div>
                 )}
               </div>
-              <img
+              {/* <img
                 className="box shake-after-10s"
                 width="70"
                 src="/images/kissan_sathi_logo.png"
-                alt="Kissan Sathi"
-              />
+                alt="Kisaan Sathi"
+              /> */}
             </div>
           </header>
 
-          <FarmScoreCard />
-          <ActionCenter onDiseaseClick={handleIdentifyDisease} />
+          <FarmScoreCard severity={severity} avgSoilMoisture={avgSoilMoisture} soilMoisture7d={soilMoisture7d} selectedDate={selectedDate} onFieldSelect={(field) => {
+            if (field?.id) {
+              setSelectedFieldId(field.id);
+              localStorage.setItem('selectedFieldId', field.id);
+            }
+          }} />
+          <ActionCenter onDiseaseClick={handleIdentifyDisease} severity={severity} avgSoilMoisture={avgSoilMoisture} soilMoisture7d={soilMoisture7d} moistActions={moistActions} tempActions={tempActions}/>
           {/* <SensorMetrics /> */}
           {/* <CropOverview /> */}
         </main>

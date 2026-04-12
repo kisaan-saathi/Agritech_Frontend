@@ -6,27 +6,25 @@ import {
   Trash2, Edit2, Mail, CheckSquare, Square, 
   ArrowUpDown, Info, FileText, Sprout, Tractor, Droplets, Printer
 } from 'lucide-react';
+import { fetchFieldsData } from '@/lib/api';
 
 // --- Types ---
 interface FieldData {
   id: string;
-  fieldName: string;
-  group: string;
-  location: string;
-  coords: string;
-  ndviChange: number;
-  ndmiDate: string;
-  ndmiValue: number;
-  ndmiChange: number;
-  reciDate: string;
-  reciValue: number;
-  reciChange: number;
+
+  farmer_name: string;
+  farm_name: string;
+  crop_name: string;
   area: string;
-  crop: string;
-  variety: string;
-  sowingDate: string;
-  [key: string]: any; 
+
+  ndvi: number;
+  ndmi: number;
+  savi: number;
+  evi: number;
+  ndwi: number;
+  ndre: number;
 }
+
 
 interface ColumnDef {
   id: string;
@@ -42,40 +40,41 @@ interface Template {
 
 // --- MOCK DATA ---
 const ALL_COLUMNS: ColumnDef[] = [
-  { id: 'field', label: 'Field Name', category: 'General' },
-  { id: 'group', label: 'Group', category: 'General' },
-  { id: 'crop', label: 'Crop', category: 'General' },
-  { id: 'variety', label: 'Variety', category: 'General' },
-  { id: 'area', label: 'Area', category: 'General' },
-  { id: 'sowing', label: 'Sowing Date', category: 'General' },
-  { id: 'ndvi_change', label: 'NDVI Change', category: 'Satellite' },
-  { id: 'ndmi_date', label: 'NDMI Date', category: 'Satellite' },
-  { id: 'ndmi_val', label: 'NDMI Value', category: 'Satellite' },
-  { id: 'ndmi_change', label: 'NDMI Change', category: 'Satellite' },
-  { id: 'reci_date', label: 'RECI Date', category: 'Satellite' },
-  { id: 'reci_val', label: 'RECI Value', category: 'Satellite' },
-  { id: 'reci_change', label: 'RECI Change', category: 'Satellite' },
+  { id: 'farmer_name', label: 'Farmer Name', category: 'General' },
+  { id: 'farm_name', label: 'Field Name', category: 'General' },
+  { id: 'crop_name', label: 'Crop', category: 'General' },
+  { id: 'area_ha', label: 'Area', category: 'General' },
+
+  { id: 'ndvi', label: 'NDVI', category: 'Satellite' },
+  { id: 'ndmi', label: 'NDMI', category: 'Satellite' },
+  { id: 'savi', label: 'SAVI', category: 'Satellite' },
+  { id: 'evi', label: 'EVI', category: 'Satellite' },
+  { id: 'ndwi', label: 'NDWI', category: 'Satellite' },
+  { id: 'ndre', label: 'NDRE', category: 'Satellite' }
+
+//   { id: 'temperature', label: 'Temperature (°C)', category: 'Weather' },
+//   { id: 'rainfall', label: 'Rainfall (mm)', category: 'Weather' },
 ];
 
-const INITIAL_DATA: FieldData[] = [
-  { id: '1', fieldName: 'Plot A-12', group: 'Baramati North', location: 'Maharastra', coords: '20.8346°N', ndviChange: -0.01, ndmiDate: 'Dec 16, 2025', ndmiValue: 0.32, ndmiChange: 0.02, reciDate: 'Dec 16, 2025', reciValue: 5.30, reciChange: -0.54, area: '1.8 ha', crop: 'Wheat', variety: 'Lokwan', sowingDate: '15 Nov 2025' },
-  { id: '2', fieldName: 'Plot B-04', group: 'Baramati North', location: 'Maharastra', coords: '20.8350°N', ndviChange: 0.05, ndmiDate: 'Dec 16, 2025', ndmiValue: 0.41, ndmiChange: 0.08, reciDate: 'Dec 16, 2025', reciValue: 6.12, reciChange: 0.15, area: '2.4 ha', crop: 'Mustard', variety: 'Pusa Bold', sowingDate: '20 Oct 2025' },
-  { id: '3', fieldName: 'Plot C-09', group: 'Baramati South', location: 'Maharastra', coords: '20.8360°N', ndviChange: -0.12, ndmiDate: 'Dec 15, 2025', ndmiValue: 0.28, ndmiChange: -0.05, reciDate: 'Dec 15, 2025', reciValue: 4.80, reciChange: -0.22, area: '1.2 ha', crop: 'Paddy', variety: 'Basmati', sowingDate: '10 Nov 2025' },
-  { id: '4', fieldName: 'Exp-Zone', group: 'Baramati South', location: 'Maharastra', coords: '20.8370°N', ndviChange: 0.15, ndmiDate: 'Dec 16, 2025', ndmiValue: 0.55, ndmiChange: 0.12, reciDate: 'Dec 16, 2025', reciValue: 7.10, reciChange: 0.45, area: '0.9 ha', crop: 'Wheat', variety: 'HD-2967', sowingDate: '01 Nov 2025' },
-  { id: '5', fieldName: 'Plot D-22', group: 'Baramati North', location: 'Maharastra', coords: '20.8388°N', ndviChange: 0.02, ndmiDate: 'Dec 17, 2025', ndmiValue: 0.44, ndmiChange: 0.01, reciDate: 'Dec 17, 2025', reciValue: 5.90, reciChange: 0.10, area: '3.1 ha', crop: 'Sugarcane', variety: 'Co-86032', sowingDate: '12 Dec 2024' },
-];
 
-const INITIAL_TEMPLATES: Template[] = [
-  { id: 't1', name: 'Standard Satellite', columns: ['field', 'ndvi_change', 'ndmi_val', 'reci_val'] },
-  { id: 't2', name: 'Agronomy Report', columns: ['field', 'crop', 'variety', 'sowing', 'area'] }
-];
 
 const AgriReport: React.FC = () => {
+  const [data, setData] = useState<FieldData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [pageSize] = useState(20);
+
   // --- STATE ---
   const [activeColumns, setActiveColumns] = useState<string[]>([
-    'field', 'crop', 'ndvi_change', 'ndmi_val', 'ndmi_change', 'reci_val'
-  ]);
-  
+  'farmer_name',
+  'farm_name',
+  'crop_name',
+  'ndvi',
+  'ndmi'
+]);
+
   // UI States
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -84,14 +83,12 @@ const AgriReport: React.FC = () => {
   const [showExportMenu, setShowExportMenu] = useState(false); // New export menu state
   
   // Filters
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const [selectedCrop, setSelectedCrop] = useState<string | null>(null);
-  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [columnSearch, setColumnSearch] = useState<Record<string, string>>({});
 
   // Templates
-  const [templates, setTemplates] = useState<Template[]>(INITIAL_TEMPLATES);
-  const [activeTemplateId, setActiveTemplateId] = useState<string>('t1');
+  const [templates, setTemplates] = useState<Template[]>([])
+  const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
+
 
   // Sorting
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
@@ -103,69 +100,99 @@ const AgriReport: React.FC = () => {
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
-        setOpenDropdown(null);
         setShowExportMenu(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true);
+        setData([]);
+        setCurrentPage(1);
+        const searchFilters = Object.keys(columnSearch).reduce((acc, key) => {
+          if (columnSearch[key]) {
+            acc[key] = columnSearch[key];
+          }
+          return acc;
+        }, {} as Record<string, string>);
+        
+        const res = await fetchFieldsData(
+          activeColumns.join(','), 
+          1, 
+          pageSize, 
+          sortConfig?.key, 
+          sortConfig?.direction === 'asc' ? 'ASC' : 'DESC',
+          Object.keys(searchFilters).length > 0 ? searchFilters : undefined
+        );
+        setData(res.data.fields || []);
+        setHasMore(res.data.pagination.currentPage < res.data.pagination.totalPages);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, [activeColumns, sortConfig, columnSearch]);
+
+  const loadMore = async () => {
+    if (loadingMore || !hasMore) return;
+    
+    try {
+      setLoadingMore(true);
+      const nextPage = currentPage + 1;
+      const searchFilters = Object.keys(columnSearch).reduce((acc, key) => {
+        if (columnSearch[key]) {
+          acc[key] = columnSearch[key];
+        }
+        return acc;
+      }, {} as Record<string, string>);
+      
+      const res = await fetchFieldsData(
+        activeColumns.join(','), 
+        nextPage, 
+        pageSize, 
+        sortConfig?.key, 
+        sortConfig?.direction === 'asc' ? 'ASC' : 'DESC',
+        Object.keys(searchFilters).length > 0 ? searchFilters : undefined
+      );
+      const newData = res.data.fields || [];
+      setData(prev => {
+        const combined = [...prev, ...newData];
+
+        // Remove duplicate IDs safely
+        const unique = Array.from(
+          new Map(combined.map(item => [item.id, item])).values()
+        );
+
+        return unique;
+      });
+      setCurrentPage(nextPage);
+      setHasMore(res.data.pagination.currentPage < res.data.pagination.totalPages);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   // 1. DYNAMIC DATA PROCESSING
   const processedData = useMemo(() => {
-    let result = [...INITIAL_DATA];
-
-    if (selectedCrop) result = result.filter(item => item.crop === selectedCrop);
-    if (selectedGroup) result = result.filter(item => item.group === selectedGroup);
-
-    Object.keys(columnSearch).forEach(key => {
-        const searchTerm = columnSearch[key].toLowerCase();
-        if (searchTerm) {
-            result = result.filter(row => {
-                let val: any = '';
-                if(key === 'field') val = row.fieldName;
-                else if(key === 'ndvi_change') val = row.ndviChange;
-                else if(key === 'ndmi_val') val = row.ndmiValue;
-                else if(key === 'reci_val') val = row.reciValue;
-                else val = row[key];
-                return String(val).toLowerCase().includes(searchTerm);
-            });
-        }
-    });
-
-    if (sortConfig) {
-        result.sort((a, b) => {
-            let valA: any = a[sortConfig.key === 'field' ? 'fieldName' : sortConfig.key] || a[sortConfig.key];
-            let valB: any = b[sortConfig.key === 'field' ? 'fieldName' : sortConfig.key] || b[sortConfig.key];
-
-            if(sortConfig.key.includes('val') || sortConfig.key.includes('Change')) {
-                 if(sortConfig.key === 'ndmi_val') { valA = a.ndmiValue; valB = b.ndmiValue; }
-                 else if(sortConfig.key === 'reci_val') { valA = a.reciValue; valB = b.reciValue; }
-                 else if(sortConfig.key === 'ndvi_change') { valA = a.ndviChange; valB = b.ndviChange; }
-            }
-
-            if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
-            if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
-            return 0;
-        });
-    }
-    return result;
-  }, [selectedCrop, selectedGroup, columnSearch, sortConfig]);
+    return [...data];
+  }, [data]);
 
   // 2. EXPORT LOGIC
   const handleDownloadCSV = () => {
     const headers = activeColumns.map(colId => ALL_COLUMNS.find(c => c.id === colId)?.label || colId);
     
     const getVal = (row: FieldData, colId: string) => {
-        if(colId === 'field') return row.fieldName;
-        if(colId === 'ndvi_change') return row.ndviChange;
-        if(colId === 'ndmi_val') return row.ndmiValue;
-        if(colId === 'ndmi_change') return row.ndmiChange;
-        if(colId === 'reci_val') return row.reciValue;
-        if(colId === 'reci_change') return row.reciChange;
-        if(colId.includes('date')) return row[colId === 'ndmi_date' ? 'ndmiDate' : 'reciDate'];
-        return row[colId] || '';
-    };
+  return (row as any)[colId] ?? '';
+};
+
 
     const csvRows = [
       headers.join(','), 
@@ -209,77 +236,35 @@ const AgriReport: React.FC = () => {
     setShowTemplateModal(false);
   };
 
-  const handleClear = () => {
-    setSortConfig(null);
-    setSelectedCrop(null);
-    setSelectedGroup(null);
-    setColumnSearch({});
-    setShowFilters(false);
-  };
 
   // --- RENDERERS ---
 
   const renderCell = (row: FieldData, colId: string) => {
-    switch (colId) {
-      case 'field':
-        return (
-          <div className="flex items-center gap-3">
-             <div className="bg-emerald-100 p-1.5 rounded text-emerald-700">
-                <Sprout size={16} />
-             </div>
-             <div>
-                <div className="font-bold text-slate-800">{row.fieldName}</div>
-                <div className="text-xs text-slate-500">{row.group}</div>
-             </div>
-          </div>
-        );
-      case 'crop':
-        return (
-            <div className="flex items-center gap-2 text-slate-700 font-medium">
-                <span className={`w-2 h-2 rounded-full ${row.crop === 'Wheat' ? 'bg-yellow-500' : row.crop === 'Paddy' ? 'bg-emerald-500' : 'bg-orange-500'}`}></span>
-                {row.crop}
-            </div>
-        );
-      case 'ndvi_change':
-      case 'ndmi_change':
-      case 'reci_change':
-        const val = colId === 'ndvi_change' ? row.ndviChange : colId === 'ndmi_change' ? row.ndmiChange : row.reciChange;
-        const isPositive = val > 0;
-        return (
-            <span className={`px-2 py-0.5 rounded text-xs font-bold ${isPositive ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-600 border border-red-200'}`}>
-                {isPositive ? '+' : ''}{val}
-            </span>
-        );
-      case 'ndmi_date':
-      case 'reci_date':
-        const dateVal = colId === 'ndmi_date' ? row.ndmiDate : row.reciDate;
-        return (
-          <div className="flex items-center gap-3">
-             <div className="w-8 h-8 bg-slate-100 border border-slate-200 rounded flex items-center justify-center text-slate-500">
-                <span className="text-[10px] font-bold">SAT</span>
-             </div>
-             <span className="text-slate-600 text-xs font-medium">{dateVal}</span>
-          </div>
-        );
-      case 'ndmi_val': return <span className="font-mono font-semibold text-slate-700">{row.ndmiValue.toFixed(2)}</span>;
-      case 'reci_val': return <span className="font-mono font-semibold text-slate-700">{row.reciValue.toFixed(2)}</span>;
-      default: return <span className="text-slate-600">{row[colId] || row[colId.replace('_', '')] || '--'}</span>;
-    }
-  };
+  const value = row[colId as keyof FieldData];
 
+  if (typeof value === 'number') {
+    return (
+      <span className="font-mono font-semibold text-slate-700">
+        {value.toFixed(2)}
+      </span>
+    );
+  }
+
+  return <span className="text-slate-700">{value ?? '--'}</span>;
+};
   return (
     // MAIN CONTAINER - Theme: Standard Agriculture (Light & Clean)
     <div className="w-full min-h-screen h-full bg-slate-50 text-slate-800 font-sans text-sm flex flex-col relative print:bg-white" ref={wrapperRef}>
       
       {/* 1. HEADER BAR */}
-      <div className="flex flex-wrap justify-between items-center px-6 py-4 border-b border-emerald-200 bg-white shadow-sm gap-4 print:border-none print:shadow-none print:px-0">
+      <div className="flex flex-wrap justify-between items-center px-6 py-4 border-b border-emerald-200 bg-green-600 shadow-sm gap-4 print:border-none print:shadow-none print:px-0">
         <div className="flex items-center gap-3">
            <div className="bg-emerald-600 p-2 rounded-lg text-white shadow-md shadow-emerald-200">
              <Tractor size={20} />
            </div>
            <div>
-               <h1 className="text-xl font-bold text-slate-800 tracking-tight">KVK Custom-Report</h1>
-               <div className="text-[11px] text-emerald-600 uppercase tracking-wider font-bold">Farm Monitoring Dashboard</div>
+               <h1 className="text-xl font-bold text-white tracking-tight">KVK Custom-Report</h1>
+               <div className="text-[11px] text-white uppercase tracking-wider font-bold">Farm Monitoring Dashboard</div>
            </div>
         </div>
 
@@ -289,12 +274,12 @@ const AgriReport: React.FC = () => {
                 onClick={() => setShowSummary(!showSummary)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-colors border ${showSummary ? 'bg-emerald-50 border-emerald-500 text-emerald-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
             >
-                <span className="text-lg text-emerald-500">✦</span> Summary
+                ✦ Summary
             </button>
             
             <button 
                 onClick={() => setShowTemplateModal(true)}
-                className="bg-white hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-md flex items-center gap-2 border border-slate-200 shadow-sm"
+                className="h-full bg-white hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-md flex items-center gap-2 border border-slate-200 shadow-sm"
             >
                 <Settings size={16} /> Templates
             </button>
@@ -342,74 +327,22 @@ const AgriReport: React.FC = () => {
       {showSummary && (
         <div className="bg-emerald-50 border-b border-emerald-100 px-6 py-4 animate-in fade-in slide-in-from-top-2 print:hidden">
             <h3 className="text-emerald-800 font-bold mb-2 flex items-center gap-2"><Droplets size={16}/> Irrigation Insights</h3>
-            <p className="text-emerald-900 text-sm leading-relaxed max-w-4xl">
-                Current analysis of <strong>{processedData.length} plots</strong> shows optimal RECI values in {selectedCrop || 'all crops'}. 
+            <p className="text-emerald-900 text-sm leading-relaxed max-w-4xl"> 
                 Moisture index (NDMI) suggests irrigation required for <strong>Plot A-12</strong> within 48 hours.
             </p>
         </div>
       )}
 
-      {/* 2. FILTER BAR - Hidden on Print */}
-      <div className="flex flex-wrap items-center gap-4 px-6 py-3 border-b border-slate-200 bg-white sticky top-0 z-20 print:hidden">
-         
-         {/* Group Dropdown */}
-         <div className="relative">
-            <button 
-                onClick={() => setOpenDropdown(openDropdown === 'group' ? null : 'group')}
-                className={`bg-white border px-4 py-1.5 rounded min-w-[140px] flex justify-between items-center text-sm hover:border-emerald-400 transition-colors shadow-sm ${selectedGroup ? 'border-emerald-500 text-emerald-700 bg-emerald-50' : 'border-slate-300 text-slate-600'}`}
-            >
-                {selectedGroup || "All Groups"} <ChevronDown size={14} />
-            </button>
-            {openDropdown === 'group' && (
-                <div className="absolute left-0 top-full mt-2 w-48 bg-white border border-slate-200 rounded shadow-xl z-[9999]">
-                    <div className="p-2 text-xs text-slate-400 font-bold border-b border-slate-100">Select Zone</div>
-                    {['Baramati North', 'Baramati South'].map(g => (
-                         <div 
-                            key={g} 
-                            onClick={() => { setSelectedGroup(g); setOpenDropdown(null); }}
-                            className={`px-3 py-2 hover:bg-slate-50 cursor-pointer text-slate-700 flex justify-between ${selectedGroup === g ? 'text-emerald-600 font-medium bg-emerald-50' : ''}`}
-                         >
-                            {g}
-                            {selectedGroup === g && <CheckSquare size={14}/>}
-                         </div>
-                    ))}
-                </div>
-            )}
-         </div>
-
-         {/* Crop Dropdown */}
-         <div className="relative">
-            <button 
-                onClick={() => setOpenDropdown(openDropdown === 'crop' ? null : 'crop')}
-                className={`bg-white border px-4 py-1.5 rounded min-w-[140px] flex justify-between items-center text-sm hover:border-emerald-400 transition-colors shadow-sm ${selectedCrop ? 'border-emerald-500 text-emerald-700 bg-emerald-50' : 'border-slate-300 text-slate-600'}`}
-            >
-                {selectedCrop || "All Crops"} <ChevronDown size={14} />
-            </button>
-            
-            {openDropdown === 'crop' && (
-                <div className="absolute left-0 top-full mt-2 w-48 bg-white border border-slate-200 rounded shadow-xl z-[9999]">
-                    <div className="p-2 text-xs text-slate-400 font-bold border-b border-slate-100">Select Crop</div>
-                    {['Wheat', 'Mustard', 'Paddy', 'Sugarcane'].map(crop => (
-                         <div 
-                            key={crop}
-                            onClick={() => { setSelectedCrop(crop); setOpenDropdown(null); }}
-                            className={`px-3 py-2 hover:bg-slate-50 cursor-pointer flex justify-between items-center ${selectedCrop === crop ? 'text-emerald-600 font-medium bg-emerald-50' : 'text-slate-700'}`}
-                         >
-                            {crop}
-                            {selectedCrop === crop && <CheckSquare size={14} />}
-                         </div>
-                    ))}
-                </div>
-            )}
-         </div>
-
-         <button onClick={handleClear} className="text-slate-500 hover:text-red-500 flex items-center gap-1 text-sm ml-auto md:ml-0 transition-colors font-medium">
-            <X size={14} /> Clear
-         </button>
-      </div>
-
       {/* 3. TABLE AREA */}
-      <div className="flex-1 w-full overflow-auto custom-scrollbar bg-slate-50 relative z-10 print:overflow-visible print:bg-white">
+      <div 
+        className="flex-1 w-full overflow-auto custom-scrollbar bg-slate-50 relative z-10 print:overflow-visible print:bg-white"
+        onScroll={(e) => {
+          const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+          if (hasMore && !loadingMore) {
+            loadMore();
+          }
+        }}
+      >
         <table className="w-full text-left border-collapse min-w-[900px] print:min-w-0">
             <thead className="sticky top-0 bg-emerald-50 z-20 shadow-sm print:static print:bg-white print:border-b-2 print:border-slate-800">
                 <tr className="border-b border-emerald-200 text-xs uppercase tracking-wide text-emerald-800 font-bold">
@@ -444,8 +377,8 @@ const AgriReport: React.FC = () => {
                 )}
             </thead>
             <tbody className="divide-y divide-slate-200 bg-white">
-                {processedData.map((row) => (
-                    <tr key={row.id} className="hover:bg-slate-50 transition-colors group print:hover:bg-transparent">
+                {processedData.map((row, index) => (
+                    <tr key={`${row.id}-${index}`} className="hover:bg-slate-50 transition-colors group print:hover:bg-transparent">
                          {ALL_COLUMNS.filter(col => activeColumns.includes(col.id)).map(col => (
                             <td key={col.id} className="px-6 py-3 whitespace-nowrap print:px-2 print:py-2 print:text-xs">
                                 {renderCell(row, col.id)}
@@ -455,13 +388,6 @@ const AgriReport: React.FC = () => {
                 ))}
             </tbody>
         </table>
-        {processedData.length === 0 && (
-             <div className="p-12 text-center text-slate-500 flex flex-col items-center">
-                <Sprout size={48} className="mb-4 text-emerald-200" />
-                <p className="mb-2 font-medium">No agricultural data matches your filters.</p>
-                <button onClick={handleClear} className="text-emerald-600 hover:underline font-bold">Reset Dashboard</button>
-             </div>
-        )}
       </div>
 
       {/* --- MODAL 1: TEMPLATE SELECTOR (Hidden on Print) --- */}

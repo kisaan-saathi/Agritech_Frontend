@@ -1,4 +1,3 @@
-// app/market/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -6,495 +5,737 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
-  AlertTriangle,
   MapPin,
-  Sprout,
   Filter,
   Loader2,
   RefreshCw,
   IndianRupee,
   Navigation,
-  Globe,
-  Wifi,
-  ServerOff
+  ArrowUpRight,
+  ArrowDownRight,
+  Sparkles,
+  CalendarDays,
+  ChevronRight,
+  Target,
+  Sprout,
+  ShieldCheck,
+  Activity
 } from "lucide-react";
 import {
   AreaChart,
   Area,
-  BarChart, // Added for the new chart
-  Bar,      // Added for the new chart
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   Tooltip,
   ResponsiveContainer,
   CartesianGrid
 } from "recharts";
-import PageHeader from "@/components/layout/PageHeader";
 
-/* ================= 1. CONSTANTS & DATA LISTS ================= */
+import {
+  fetchMarkets,
+  fetchStates,
+  fetchDistrictsByState,
+  fetchPriceDynamics,
+} from "@/lib/market";
+import Image from "next/image";
+ 
+/* ================= 1. CONSTANTS ================= */
 
-const ALL_STATES = [
-  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa",
-  "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala",
-  "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland",
-  "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana",
-  "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "Delhi"
+const TOP_GAINERS = [
+  { name: "Moong", price: 4305.0, change: 10.31 },
+  { name: "Arhar", price: 3964.8, change: 8.68 },
+  { name: "Maize", price: 1635.6, change: 5.53 },
+  { name: "Sesamum", price: 7089.6, change: 4.98 },
+  { name: "Gram", price: 4107.6, change: 4.19 },
 ];
 
-// Mapping of Districts for major states
-const DISTRICTS: Record<string, string[]> = {
-  "Andhra Pradesh": ["Alluri Sitharama Raju", "Anakapalli", "Anantapur", "Annamayya", "Bapatla", "Chittoor", "Dr. B.R. Ambedkar Konaseema", "East Godavari", "Eluru", "Guntur", "Kakinada", "Krishna", "Kurnool", "Nandyal", "NTR", "Palnadu", "Parvathipuram Manyam", "Prakasam", "Sri Potti Sriramulu Nellore", "Sri Sathya Sai", "Srikakulam", "Tirupati", "Visakhapatnam", "Vizianagaram", "West Godavari", "YSR Kadapa"],
-  "Arunachal Pradesh": ["Anjaw", "Changlang", "Dibang Valley", "East Kameng", "East Siang", "Kamle", "Kra Daadi", "Kurung Kumey", "Lepa Rada", "Lohit", "Longding", "Lower Dibang Valley", "Lower Siang", "Lower Subansiri", "Namsai", "Pakke Kessang", "Papum Pare", "Shi Yomi", "Siang", "Tawang", "Tirap", "Upper Siang", "Upper Subansiri", "West Kameng", "West Siang", "Itanagar Capital Complex"],
-  "Assam": ["Baksa", "Barpeta", "Biswanath", "Bongaigaon", "Cachar", "Charaideo", "Chirang", "Darrang", "Dhemaji", "Dhubri", "Dibrugarh", "Dima Hasao", "Goalpara", "Golaghat", "Hailakandi", "Hojai", "Jorhat", "Kamrup", "Kamrup Metropolitan", "Karbi Anglong", "Karimganj", "Kokrajhar", "Lakhimpur", "Majuli", "Morigaon", "Nagaon", "Nalbari", "Sivasagar", "Sonitpur", "South Salmara-Mankachar", "Tinsukia", "Udalguri", "West Karbi Anglong"],
-  "Bihar": ["Araria", "Arwal", "Aurangabad", "Banka", "Begusarai", "Bhagalpur", "Bhojpur", "Buxar", "Darbhanga", "East Champaran", "Gaya", "Gopalganj", "Jamui", "Jehanabad", "Kaimur", "Katihar", "Khagaria", "Kishanganj", "Lakhisarai", "Madhepura", "Madhubani", "Munger", "Muzaffarpur", "Nalanda", "Nawada", "Patna", "Purnia", "Rohtas", "Saharsa", "Samastipur", "Saran", "Sheikhpura", "Sheohar", "Sitamarhi", "Siwan", "Supaul", "Vaishali", "West Champaran"],
-  "Chandigarh": ["Chandigarh"],
-  "Chhattisgarh": ["Balod", "Baloda Bazar", "Balrampur", "Bastar", "Bemetara", "Bijapur", "Bilaspur", "Dantewada", "Dhamtari", "Durg", "Gariaband", "Gaurela-Pendra-Marwahi", "Janjgir-Champa", "Jashpur", "Kabirdham", "Kanker", "Kondagaon", "Korba", "Koriya", "Mahasamund", "Manendragarh-Chirmiri-Bharatpur", "Mohla-Manpur-Ambagarh Chowki", "Mungeli", "Narayanpur", "Raigarh", "Raipur", "Rajnandgaon", "Sarangarh-Bilaigarh", "Shakti", "Sukma", "Surajpur", "Surguja"],
-  "Dadra and Nagar Haveli and Daman and Diu": ["Dadra and Nagar Haveli", "Daman", "Diu"],
-  "Delhi": ["Central Delhi", "East Delhi", "New Delhi", "North Delhi", "North East Delhi", "North West Delhi", "Shahdara", "South Delhi", "South East Delhi", "South West Delhi", "West Delhi"],
-  "Goa": ["North Goa", "South Goa"],
-  "Gujarat": ["Ahmedabad", "Amreli", "Anand", "Aravalli", "Banaskantha", "Bharuch", "Bhavnagar", "Botad", "Chhota Udaipur", "Dahod", "Dang", "Devbhoomi Dwarka", "Gandhinagar", "Gir Somnath", "Jamnagar", "Junagadh", "Kheda", "Kutch", "Mahisagar", "Mehsana", "Morbi", "Narmada", "Navsari", "Panchmahal", "Patan", "Porbandar", "Rajkot", "Sabarkantha", "Surat", "Surendranagar", "Tapi", "Vadodara", "Valsad"],
-  "Haryana": ["Ambala", "Bhiwani", "Charkhi Dadri", "Faridabad", "Fatehabad", "Gurugram", "Hisar", "Jhajjar", "Jind", "Kaithal", "Karnal", "Kurukshetra", "Mahendragarh", "Nuh", "Palwal", "Panchkula", "Panipat", "Rewari", "Rohtak", "Sirsa", "Sonipat", "Yamunanagar"],
-  "Himachal Pradesh": ["Bilaspur", "Chamba", "Hamirpur", "Kangra", "Kinnaur", "Kullu", "Lahaul and Spiti", "Mandi", "Shimla", "Sirmaur", "Solan", "Una"],
-  "Jammu and Kashmir": ["Anantnag", "Bandipora", "Baramulla", "Budgam", "Doda", "Ganderbal", "Jammu", "Kathua", "Kishtwar", "Kulgam", "Kupwara", "Poonch", "Pulwama", "Rajouri", "Ramban", "Reasi", "Samba", "Shopian", "Srinagar", "Udhampur"],
-  "Jharkhand": ["Bokaro", "Chatra", "Deoghar", "Dhanbad", "Dumka", "East Singhbhum", "Garhwa", "Giridih", "Godda", "Gumla", "Hazaribagh", "Jamtara", "Khunti", "Koderma", "Latehar", "Lohardaga", "Pakur", "Palamu", "Ramgarh", "Ranchi", "Sahibganj", "Saraikela Kharsawan", "Simdega", "West Singhbhum"],
-  "Karnataka": ["Bagalkot", "Ballari", "Belagavi", "Bengaluru Rural", "Bengaluru Urban", "Bidar", "Chamarajanagar", "Chikkaballapura", "Chikkamagaluru", "Chitradurga", "Dakshina Kannada", "Davanagere", "Dharwad", "Gadag", "Hassan", "Haveri", "Kalaburagi", "Kodagu", "Kolar", "Koppal", "Mandya", "Mysuru", "Raichur", "Ramanagara", "Shivamogga", "Tumakuru", "Udupi", "Uttara Kannada", "Vijayanagara", "Vijayapura", "Yadgir"],
-  "Kerala": ["Alappuzha", "Ernakulam", "Idukki", "Kannur", "Kasaragod", "Kollam", "Kottayam", "Kozhikode", "Malappuram", "Palakkad", "Pathanamthitta", "Thiruvananthapuram", "Thrissur", "Wayanad"],
-  "Ladakh": ["Kargil", "Leh"],
-  "Lakshadweep": ["Lakshadweep"],
-  "Madhya Pradesh": ["Agar Malwa", "Alirajpur", "Anuppur", "Ashoknagar", "Balaghat", "Barwani", "Betul", "Bhind", "Bhopal", "Burhanpur", "Chhatarpur", "Chhindwara", "Damoh", "Datia", "Dewas", "Dhar", "Dindori", "Guna", "Gwalior", "Harda", "Hoshangabad", "Indore", "Jabalpur", "Jhabua", "Katni", "Khandwa", "Khargone", "Mandla", "Mandsaur", "Morena", "Narsinghpur", "Neemuch", "Niwari", "Panna", "Raisen", "Rajgarh", "Ratlam", "Rewa", "Sagar", "Satna", "Sehore", "Seoni", "Shahdol", "Shajapur", "Sheopur", "Shivpuri", "Sidhi", "Singrauli", "Tikamgarh", "Ujjain", "Umaria", "Vidisha"],
-  "Maharashtra": ["Ahmednagar", "Akola", "Amravati", "Aurangabad", "Beed", "Bhandara", "Buldhana", "Chandrapur", "Dhule", "Gadchiroli", "Gondia", "Hingoli", "Jalgaon", "Jalna", "Kolhapur", "Latur", "Mumbai City", "Mumbai Suburban", "Nagpur", "Nanded", "Nandurbar", "Nashik", "Osmanabad", "Palghar", "Parbhani", "Pune", "Raigad", "Ratnagiri", "Sangli", "Satara", "Sindhudurg", "Solapur", "Thane", "Wardha", "Washim", "Yavatmal"],
-  "Manipur": ["Bishnupur", "Chandel", "Churachandpur", "Imphal East", "Imphal West", "Jiribam", "Kakching", "Kamjong", "Kangpokpi", "Noney", "Pherzawl", "Senapati", "Tamenglong", "Tengnoupal", "Thoubal", "Ukhrul"],
-  "Meghalaya": ["East Garo Hills", "East Jaintia Hills", "East Khasi Hills", "Eastern West Khasi Hills", "North Garo Hills", "Ri Bhoi", "South Garo Hills", "South West Garo Hills", "South West Khasi Hills", "West Garo Hills", "West Jaintia Hills", "West Khasi Hills"],
-  "Mizoram": ["Aizawl", "Champhai", "Hnahthial", "Khawzawl", "Kolasib", "Lawngtlai", "Lunglei", "Mamit", "Saiha", "Saitual", "Serchhip"],
-  "Nagaland": ["Chümoukedima", "Dimapur", "Kiphire", "Kohima", "Longleng", "Mokokchung", "Mon", "Niuland", "Noklak", "Peren", "Phek", "Shamator", "Tseminyü", "Tuensang", "Wokha", "Zunheboto"],
-  "Odisha": ["Angul", "Balangir", "Balasore", "Bargarh", "Bhadrak", "Boudh", "Cuttack", "Deogarh", "Dhenkanal", "Gajapati", "Ganjam", "Jagatsinghpur", "Jajpur", "Jharsuguda", "Kalahandi", "Kandhamal", "Kendrapara", "Kendujhar", "Khordha", "Koraput", "Malkangiri", "Mayurbhanj", "Nabarangpur", "Nayagarh", "Nuapada", "Puri", "Rayagada", "Sambalpur", "Subarnapur", "Sundargarh"],
-  "Puducherry": ["Karaikal", "Mahe", "Puducherry", "Yanam"],
-  "Punjab": ["Amritsar", "Barnala", "Bathinda", "Faridkot", "Fatehgarh Sahib", "Fazilka", "Ferozepur", "Gurdaspur", "Hoshiarpur", "Jalandhar", "Kapurthala", "Ludhiana", "Malerkotla", "Mansa", "Moga", "Mohali", "Muktsar", "Pathankot", "Patiala", "Rupnagar", "Sangrur", "Shaheed Bhagat Singh Nagar", "Tarn Taran"],
-  "Rajasthan": ["Ajmer", "Alwar", "Anupgarh", "Balotra", "Banswara", "Baran", "Barmer", "Beawar", "Bharatpur", "Bhilwara", "Bikaner", "Bundi", "Chittorgarh", "Churu", "Dausa", "Deeg", "Dholpur", "Didwana-Kuchaman", "Dudu", "Dungarpur", "Gangapur City", "Hanumangarh", "Jaipur", "Jaipur Rural", "Jaisalmer", "Jalore", "Jhalawar", "Jhunjhunu", "Jodhpur", "Jodhpur Rural", "Karauli", "Kekri", "Khairthal-Tijara", "Kota", "Kotputli-Behror", "Nagaur", "Neem Ka Thana", "Pali", "Phalodi", "Pratapgarh", "Rajsamand", "Salumbar", "Sanchore", "Sawai Madhopur", "Shahpura", "Sikar", "Sirohi", "Sri Ganganagar", "Tonk", "Udaipur"],
-  "Sikkim": ["Gangtok", "Gyalshing", "Mangan", "Namchi", "Pakyong", "Soreng"],
-  "Tamil Nadu": ["Ariyalur", "Chengalpattu", "Chennai", "Coimbatore", "Cuddalore", "Dharmapuri", "Dindigul", "Erode", "Kallakurichi", "Kanchipuram", "Kanyakumari", "Karur", "Krishnagiri", "Madurai", "Mayiladuthurai", "Nagapattinam", "Namakkal", "Nilgiris", "Perambalur", "Pudukkottai", "Ramanathapuram", "Ranipet", "Salem", "Sivaganga", "Tenkasi", "Thanjavur", "Theni", "Thoothukudi", "Tiruchirappalli", "Tirunelveli", "Tirupathur", "Tiruppur", "Tiruvallur", "Tiruvannamalai", "Tiruvarur", "Vellore", "Viluppuram", "Virudhunagar"],
-  "Telangana": ["Adilabad", "Bhadradri Kothagudem", "Hanamkonda", "Hyderabad", "Jagtial", "Jangaon", "Jayashankar Bhupalpally", "Jogulamba Gadwal", "Kamareddy", "Karimnagar", "Khammam", "Komaram Bheem Asifabad", "Mahabubabad", "Mahabubnagar", "Mancherial", "Medak", "Medchal-Malkajgiri", "Mulugu", "Nagarkurnool", "Nalgonda", "Narayanpet", "Nirmal", "Nizamabad", "Peddapalli", "Rajanna Sircilla", "Rangareddy", "Sangareddy", "Siddipet", "Suryapet", "Vikarabad", "Wanaparthy", "Warangal", "Yadadri Bhuvanagiri"],
-  "Tripura": ["Dhalai", "Gomati", "Khowai", "North Tripura", "Sepahijala", "South Tripura", "Unakoti", "West Tripura"],
-  "Uttar Pradesh": ["Agra", "Aligarh", "Ambedkar Nagar", "Amethi", "Amroha", "Auraiya", "Ayodhya", "Azamgarh", "Baghpat", "Bahraich", "Ballia", "Balrampur", "Banda", "Barabanki", "Bareilly", "Basti", "Bhadohi", "Bijnor", "Budaun", "Bulandshahr", "Chandauli", "Chitrakoot", "Deoria", "Etah", "Etawah", "Farrukhabad", "Fatehpur", "Firozabad", "Gautam Buddha Nagar", "Ghaziabad", "Ghazipur", "Gonda", "Gorakhpur", "Hamirpur", "Hapur", "Hardoi", "Hathras", "Jalaun", "Jaunpur", "Jhansi", "Kannauj", "Kanpur Dehat", "Kanpur Nagar", "Kasganj", "Kaushambi", "Kheri", "Kushinagar", "Lalitpur", "Lucknow", "Maharajganj", "Mahoba", "Mainpuri", "Mathura", "Mau", "Meerut", "Mirzapur", "Moradabad", "Muzaffarnagar", "Pilibhit", "Pratapgarh", "Prayagraj", "Raebareli", "Rampur", "Saharanpur", "Sambhal", "Sant Kabir Nagar", "Shahjahanpur", "Shamli", "Shravasti", "Siddharthnagar", "Sitapur", "Sonbhadra", "Sultanpur", "Unnao", "Varanasi"],
-  "Uttarakhand": ["Almora", "Bageshwar", "Chamoli", "Champawat", "Dehradun", "Haridwar", "Nainital", "Pauri Garhwal", "Pithoragarh", "Rudraprayag", "Tehri Garhwal", "Udham Singh Nagar", "Uttarkashi"],
-  "West Bengal": ["Alipurduar", "Bankura", "Birbhum", "Cooch Behar", "Dakshin Dinajpur", "Darjeeling", "Hooghly", "Howrah", "Jalpaiguri", "Jhargram", "Kalimpong", "Kolkata", "Malda", "Murshidabad", "Nadia", "North 24 Parganas", "Paschim Bardhaman", "Paschim Medinipur", "Purba Bardhaman", "Purba Medinipur", "Purulia", "South 24 Parganas", "Uttar Dinajpur"],
-  "Default": ["Central District", "North District", "South District", "East District"]
-};
-
-const ALL_CROPS = [
-  "Wheat", "Rice", "Maize", "Bajra", "Jowar", "Soybean", "Mustard", "Groundnut",
-  "Cotton", "Sugarcane", "Onion", "Potato", "Tomato", "Turmeric", "Chilli", "Jeera",
-  "Gram (Chana)", "Tur (Arhar)", "Moong", "Urad", "Masur", "Barley", "Ragi",
-  "Castor Seed", "Sunflower", "Sesame", "Linseed", "Safflower", "Niger Seed",
-  "Jute", "Mesta", "Coconut", "Arecanut", "Tobacco", "Tea", "Coffee", "Rubber",
-  "Cardamom", "Pepper", "Ginger", "Garlic", "Coriander", "Cumin", "Fennel", "Fenugreek"
+const TOP_LOSERS = [
+  { name: "Groundnut", price: 4536.2, change: -2.15 },
+  { name: "Rape", price: 3642.5, change: -0.61 },
+  { name: "Paddy", price: 1926.79, change: -0.51 },
+  { name: "Niger", price: 4938.5, change: 0.0 },
+  { name: "Sugarcane", price: 3813.75, change: 0.0 },
 ];
 
-const API_BASE = `${process.env.NEXT_PUBLIC_BACKEND_URL}`; 
+const STAR_PREDICTIONS = [
+  { name: "Copra", price: 5946.6, change: 5.89, trend: "up" },
+  { name: "Barley", price: 1142.68, change: -5.89, trend: "down" },
+];
 
-/* ================= 2. TYPES ================= */
 
-type MarketTick = {
-  date: string; // ISO Date YYYY-MM-DD
-  price: number;
-};
 
-type MarketItem = {
-  id: string;
-  state: string;
-  district: string;
-  market: string;
-  commodity: string;
-  arrival: string;
-  min: number;
-  max: number;
-  modal: number;
-  trendHistory: MarketTick[];
-  lastUpdated: string;
-};
+/* ================= 2. HELPERS ================= */
 
-/* ================= 3. MOCK GENERATOR (FALLBACK) ================= */
-
-const generateMockData = (state: string, district: string, commodity: string): MarketItem[] => {
-  const markets = [
-    `${district} APMC`, 
-    `${district} Mandi Yard`, 
-    `Regional Hub (${district})`, 
-    `Rural Depot - ${district.substring(0,3)}`
-  ];
-  
-  let base = 2200;
-  if (["Soybean", "Mustard", "Groundnut"].includes(commodity)) base = 5200;
-  if (["Onion", "Tomato", "Potato"].includes(commodity)) base = 1800;
-  if (["Jeera", "Cardamom", "Pepper"].includes(commodity)) base = 12000;
-  if (["Cotton", "Turmeric"].includes(commodity)) base = 7500;
-
-  return markets.map((m, i) => {
-    const variance = (Math.random() - 0.5) * (base * 0.15);
-    const currentPrice = Math.floor(base + variance);
-    
-    const history = Array.from({ length: 10 }).map((_, d) => {
-      const date = new Date();
-      date.setDate(date.getDate() - (9 - d));
-      return {
-        date: date.toISOString().split('T')[0],
-        price: Math.floor(currentPrice - (Math.random() - 0.5) * (base * 0.05) + (d * 5))
-      };
-    });
-    history[history.length - 1].price = currentPrice;
-
-    return {
-      id: `m-${i}`,
-      state,
-      district,
-      market: m,
-      commodity,
-      arrival: `${Math.floor(Math.random() * 800) + 50} Qtl`,
-      min: Math.floor(currentPrice * 0.95),
-      max: Math.floor(currentPrice * 1.05),
-      modal: currentPrice,
-      trendHistory: history,
-      lastUpdated: new Date().toISOString(),
-    };
-  });
-};
-
-/* ================= 4. HELPERS ================= */
-
-function getTrend(history: MarketTick[]) {
-  if (history.length < 2) return "flat";
-  const latest = history[history.length - 1].price;
-  const prev = history[history.length - 2].price;
-  const diff = latest - prev;
-  
-  const threshold = latest * 0.01; 
-  if (diff > threshold) return "up";
-  if (diff < -threshold) return "down";
-  return "flat";
+function getTrend(history: any[]) {
+  if (!history || history.length < 2) return "flat";
+  const latest = history[history.length - 1].price || 0;
+  const prev = history[history.length - 2].price || 0;
+  return latest > prev ? "up" : latest < prev ? "down" : "flat";
 }
 
 function formatDateTick(dateStr: string) {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  if (!dateStr || isNaN(Date.parse(dateStr))) return "";
+  return new Date(dateStr).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+  });
 }
+
 
 function getAdvisory(trend: string) {
-  if (trend === "up")
-    return {
-      label: "HOLD STOCK",
-      color: "bg-green-100 text-green-800 border-green-200",
-      icon: TrendingUp,
-      reason: "Prices are rising. Wait for peak.",
-    };
-  if (trend === "down")
-    return {
-      label: "SELL NOW",
-      color: "bg-red-100 text-red-800 border-red-200",
-      icon: TrendingDown,
-      reason: "Prices falling. Sell immediately.",
-    };
-  return {
-    label: "WATCH",
-    color: "bg-blue-50 text-blue-800 border-blue-200",
-    icon: Minus,
-    reason: "Market stable. Monitor closely.",
-  };
+  if (trend === "up") return { label: "HOLD STOCK", color: "bg-emerald-50 text-emerald-700 border-emerald-100", icon: TrendingUp, reason: "Prices are rising. Best time to wait." };
+  if (trend === "down") return { label: "SELL NOW", color: "bg-rose-50 text-rose-700 border-rose-100", icon: TrendingDown, reason: "Prices falling. Sell to avoid loss." };
+  return { label: "WATCH", color: "bg-indigo-50 text-indigo-700 border-indigo-100", icon: Minus, reason: "Market stable. Monitor movements." };
 }
 
-/* ================= 5. COMPONENT ================= */
+/* ================= 3. COMPONENT ================= */
 
 export default function MarketPage() {
-  const [state, setState] = useState("Maharashtra");
-  const [district, setDistrict] = useState("Pune");
-  const [commodity, setCommodity] = useState("Onion");
+  const [state, setState] = useState("");
+  const [district, setDistrict] = useState("");
+  const [states, setStates] = useState<string[]>([]);
+  const [districts, setDistricts] = useState<string[]>([]);
   
-  const [stateOptions, setStateOptions] = useState<string[]>([]);
-  const [districtOptions, setDistrictOptions] = useState<string[]>([]);
-  const [cropOptions, setCropOptions] = useState<string[]>([]);
 
-  const [markets, setMarkets] = useState<MarketItem[]>([]);
+  const [commodity, setCommodity] = useState("");
+  const [markets, setMarkets] = useState<any[]>([]);
+  const [rawMarketItems, setRawMarketItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [usingMock, setUsingMock] = useState(false);
+  const [crops, setCrops] = useState<string[]>([]);
 
-  // --- 1. Initialize Filters ---
+  const [priceDynamics, setPriceDynamics] = useState<any>(null);
+  const [priceLoading, setPriceLoading] = useState(false);
+  const [priceError, setPriceError] = useState<string | null>(null);
+
+
+  const noData =
+  !loading &&
+  markets.length === 0 &&
+  !!state &&
+  !!district;
+
+
+
+
+// Fetch states on mount
   useEffect(() => {
-    async function initFilters() {
-      // States
-      try {
-        const res = await fetch(`${API_BASE}/filters/states`);
-        if (!res.ok) throw new Error();
-        const data = await res.json();
-        setStateOptions(data);
-      } catch (e) {
-        setStateOptions(ALL_STATES);
-      }
-      // Crops
-      try {
-        const res = await fetch(`${API_BASE}/filters/crops`);
-        if (!res.ok) throw new Error();
-        const data = await res.json();
-        setCropOptions(data);
-      } catch (e) {
-        setCropOptions(ALL_CROPS);
-      }
-    }
-    initFilters();
+    fetchStates()
+      .then((data) => {
+        setStates(data || []);
+        if (data?.length) setState(data[0]);
+      })
+      .catch(console.error);
   }, []);
-
-  // --- 2. Update Districts ---
+  // Update districts when state changes
   useEffect(() => {
-    async function fetchDistricts() {
-      try {
-        const res = await fetch(`${API_BASE}/filters/districts?state=${state}`);
-        if (!res.ok) throw new Error();
-        const data = await res.json();
-        setDistrictOptions(data);
-        if (!data.includes(district)) setDistrict(data[0]);
-      } catch (e) {
-        const fallback = DISTRICTS[state] || DISTRICTS["Default"];
-        setDistrictOptions(fallback);
-        if (!fallback.includes(district)) setDistrict(fallback[0]);
-      }
-    }
-    fetchDistricts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!state) return
+    fetchDistrictsByState(state)
+      .then((data) => {
+        setDistricts(data || []);
+         if (data?.length) setDistrict(data[0]); // default = All Districts
+      })
+      .catch(console.error);
   }, [state]);
 
-  // --- 3. Fetch Market Data ---
   useEffect(() => {
-    let isMounted = true;
-    async function fetchData() {
-      setLoading(true);
-      try {
-        const res = await fetch(`${API_BASE}/markets?state=${state}&district=${district}&commodity=${commodity}`);
-        if (!res.ok) throw new Error("API Failed");
-        const data = await res.json();
-        if (isMounted) {
-          setMarkets(data.items || []);
-          setUsingMock(false);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setMarkets(generateMockData(state, district, commodity));
-          setUsingMock(true);
-        }
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    }
-    const timer = setTimeout(() => fetchData(), 400);
-    return () => { isMounted = false; clearTimeout(timer); };
-  }, [state, district, commodity]);
+  setCommodity("");      // reset commodity
+}, [district]);
 
-  const bestMarket = useMemo(() => {
-    return markets.reduce(
-      (best, m) => (m.modal > (best?.modal ?? 0) ? m : best),
-      null as MarketItem | null
-    );
-  }, [markets]);
+
+// Update crops when district changes
+  useEffect(() => {
+  if  (!rawMarketItems.length) {
+    setCrops([]);
+    return;
+  }
+
+  const uniqueCommodities = Array.from(
+    new Set(
+      rawMarketItems
+        .map((m: any) => m.commodity)
+        .filter(Boolean)
+    )
+  ).sort();
+
+  setCrops(uniqueCommodities);
+}, [ rawMarketItems]);
+
+//Effect A — for dropdown (NO commodity filter)
+useEffect(() => {
+  if (!state || !district) return;
+
+  fetchMarkets({
+    state: state.toLowerCase(),
+    district: district.toLowerCase(),
+  })
+    .then((data) => {
+      const items = Array.isArray(data?.items) ? data.items : [];
+      setRawMarketItems(items); 
+    })
+    .catch(() => setRawMarketItems([]));
+}, [state, district]);
+//Effect B — for table + charts (WITH commodity filter)
+useEffect(() => {
+  if (!state || !district) return;
+
+  setLoading(true);
+
+  fetchMarkets({
+    state: state.toLowerCase(),
+    district: district.toLowerCase(),
+    commodity: commodity || undefined,
+  })
+    .then((data) => {
+      const items = Array.isArray(data?.items) ? data.items : [];
+      setMarkets(items); // ONLY markets
+    })
+    .catch(() => setMarkets([]))
+    .finally(() => setLoading(false));
+}, [state, district, commodity]);
+
+
+// Fetch price dynamics when state, district, or commodity changes
+useEffect(() => {
+  if (!state || !district || !commodity) return;
+
+  setPriceLoading(true);
+  setPriceError(null);
+  setPriceDynamics(null);
+
+  fetchPriceDynamics({
+    state: state.toLowerCase(),
+    district: district.toLowerCase(),
+    commodity,
+    days: 30,
+  })
+    .then(setPriceDynamics)
+    .catch(() => setPriceError("Unable to load price trends"))
+    .finally(() => setPriceLoading(false));
+}, [state, district, commodity]);
+
+
+  const bestMarket = markets[0];
+  const chartMarkets = useMemo(() => markets.slice(0, 6), [markets]);
+  const priceChartData = useMemo(() => {
+  if (!priceDynamics?.prices) return [];
+  return priceDynamics.prices.map((p: any) => ({
+    date: p.date,
+    price: p.modal,
+  }));
+}, [priceDynamics]);
+
+  const commodityMovers = useMemo(() => {
+    const toNumber = (value: any): number | null => {
+      if (typeof value === "number" && Number.isFinite(value)) return value;
+      if (typeof value === "string") {
+        const parsed = Number(value.replace(/[^\d.-]/g, ""));
+        return Number.isFinite(parsed) ? parsed : null;
+      }
+      return null;
+    };
+
+    const grouped = new Map<
+      string,
+      { current: number[]; previous: number[] }
+    >();
+
+    const sourceItems = rawMarketItems.length > 0 ? rawMarketItems : markets;
+
+    sourceItems.forEach((item: any) => {
+      const commodityName = String(item?.commodity || "").trim();
+      if (!commodityName) return;
+
+      const currentPrice = toNumber(
+        item?.modal ?? item?.price ?? item?.modal_price
+      );
+      if (currentPrice === null) return;
+
+      let previousPrice: number | null = null;
+      const history = Array.isArray(item?.trendHistory) ? item.trendHistory : [];
+
+      if (history.length >= 2) {
+        previousPrice = toNumber(
+          history[history.length - 2]?.price ??
+            history[history.length - 2]?.modal
+        );
+      }
+
+      if (previousPrice === null) {
+        previousPrice = toNumber(
+          item?.previous_modal ?? item?.prevModal ?? item?.yesterday_modal
+        );
+      }
+
+      if (previousPrice === null) {
+        const minPrice = toNumber(item?.min_price ?? item?.minPrice ?? item?.min);
+        const maxPrice = toNumber(item?.max_price ?? item?.maxPrice ?? item?.max);
+        if (minPrice !== null && maxPrice !== null) {
+          previousPrice = (minPrice + maxPrice) / 2;
+        }
+      }
+
+      if (!grouped.has(commodityName)) {
+        grouped.set(commodityName, { current: [], previous: [] });
+      }
+
+      const bucket = grouped.get(commodityName)!;
+      bucket.current.push(currentPrice);
+      if (previousPrice !== null) {
+        bucket.previous.push(previousPrice);
+      }
+    });
+
+    return Array.from(grouped.entries())
+      .map(([name, prices]) => {
+        const currentAvg =
+          prices.current.reduce((sum, v) => sum + v, 0) / prices.current.length;
+
+        const previousAvg =
+          prices.previous.length > 0
+            ? prices.previous.reduce((sum, v) => sum + v, 0) /
+              prices.previous.length
+            : null;
+
+        const change =
+          previousAvg && previousAvg > 0
+            ? ((currentAvg - previousAvg) / previousAvg) * 100
+            : 0;
+
+        return {
+          name,
+          price: Number(currentAvg.toFixed(2)),
+          change: Number(change.toFixed(2)),
+        };
+      })
+      .filter((row) => Number.isFinite(row.price) && Number.isFinite(row.change));
+  }, [rawMarketItems, markets]);
+
+  const dynamicTopGainers = useMemo(
+    () => {
+      const gainers = commodityMovers
+        .filter((row) => row.change > 0)
+        .sort((a, b) => b.change - a.change)
+        .slice(0, 5);
+
+      if (gainers.length > 0) return gainers;
+
+      // Fallback: show today's highest priced crops when positive gainers are unavailable.
+      return [...commodityMovers]
+        .sort((a, b) => b.price - a.price)
+        .slice(0, 5)
+        .map((row) => ({ ...row, change: Math.max(0, row.change) }));
+    },
+    [commodityMovers]
+  );
+
+  const dynamicTopLosers = useMemo(
+    () => commodityMovers.filter((row) => row.change < 0).sort((a, b) => a.change - b.change).slice(0, 5),
+    [commodityMovers]
+  );
+
 
   return (
-    <div className="h-screen overflow-y-auto bg-slate-50 pb-20 font-sans">
+    <div className="min-h-screen h-full bg-[#f8fafc] pb-20 font-sans selection:bg-indigo-100 overflow-y-auto overflow-x-hidden">
       
-      {/* HEADER */}
-      <div className="bg-white border-b sticky top-0 z-20 shadow-sm">
-        <div className="px-6 py-4 flex flex-col gap-4 max-w-7xl mx-auto">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <PageHeader/>
-              <img src="/images/mithu.jpg" alt="MarketSaathi Logo" className="h-8 w-8" />
+      {/* 1. STICKY HEADER */}
+      <div className="bg-white border-b sticky top-0 z-40 shadow-sm backdrop-blur-md bg-white/90">
+        <div className="px-8 py-3 w-full flex flex-col lg:flex-row justify-between items-center gap-6">
+            <div className="flex items-center gap-4">
+
+             <div className="h-14 w-14 flex items-center justify-center">
+                       <Image
+                         src="/images/market-mithu.png"
+                         alt="MarketSaathi"
+                         width={64}
+                         height={64}
+                         className="object-contain"
+                         priority
+                       />
+                     </div>
               <div>
-                <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Market<span className="text-green-600">Saathi</span></h1>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full flex items-center gap-1 ${usingMock ? "bg-amber-100 text-amber-700" : "bg-green-100 text-green-700"}`}>
-                    {usingMock ? "" : "Live Feed"}
-                  </span>
-                </div>
+                <h1 className="text-2xl font-extrabold text-green-800 tracking-tight mb-0">Market<span className="text-green-800 ml-1">Saathi</span></h1>
+                <p className="mb-0 text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                   <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" /> Live Analysis Engine
+                </p>
               </div>
             </div>
-          </div>
-
-          {/* DROPDOWNS */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="relative group">
-              <label className="text-[10px] font-bold text-slate-500 uppercase absolute -top-2 left-2 bg-white px-1">State</label>
-              <select className="w-full appearance-none border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 bg-white hover:border-green-400 focus:border-green-600 focus:ring-0 outline-none transition-all" value={state} onChange={(e) => setState(e.target.value)}>
-                {stateOptions.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-              <MapPin className="absolute right-3 top-3.5 text-slate-400" size={16} />
+            
+            <div className="flex flex-wrap gap-3 justify-center">
+              {[
+                { label: "State", val: state, set: setState, opt: states, icon: MapPin },
+                { label: "District", val: district, set: setDistrict, opt: districts, icon: Navigation },
+                { label: "Commodity", val: commodity, set: setCommodity, opt: crops, icon: Filter }
+              ].map((f, i) => (
+                <div key={i} className="relative group min-w-[160px]">
+                  <select 
+                    className="w-full appearance-none bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-regular text-slate-700 outline-none focus:bg-white focus:ring-2 focus:ring-indigo-100 transition-all cursor-pointer" 
+                    value={f.val} 
+                    onChange={(e) => f.set(e.target.value)}
+                  >
+                    {f.label === "Commodity" && (
+                      <option value="">All Commodities</option>
+                    )}
+                    {f.label === "District" && (
+                      <option value="">All Districts</option>
+                    )}
+                    {Array.isArray(f.opt) &&
+                    f.opt.map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                  <f.icon className="absolute right-3 top-3 text-slate-400 pointer-events-none group-focus-within:text-indigo-500 transition-colors" size={14} />
+                </div>
+              ))}
             </div>
-            <div className="relative group">
-              <label className="text-[10px] font-bold text-slate-500 uppercase absolute -top-2 left-2 bg-white px-1">District</label>
-              <select className="w-full appearance-none border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 bg-white hover:border-blue-400 focus:border-blue-600 focus:ring-0 outline-none transition-all" value={district} onChange={(e) => setDistrict(e.target.value)}>
-                {districtOptions.map(d => <option key={d} value={d}>{d}</option>)}
-              </select>
-              <Navigation className="absolute right-3 top-3.5 text-slate-400" size={16} />
-            </div>
-            <div className="relative group">
-              <label className="text-[10px] font-bold text-slate-500 uppercase absolute -top-2 left-2 bg-white px-1">Commodity</label>
-              <select className="w-full appearance-none border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 bg-white hover:border-amber-400 focus:border-amber-600 focus:ring-0 outline-none transition-all" value={commodity} onChange={(e) => setCommodity(e.target.value)}>
-                {cropOptions.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-              <Filter className="absolute right-3 top-3.5 text-slate-400" size={16} />
-            </div>
-          </div>
         </div>
       </div>
 
-      <div className="p-6 max-w-7xl mx-auto space-y-6">
+      <div className="px-8 py-8 w-full space-y-6 animate-in fade-in duration-1000">
+
         {loading ? (
-          <div className="h-64 flex flex-col items-center justify-center text-slate-400">
-            <Loader2 className="animate-spin mb-2 text-green-600" size={32} />
-            <p className="font-semibold text-sm">Fetching rates for {district}...</p>
+          <div className="h-96 flex flex-col items-center justify-center text-slate-400">
+            <Loader2 className="animate-spin text-indigo-600 mb-4" size={40} />
+            <p className="font-bold tracking-tight text-lg">Fetching Latest Mandi Records...</p>
           </div>
-        ) : (
-          <>
-            {/* KPI CARDS */}
-            {bestMarket && (
+        ) : noData ? (
+          <div className="h-96 flex flex-col items-center justify-center text-center bg-white rounded-3xl border border-slate-100 shadow-sm">
+            <Activity size={48} className="text-slate-300 mb-4" />
+
+            <h3 className="text-xl font-black text-slate-700 mb-2">
+              No Mandi Data Available Today
+            </h3>
+
+            <p className="text-sm text-slate-500 max-w-md">
+              Market prices for the selected state, district, and commodity
+              have not been published in today’s Agmarknet update.
+              Please try a different selection or check back later.
+            </p>
+          </div>
+        ) : ( 
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            {/* 2. LEFT COLUMN (8/12) */}
+            <div className="lg:col-span-8 flex flex-col gap-6">
+              
+              {/* TOP KPI ROW */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex justify-between items-center group hover:border-green-200 transition-all">
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Top Rate in {district}</p>
-                    <h3 className="text-2xl font-black text-slate-800 mt-1">₹{bestMarket.modal}<span className="text-xs text-slate-500 font-bold ml-1">/Qtl</span></h3>
-                    <p className="text-xs font-bold text-green-600 mt-1 flex items-center gap-1"><TrendingUp size={12} /> {bestMarket.market}</p>
-                  </div>
-                  <div className="h-12 w-12 bg-green-50 rounded-xl flex items-center justify-center text-green-600"><IndianRupee size={24} /></div>
+                <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm transition-all hover:shadow-md">
+                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Peak Rate in {district}</p>
+                   <div className="flex items-end gap-2">
+                     <h2 className="mb-0 text-3xl font-black text-slate-900">₹{bestMarket?.modal}</h2>
+                     <span className="text-xs font-bold text-slate-400 mb-1">/Qtl</span>
+                   </div>
+                   <p className="d-flex gap-2 align-center text-xs font-bold text-teal-600 mt-2 mb-0 truncate"><MapPin size={12}/> {bestMarket?.market}</p>
                 </div>
-                <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex justify-between items-center group hover:border-blue-200 transition-all">
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Trading Range</p>
-                    <h3 className="text-2xl font-black text-slate-800 mt-1">₹{bestMarket.min} - ₹{bestMarket.max}</h3>
-                    <p className="text-xs font-bold text-blue-600 mt-1 flex items-center gap-1"><RefreshCw size={12} /> {markets.length} Markets Live</p>
-                  </div>
-                  <div className="h-12 w-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600"><Filter size={24} /></div>
+                <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm transition-all hover:shadow-md">
+                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Active Mandis</p>
+                   <h2 className="text-3xl font-black text-slate-900">{markets.length}</h2>
+                   <p className="text-xs font-bold text-slate-500 mt-2 mb-0">Verified Hubs Mapped</p>
                 </div>
-                {(() => {
-                  const trend = getTrend(bestMarket.trendHistory);
-                  const adv = getAdvisory(trend);
+                {bestMarket && (() => {
+                  const adv = getAdvisory(
+                    getTrend(Array.isArray(bestMarket?.trendHistory) ? bestMarket.trendHistory : [])
+                  );
+
                   return (
-                    <div className={`p-5 rounded-xl border-2 flex flex-col justify-center ${adv.color} relative overflow-hidden`}>
-                      <div className="flex items-center gap-2 mb-1 relative z-10"><adv.icon size={20} /><span className="font-black text-xs uppercase tracking-widest">ADVISORY</span></div>
-                      <h3 className="text-xl font-black relative z-10">{adv.label}</h3>
-                      <p className="text-xs font-semibold opacity-90 mt-1 relative z-10">{adv.reason}</p>
-                      <adv.icon className="absolute -right-4 -bottom-4 opacity-10" size={80} />
+                    <div className={`p-6 rounded-3xl border transition-all ${adv.color} relative overflow-hidden group`}>
+                      <div className="relative z-10">
+                        <p className="text-[10px] font-bold opacity-60 uppercase tracking-widest mb-1">Market Advisory</p>
+                        <h2 className="text-2xl font-black tracking-tight">{adv.label}</h2>
+                        <p className="text-xs font-bold opacity-80 mb-0">{adv.reason}</p>
+                      </div>
+                      <adv.icon size={48} className="absolute right-2 -bottom-1 opacity-10 group-hover:scale-110 transition-transform" />
                     </div>
                   );
                 })()}
               </div>
-            )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* AREA CHART */}
-              {bestMarket && (
-                <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                  <div className="flex justify-between items-center mb-6">
-                    <div>
-                      <h3 className="font-bold text-slate-900 text-lg">Price Trend Analysis</h3>
-                      <p className="text-xs text-slate-500 font-semibold">10-Day Trend • {bestMarket.market}</p>
-                    </div>
-                  </div>
-                  <div className="h-[280px] w-full">
+              {/* CHARTS ROW */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white p-3 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                  <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-6">Price Dynamics (10D)</h3>
+                  <div className="h-[240px] w-full flex items-center justify-center">
+                {priceLoading && (
+                  <p className="text-xs text-slate-400">
+                    Loading price trends…
+                  </p>
+                )}
+
+                {!priceLoading && (priceError || priceDynamics?.message) && (
+                  <p className="text-xs text-amber-600 text-center px-4">
+                    {priceError || priceDynamics.message}
+                  </p>
+                )}
+
+                {!priceLoading && priceChartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={priceChartData}>
+                      <defs>
+                        <linearGradient id="areaColor" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.1} />
+                          <stop offset="95%" stopColor="#4f46e5" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis
+                        dataKey="date"
+                        tickFormatter={formatDateTick}
+                        tick={{ fontSize: 9, fill: "#94a3b8" }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 9, fill: "#94a3b8" }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <Tooltip />
+                      <Area
+                        type="monotone"
+                        dataKey="price"
+                        stroke="#4f46e5"
+                        strokeWidth={3}
+                        fill="url(#areaColor)"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer> 
+                ) : null} 
+
+                {!priceLoading && priceDynamics?.prices?.length === 0 && (
+                  <p className="text-xs text-slate-400 text-center">
+                    Price trends not available
+                  </p>
+                )}
+              </div>
+
+                </div>
+
+                <div className="bg-white p-3 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                  <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-6">Market Comparison</h3>
+                  <div className="h-[240px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={bestMarket.trendHistory}>
-                        <defs>
-                          <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#16a34a" stopOpacity={0.2}/>
-                            <stop offset="95%" stopColor="#16a34a" stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
+                      <BarChart data={chartMarkets}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="date" tickFormatter={formatDateTick} tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }} axisLine={false} tickLine={false} dy={10} />
-                        <YAxis tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }} axisLine={false} tickLine={false} tickFormatter={(val) => `₹${val}`} />
-                        <Tooltip formatter={(value) => [`₹${value}`, "Price"]} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', fontWeight: 'bold'}} />
-                        <Area type="monotone" dataKey="price" stroke="#16a34a" strokeWidth={3} fill="url(#colorPrice)" activeDot={{ r: 6, strokeWidth: 0, fill: '#15803d' }} />
-                      </AreaChart>
+                        <XAxis dataKey="market" tick={{fontSize: 9, fill: '#94a3b8'}} axisLine={false} tickLine={false} tickFormatter={(v) => v.split(' ')[0]} />
+                        <YAxis tick={{fontSize: 9, fill: '#94a3b8'}} axisLine={false} tickLine={false} />
+                        <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius: '12px', border: 'none'}} />
+                        <Bar dataKey="modal" fill="#10b981" radius={[6, 6, 0, 0]} barSize={24} />
+                      </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
-              )}
-
-              {/* MARKET COMPARISON BAR CHART (New Feature) */}
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col">
-                <div className="mb-6">
-                  <h3 className="font-bold text-slate-900 text-lg">Mandi Rates</h3>
-                  <p className="text-xs text-slate-500 font-semibold">Live Comparison</p>
-                </div>
-                <div className="flex-1 min-h-[250px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={markets} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                      <XAxis 
-                        dataKey="market" 
-                        tick={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }} 
-                        axisLine={false} 
-                        tickLine={false} 
-                        interval={0}
-                        tickFormatter={(val) => val.length > 8 ? `${val.slice(0, 6)}..` : val}
-                      />
-                      <YAxis 
-                        tick={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }} 
-                        axisLine={false} 
-                        tickLine={false} 
-                        tickFormatter={(val) => `₹${val}`}
-                      />
-                      <Tooltip 
-                        cursor={{ fill: '#f8fafc' }}
-                        formatter={(value) => [`₹${value}`, "Price"]}
-                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: '12px' }}
-                      />
-                      <Bar 
-                        dataKey="modal" 
-                        fill="#3b82f6" 
-                        radius={[4, 4, 0, 0]} 
-                        barSize={30}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
               </div>
-            </div>
 
-            {/* TABLE */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                <h3 className="font-bold text-slate-800">Detailed Market Report</h3>
-                <span className="bg-slate-200 text-slate-600 text-[10px] px-2 py-1 rounded font-bold uppercase">{markets.length} Mandis</span>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-slate-50 text-slate-400 uppercase text-[10px] font-bold tracking-wider">
-                    <tr>
-                      <th className="px-6 py-3">Market Name</th>
-                      <th className="px-6 py-3">Arrivals</th>
-                      <th className="px-6 py-3">Min/Max Price</th>
-                      <th className="px-6 py-3">Modal Price</th>
-                      <th className="px-6 py-3 text-center">Trend</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {markets.map((m) => {
-                      const trend = getTrend(m.trendHistory);
-                      return (
-                        <tr key={m.id} className="hover:bg-slate-50 transition-colors group">
-                          <td className="px-6 py-4 font-bold text-slate-700 group-hover:text-green-700">{m.market}</td>
-                          <td className="px-6 py-4 text-slate-500 font-medium">{m.arrival}</td>
-                          <td className="px-6 py-4 text-slate-500 font-medium">₹{m.min} - ₹{m.max}</td>
-                          <td className="px-6 py-4 font-black text-slate-800 text-base">₹{m.modal}</td>
-                          <td className="px-6 py-4 text-center">
-                            {trend === "up" && <span className="inline-flex items-center text-green-700 bg-green-100 px-2.5 py-1 rounded-md text-xs font-bold"><TrendingUp size={14} className="mr-1"/> UP</span>}
-                            {trend === "down" && <span className="inline-flex items-center text-red-700 bg-red-100 px-2.5 py-1 rounded-md text-xs font-bold"><TrendingDown size={14} className="mr-1"/> DOWN</span>}
-                            {trend === "flat" && <span className="inline-flex items-center text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md text-xs font-bold"><Minus size={14} className="mr-1"/> STABLE</span>}
+              {/* LIVE MANDI REPORT TABLE (INCREASED HEIGHT TO h-[910px] TO ALIGN BOTTOM WITH SIDEBAR) */}
+              <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col h-[420px] transition-all hover:shadow-md">
+                <div className="px-3 py-3 border-b border-slate-50 flex justify-between items-center bg-white sticky top-0 z-10">
+                  <div>
+                    <h3 className="text-xl font-black text-slate-800 mb-0">Live Mandi Report</h3>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 mb-0">Coverage: {district}</p>
+                  </div>
+                  <div className="flex items-center gap-2 bg-teal-50 text-teal-500 px-4 py-1.5 rounded-full border border-teal-100/50">
+                    <span className="text-[10px] font-black uppercase tracking-widest">{markets.length} Markets Found</span>
+                  </div>
+                </div>
+                
+                <div className="overflow-y-auto custom-scrollbar max-h-[260px] pb-2">
+                  <table className="w-full text-left">
+                    <thead className="bg-slate-50/50 sticky top-0 z-20 backdrop-blur-md border-b">
+                      <tr className="text-xs font-bold text-black uppercase tracking-widest">
+                        <th className="px-3 py-2 text-sm">Mandi Hub</th>
+                        <th className="px-3 py-2 text-sm">Arrival Vol.</th>
+                        <th className="px-3 py-2 text-sm">Modal Price</th>
+                        <th className="px-3 py-2 text-sm text-center">Trend</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {markets.map((m, i) => (
+                        <tr key={i} className="hover:bg-slate-50/80 transition-all group">
+                          <td className="px-3 py-1">
+                            <span className="font-regular text-sm text-slate-700 group-hover:text-indigo-600 transition-colors">{m.market}</span>
+                          </td>
+                          <td className="px-3 py-1 text-slate-400 font-bold text-xs">{m.arrival}</td>
+                          <td className="px-3 py-1 font-regular text-sm text-slate-800 text-lg">₹{m.modal}</td>
+                          <td className="px-3 py-1 text-center">
+                            <div className="mx-auto w-fit p-1.5 bg-emerald-50 text-emerald-600 rounded-lg group-hover:rotate-12 transition-transform">
+                               <ArrowUpRight size={16}/>
+                            </div>
                           </td>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
-          </>
+
+            {/* 3. RIGHT COLUMN: FORECASTING + SIDEBAR TABLES (4/12) */}
+            <div className="lg:col-span-4 flex flex-col gap-6 animate-in slide-in-from-right duration-700">
+              
+              {/*
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col transition-all hover:shadow-md">
+                <div className="px-3 py-3 bg-teal-50 border-b border-teal-100 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="p-0 bg-whit rounded-lg shadow-smm text-teal-600">
+                      <Sparkles size={16} />
+                    </div>
+                    <h3 className="mb-0 text-xs font-black uppercase text-teal-800 tracking-widest">Forecasting AI</h3>
+                  </div>
+                  <ShieldCheck size={18} className="text-teal-400 opacity-60" />
+                </div>
+                
+                <div className="p-4 space-y-5">
+                  <div className="space-y-4">
+                    {STAR_PREDICTIONS.map((p, idx) => (
+                      <div key={idx} className="bg-slate-50 p-3 rounded-2xl border border-slate-100 hover:border-indigo-100 hover:bg-white transition-all group/item">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{p.name}</span>
+                          <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${p.trend === 'up' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                             {p.trend === 'up' ? '↑' : '↓'} {p.change}%
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-2xl font-regular text-slate-900 tracking-normal">₹{p.price}</h4>
+                          <ChevronRight size={16} className="text-slate-300 group-hover/item:translate-x-1 transition-transform" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="pt-4 border-t border-slate-100 flex justify-between align-center items-center">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-normal">Accuracy Level</span>
+                    <span className="text-xs font-black text-green-600">96.4% CONFIDENCE</span>
+                  </div>
+                </div>
+              </div>
+              */}
+
+              {/* TOP GAINERS */}
+              <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden transition-all hover:shadow-md">
+                <div className="px-3 py-3 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp size={16} className="text-emerald-600" />
+                    <h3 className="font-black text-emerald-800 text-xs uppercase tracking-widest mb-0">Top Gainers</h3>
+                  </div>
+                </div>
+                <div className="p-2 max-h-[192px] overflow-y-auto custom-scrollbar">
+                  {dynamicTopGainers.length > 0 ? (
+                    dynamicTopGainers.map((item, idx) => (
+                      <div key={`${item.name}-${idx}`} className="flex items-center justify-between px-3 py-2 hover:bg-slate-50 rounded-2xl transition-all">
+                        <span className="text-md font-bold textslate-600 group-hover:text-slate-900">{item.name}</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-regular text-slate-900">₹{item.price}</span>
+                          <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">+{item.change}%</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="px-3 py-2 text-xs text-slate-400">No gaining crops available</div>
+                  )}
+                </div>
+              </div>
+
+              {/* TOP LOSERS */}
+              <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden transition-all hover:shadow-md">
+                <div className="px-3 py-3 bg-rose-50 border-b border-rose-100 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <TrendingDown size={16} className="text-rose-600" />
+                    <h3 className="font-black text-rose-800 text-xs uppercase tracking-widest mb-0">Top Losers</h3>
+                  </div>
+                </div>
+                <div className="p-2 max-h-[192px] overflow-y-auto custom-scrollbar">
+                  {dynamicTopLosers.length > 0 ? (
+                    dynamicTopLosers.map((item, idx) => (
+                      <div key={`${item.name}-${idx}`} className="flex items-center justify-between px-3 py-2 hover:bg-slate-50 rounded-2xl transition-all">
+                        <span className="text-md font-bold textslate-600 group-hover:text-slate-900">{item.name}</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-regular text-slate-900">₹{item.price}</span>
+                          <span className="text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-1 rounded-lg">{item.change}%</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="px-3 py-2 text-xs text-slate-400">No losing crops available</div>
+                  )}
+                </div>
+              </div>
+
+            </div>
+          </div>
         )}
       </div>
+
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+      `}</style>
+      <section className="mt-12">
+  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+    <h2 className="text-lg font-bold text-gray-900 mb-4 text-left">
+      Sources & References
+    </h2>
+
+    <div className="text-sm text-gray-600 leading-relaxed text-left space-y-3">
+      <p>
+        This Market Price Information and advisory module is developed using
+        officially published mandi price data provided by Government of India
+        platforms. The pricing logic, availability indicators, and advisory
+        messages are aligned with standard agricultural market reporting
+        practices followed by Agricultural Produce Market Committees (APMCs)
+        across India.
+      </p>
+
+      <p className="font-medium text-gray-700">
+        Official Government Data Sources:
+      </p>
+
+      <ul className="list-disc list-inside space-y-1">
+        <li>
+          Directorate of Marketing & Inspection (DMI), Ministry of Agriculture
+          & Farmers Welfare – National agricultural market data authority
+        </li>
+
+        <li>
+          AGMARKNET – Agricultural Marketing Information Network (
+          <a
+            href="https://agmarknet.gov.in"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-700 hover:underline"
+          >
+            Official portal
+          </a>
+          )
+        </li>
+
+        <li>
+          Agricultural Produce Market Committees (APMCs) – Primary mandi-level
+          data reporting agencies
+        </li>
+
+        <li>
+          National Informatics Centre (NIC) – Digital infrastructure and data
+          dissemination for agricultural markets
+        </li>
+      </ul>
+
+      <p className="mt-3 text-xs text-gray-500 italic">
+        Disclaimer: Market prices, arrival volumes, and advisory indicators
+        displayed are indicative and based on the latest officially available
+        mandi updates published by Agmarknet. Data availability may vary by
+        location, commodity, and reporting day. Users are advised to verify
+        prices with local APMC offices or official government notifications
+        before making commercial decisions.
+      </p>
+    </div>
+  </div>
+</section>
+
     </div>
   );
 }

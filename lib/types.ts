@@ -1,29 +1,70 @@
 /** Supported vegetation index layers */
-export type LayerKey = "ndvi" | "ndre" | "evi" | "ndwi" | "savi";
+export type LayerKey =
+  | "ndvi"
+  | "ndre"
+  | "evi"
+  | "savi"
+  | "ndwi"
+  | "ndmi"
+  | "gndvi"
+  | "sipi"
+  | "todays_image";
 
-/** Array of all supported layers for iteration */
-export const SUPPORTED_LAYERS: LayerKey[] = ["ndvi", "ndre", "evi", "ndwi", "savi"];
+/** Array of all supported layers (ordered for UI) */
+export const SUPPORTED_LAYERS: LayerKey[] = [
+  "ndvi",
+  "ndre",
+  "evi",
+  "savi",
+  "ndwi",
 
-/** Layer display names */
+  // Water / stress / nutrients
+  "ndmi",
+  "gndvi",
+  "sipi",
+
+  "todays_image",
+];
+
+/** Layer display names (UI labels) */
 export const LAYER_NAMES: Record<LayerKey, string> = {
-  ndvi: "NDVI - Normalized Difference Vegetation Index",
-  ndre: "NDRE - Normalized Difference Red Edge",
-  evi: "EVI - Enhanced Vegetation Index",
-  savi: "SAVI - Soil Adjusted Vegetation Index",
-  ndwi: "NDWI - Normalized Difference Water Index",
+  ndvi: "NDVI – Vegetation Health",
+  ndre: "NDRE – Crop Nitrogen",
+  evi: "EVI – Canopy Density",
+  savi: "SAVI – Soil Adjusted Vegetation",
+  ndwi: "NDWI – Surface Water",
+  ndmi: "NDMI – Crop Water Stress",
+  gndvi: "GNDVI – Nitrogen / Chlorophyll",
+  sipi: "SIPI – Plant Stress Index",
+  todays_image: "Today's Image (Sentinel-2 RGB)",
 };
+
+/** Supported satellite sources */
+export type SourceKey = "sentinel2";
+
+/** Display names for sources */
+export const SOURCE_NAMES: Record<SourceKey, string> = {
+  sentinel2: "Sentinel-2",
+};
+
+/* ============================================================================
+   FIELD & GEOJSON TYPES
+============================================================================ */
 
 /** Properties of a field polygon */
 export interface FieldProperties {
   id: string;
   name?: string;
-  farmerName?: string;
-  cropType?: string;
-  season?: string;
-  sowingDate?: string;
-  harvestDate?: string;
+  crop_name?: string;
+  notes?: string;
+  sowing_date?: string;
+  soil_type?: string;
+  fertilizer?: string;
+  irrigation?: string;
+  rainfall_pattern?: string;
   health_score?: number;
   area?: number;
+  is_selected?: boolean;
 }
 
 /** A selected field with its geometry */
@@ -85,14 +126,9 @@ export interface IndexDataPoint {
   ndvi: number;
   ndre: number;
   evi: number;
-  ndwi: number;
   savi: number;
+  ndwi: number;
+  ndmi: number;
+  gndvi: number;
+  sipi: number;
 }
-
-/** Supported satellite sources */
-export type SourceKey = "sentinel2" ;
-
-/** Display names for sources */
-export const SOURCE_NAMES: Record<SourceKey, string> = {
-  sentinel2: "Sentinel-2"
-};

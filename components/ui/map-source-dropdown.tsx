@@ -6,14 +6,18 @@ import { SourceKey, SOURCE_NAMES } from '@/lib/types';
 interface MapSourceDropdownProps {
   selectedSource: SourceKey;
   onSourceChange: (source: SourceKey) => void;
+  dropdownOpen: boolean;
+  setDropdownOpen: (open: boolean) => void;
+  onClick?: () => void;
 }
 
 const MapSourceDropdown: React.FC<MapSourceDropdownProps> = ({
   selectedSource,
   onSourceChange,
+  dropdownOpen,
+  setDropdownOpen,
+  onClick,
 }) => {
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-
   return (
     <div
       className="btn-group ml-2 my-2"
@@ -22,7 +26,7 @@ const MapSourceDropdown: React.FC<MapSourceDropdownProps> = ({
       <button
         type="button"
         className="btn dropdown-toggle relative my-2"
-        onClick={() => setDropdownOpen(!dropdownOpen)}
+        onClick={() => {setDropdownOpen(!dropdownOpen); onClick?.();}}
         aria-expanded={dropdownOpen}
         style={{ backgroundColor: "#10B981", color: "white" }}
       >

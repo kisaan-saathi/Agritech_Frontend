@@ -1,13 +1,166 @@
+import { useEffect, useState } from "react";
 import { useAiAdvisory } from "../../../lib/hooks/dashboard";
-
+import { fetchWeatherData } from "../../../lib/weather";
+import Sparkline from "./Sparkline";
 interface ActionCenterProps {
   onDiseaseClick: () => void;
 }
 
-export default function ActionCenter({ onDiseaseClick }: ActionCenterProps) {
-  const { aiAdvisoryOutput, loadingAdvisory, handleGenerateAdvisory } =
-    useAiAdvisory();
+export default function ActionCenter({ onDiseaseClick, severity, avgSoilMoisture, soilMoisture7d, moistActions, tempActions }: ActionCenterProps & {severity: string, avgSoilMoisture: number | null, soilMoisture7d: number[], moistActions?: any[], tempActions?: any[]}) {
+  const { aiAdvisoryOutput, loadingAdvisory, handleGenerateAdvisory } = useAiAdvisory();
+  const [temp, setTemp] = useState<any>(null);
+  const [tempLabel, setTempLabel] = useState<string>("--");
+  const [tempTrend7d, setTempTrend7d] = useState<number[]>([]);
+  const selectedFieldId =
+    typeof window !== "undefined" ? localStorage.getItem("selectedFieldId") || "" : "";
+  const fieldLabel = selectedFieldId ? `Field ${selectedFieldId.slice(-4)}` : "Selected Field";
 
+  const hasMoistureValue =
+    typeof avgSoilMoisture === "number" && !Number.isNaN(avgSoilMoisture);
+  const trendMoisture = soilMoisture7d.find((value) => typeof value === "number" && !Number.isNaN(value));
+  const moistureValue = hasMoistureValue
+    ? Math.max(0, Math.min(100, avgSoilMoisture))
+    : typeof trendMoisture === "number"
+      ? Math.max(0, Math.min(100, trendMoisture))
+      : null;
+  const moistureRingValue = moistureValue ?? 0;
+  const moistureText = moistureValue !== null ? `${moistureValue}%` : "--";
+  const severityLabel = moistureValue !== null ? (severity || "--") : "--";
+
+  const alerts: Array<{ id: string; severity: "critical" | "high" | "medium" | "low"; title: string; message: string }> = [];
+
+  const actionToSeverity = (action: any): "critical" | "high" | "medium" | "low" => {
+    const color = String(action?.color || action?.severity || "").toLowerCase();
+    if (color === "red" || color === "critical") return "critical";
+    if (color === "yellow" || color === "orange" || color === "high") return "high";
+    if (color === "blue" || color === "medium") return "medium";
+    return "low";
+  };
+
+  const pushActions = (items: any[], prefix: string) => {
+    items.forEach((action, index) => {
+      if (!action) return;
+      alerts.push({
+        id: `${prefix}-${index}`,
+        severity: actionToSeverity(action),
+        title: action.title || action.step || `${prefix} action`,
+        message: action.description || action.message || action.cta || "",
+      });
+    });
+  };
+
+  if (Array.isArray(moistActions) && moistActions.length > 0) {
+    pushActions(moistActions, "moisture");
+  }
+
+  if (Array.isArray(tempActions) && tempActions.length > 0) {
+    pushActions(tempActions, "temperature");
+  }
+
+  if (!alerts.length && moistureValue !== null && moistureValue <= 35) {
+    alerts.push({
+      id: "moisture",
+      severity: "critical",
+      title: `Urgent: Irrigation Required: ${fieldLabel}`,
+      message: `Soil moisture dropped to ${moistureValue}%. Auto-irrigate needs immediate check.`,
+    });
+  } else if (!alerts.length && moistureValue !== null && moistureValue <= 50) {
+    alerts.push({
+      id: "moisture-watch",
+      severity: "medium",
+      title: `Moisture Watch: ${fieldLabel}`,
+      message: `Soil moisture is ${moistureValue}%. Plan irrigation window within next 24 hours.`,
+    });
+  }
+
+  if (!alerts.length && typeof temp === "number" && temp >= 35) {
+    alerts.push({
+      id: "temp-heat",
+      severity: "high",
+      title: `Heat Stress Risk: ${fieldLabel}`,
+      message: `Temperature at ${temp}°C. Consider protective irrigation and avoid midday spray.`,
+    });
+  } else if (!alerts.length && (tempLabel || "").toLowerCase().includes("unfavorable")) {
+    alerts.push({
+      id: "temp-advisory",
+      severity: "medium",
+      title: `Weather Advisory: ${fieldLabel}`,
+      message: `Current condition marked as ${tempLabel.toLowerCase()}. Schedule monitoring and scouting.`,
+    });
+  }
+
+  if (!alerts.length) {
+    alerts.push({
+      id: "stable",
+      severity: "low",
+      title: `No Critical Alerts: ${fieldLabel}`,
+      message: "Field conditions are stable based on current moisture and weather indicators.",
+    });
+  }
+
+  const moistureHealthScore = Math.round((moistureValue ?? 0) * 0.8 + 20);
+  const tempPenalty = typeof temp === "number" && temp > 34 ? Math.min(18, (temp - 34) * 3) : 0;
+  const cropHealthPercent = Math.max(0, Math.min(100, Math.round(moistureHealthScore - tempPenalty)));
+  const ndviScore = Math.max(0, Math.min(1, Number((cropHealthPercent / 100).toFixed(2))));
+  const cropVigorLabel =
+    cropHealthPercent >= 80
+      ? "Excellent Vigor"
+      : cropHealthPercent >= 60
+        ? "Moderate Vigor"
+        : "Stress Detected";
+
+  const criticalTasksCount = alerts.filter((a) => a.severity === "critical" || a.severity === "high").length;
+  const taskPriorityLabel = criticalTasksCount > 0 ? "High Priority" : "Routine";
+  const nextScoutingDue = criticalTasksCount > 0 ? "Today, 6 PM" : "Tomorrow, 10 AM";
+
+  const severityPillClass = (level: string) => {
+    if (level === "critical") return "text-white bg-red-600";
+    if (level === "high") return "text-red-800 bg-red-200";
+    if (level === "medium") return "text-yellow-800 bg-yellow-200";
+    return "text-emerald-800 bg-emerald-100";
+  };
+
+  const alertRowClass = (level: string) => {
+    if (level === "critical") return "hover:bg-red-50/50";
+    if (level === "high") return "hover:bg-red-50/40";
+    if (level === "medium") return "hover:bg-yellow-50/50";
+    return "hover:bg-emerald-50/60";
+  };
+
+  const alertIconColorClass = (level: string) => {
+    if (level === "critical") return "text-red-500";
+    if (level === "high") return "text-red-400";
+    if (level === "medium") return "text-yellow-500";
+    return "text-emerald-500";
+  };
+
+  useEffect(() => {
+    // Fetch weather data on mount and auto-refresh every 60 seconds
+    fetchWeather();
+    const weatherInterval = setInterval(() => {
+      fetchWeather();
+    }, 60000);
+    return () => clearInterval(weatherInterval);
+  }, []);
+
+  /* -------------------- Weather Fetcher -------------------- */
+  async function fetchWeather() {
+    try {
+      const backendData = await fetchWeatherData();
+      const tempValue = backendData?.current?.temperature ?? null;
+      const label = backendData?.advisory?.label ?? "--";
+      const trend = backendData?.trend7d?.avgTemp ?? [];
+      
+      setTemp(tempValue);
+      setTempLabel(label);
+      setTempTrend7d(trend);
+    } catch (err: any) {
+      console.error("Weather fetch error:", err);
+      setTemp(null);
+      setTempLabel("--");
+      setTempTrend7d([]);
+    }
+  }
   return (
     <section className="mb-10 shadow rounded-2xl pb-2">
       <h2 className="text-xl font-bold text-gray-800 mb-4 p-3 border-bottom">
@@ -24,69 +177,46 @@ export default function ActionCenter({ onDiseaseClick }: ActionCenterProps) {
             dangerouslySetInnerHTML={{ __html: aiAdvisoryOutput }}
           ></div>
           <ul className="divide-y divide-gray-100">
-            <li className="flex items-center justify-between py-4 hover:bg-red-50/50 rounded-lg px-2 -mx-2 transition duration-150 cursor-pointer">
-              <div className="flex items-center space-x-4">
-                <span className="text-xl text-red-500">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                    <line x1="12" y1="9" x2="12" y2="13" />
-                    <line x1="12" y1="17" x2="12.01" y2="17" />
-                  </svg>
-                </span>
-                <div>
-                  <p className="font-bold text-gray-900">
-                    Urgent: Irrigation Required: Field 3
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Soil moisture dropped to 35%. *Auto-irrigate is disabled*.
-                  </p>
+            {alerts.map((alert, index) => (
+              <li
+                key={alert.id}
+                onClick={alert.id.includes("advisory") ? onDiseaseClick : undefined}
+                className={`flex items-center justify-between py-4 rounded-lg px-2 -mx-2 transition duration-150 cursor-pointer ${alertRowClass(alert.severity)}`}
+              >
+                <div className="flex items-center space-x-4">
+                  <span className={`text-xl ${alertIconColorClass(alert.severity)}`}>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      {index === 0 ? (
+                        <>
+                          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                          <line x1="12" y1="9" x2="12" y2="13" />
+                          <line x1="12" y1="17" x2="12.01" y2="17" />
+                        </>
+                      ) : (
+                        <path d="M21 11.5a8.38 8.38 0 0 1-.39 3.1c-.81 1.6-2.12 2.87-3.73 3.51-1.6.64-3.41.76-5.18.36-1.78-.39-3.4-1.28-4.66-2.5-1.26-1.22-2.09-2.73-2.45-4.42-.36-1.68-.2-3.45.45-5.1a8.38 8.38 0 0 1 2.37-3.23" />
+                      )}
+                    </svg>
+                  </span>
+                  <div>
+                    <p className="font-bold text-gray-900">{alert.title}</p>
+                    <p className="text-sm text-gray-600">{alert.message}</p>
+                  </div>
                 </div>
-              </div>
-              <span className="px-3 py-1 text-xs font-bold text-white bg-red-600 rounded-full shadow-md">
-                CRITICAL
-              </span>
-            </li>
-            <li className="flex items-center justify-between py-4 hover:bg-yellow-50/50 rounded-lg px-2 -mx-2 transition duration-150 cursor-pointer">
-              <div className="flex items-center space-x-4">
-                <span className="text-xl text-yellow-500">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M21 11.5a8.38 8.38 0 0 1-.39 3.1c-.81 1.6-2.12 2.87-3.73 3.51-1.6.64-3.41.76-5.18.36-1.78-.39-3.4-1.28-4.66-2.5-1.26-1.22-2.09-2.73-2.45-4.42-.36-1.68-.2-3.45.45-5.1a8.38 8.38 0 0 1 2.37-3.23" />
-                  </svg>
+                <span className={`px-3 py-1 text-xs font-bold rounded-full shadow-md uppercase ${severityPillClass(alert.severity)}`}>
+                  {alert.severity}
                 </span>
-                <div>
-                  <p className="font-bold text-gray-900">
-                    Pest Warning: Soybean Field 1
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Increased insect count detected. *Predictive model*
-                    recommends scouting.
-                  </p>
-                </div>
-              </div>
-              <span className="px-3 py-1 text-xs font-bold text-yellow-800 bg-yellow-200 rounded-full shadow-md">
-                MEDIUM
-              </span>
-            </li>
+              </li>
+            ))}
           </ul>
         </div>
         {/* <div className="lg:col-span-1 space-y-4">
@@ -140,29 +270,25 @@ export default function ActionCenter({ onDiseaseClick }: ActionCenterProps) {
                 Soil Moisture
               </h3>
               <div className="flex items-center justify-between">
-                <div id="soil-moisture-progress" className="radial-progress">
-                  <div className="radial-progress-inner">68%</div>
+                <div id="soil-moisture-progress" className="radial-progress" style={{ '--value': `${moistureRingValue}%` } as React.CSSProperties}>
+                  <div className="radial-progress-inner">{moistureText}</div>
                 </div>
                 <div>
-                  <p className="text-3xl font-extrabold text-gray-900">68%</p>
+                  <p className="text-3xl font-extrabold text-gray-900">{moistureText}</p>
                   <p className="text-xs text-sky-blue mt-1 font-medium">
-                    Target: 65%
+                    Severity: {severityLabel}
                   </p>
                 </div>
               </div>
               <div className="mt-4 border-t pt-3">
                 <p className="text-xs font-medium text-gray-500 mb-1">
-                  Last 7 Day Trend
+                  Next 7 Day Trend
                 </p>
-                <svg viewBox="0 0 100 30" className="w-full h-8">
-                  <polyline
-                    fill="none"
-                    stroke="#3B82F6"
-                    strokeWidth="1.5"
-                    points="0,20 16,10 32,25 48,15 64,18 80,5 100,10"
-                  />
-                  <circle cx="100" cy="10" r="1.5" fill="#3B82F6" />
-                </svg>
+                {soilMoisture7d?.length ? (
+                  <Sparkline data={soilMoisture7d} color="#3B82F6" />
+                ) : (
+                  <div className="h-8 bg-gray-100 rounded animate-pulse" />
+                )}
               </div>
             </div>
             <div className="bg-white rounded-2xl shadow border py-2 px-3 border-bottom-5 border-warning hover:shadow-2xl transition duration-300">
@@ -189,26 +315,23 @@ export default function ActionCenter({ onDiseaseClick }: ActionCenterProps) {
                 </div>
                 <div>
                   <p className="text-3xl font-extrabold text-gray-900">
-                    25.3°C
+                    {temp}°C
                   </p>
                   <p className="text-xs text-red-500 mt-1 font-medium">
-                    Slightly High
+                    {tempLabel}
                   </p>
                 </div>
               </div>
               <div className="mt-4 border-t pt-3">
                 <p className="text-xs font-medium text-gray-500 mb-1">
-                  Last 7 Day Trend
+                  Next 7 Day Trend
                 </p>
-                <svg viewBox="0 0 100 30" className="w-full h-8">
-                  <polyline
-                    fill="none"
-                    stroke="#F97316"
-                    strokeWidth="1.5"
-                    points="0,15 16,10 32,5 48,12 64,8 80,18 100,15"
-                  />
-                  <circle cx="100" cy="15" r="1.5" fill="#F97316" />
-                </svg>
+                {tempTrend7d.length > 0 ? (
+                  <Sparkline data={tempTrend7d} color="#F97316" />
+                ) : (
+                  <div className="h-8 bg-gray-100 rounded animate-pulse" />
+                )}
+
               </div>
             </div>
             <div className="bg-white rounded-2xl shadow-xll border py-2 px-3 border-bottom-5 border-success hover:shadow-2xl transition duration-300">
@@ -216,13 +339,13 @@ export default function ActionCenter({ onDiseaseClick }: ActionCenterProps) {
                 Crop Health Index
               </h3>
               <div className="flex items-center justify-between">
-                <div id="crop-health-progress" className="radial-progress">
-                  <div className="radial-progress-inner">92%</div>
+                <div id="crop-health-progress" className="radial-progress" style={{ '--value': `${cropHealthPercent}%` } as React.CSSProperties}>
+                  <div className="radial-progress-inner">{cropHealthPercent}%</div>
                 </div>
                 <div>
-                  <p className="text-3xl font-extrabold text-gray-900">92%</p>
+                  <p className="text-3xl font-extrabold text-gray-900">{cropHealthPercent}%</p>
                   <p className="text-xs text-success mt-1 font-medium">
-                    Excellent Vigor
+                    {cropVigorLabel}
                   </p>
                 </div>
               </div>
@@ -231,7 +354,7 @@ export default function ActionCenter({ onDiseaseClick }: ActionCenterProps) {
                   Index Score (NDVI)
                 </p>
                 <p className="text-sm font-semibold text-gray-800">
-                  0.78 / 1.00
+                  {ndviScore.toFixed(2)} / 1.00
                 </p>
               </div>
             </div>
@@ -257,9 +380,9 @@ export default function ActionCenter({ onDiseaseClick }: ActionCenterProps) {
                   </svg>
                 </div>
                 <div>
-                  <p className="text-3xl font-extrabold text-gray-900">3</p>
+                  <p className="text-3xl font-extrabold text-gray-900">{criticalTasksCount}</p>
                   <p className="text-xs text-danger mt-1 font-medium">
-                    High Priority
+                    {taskPriorityLabel}
                   </p>
                 </div>
               </div>
@@ -268,7 +391,7 @@ export default function ActionCenter({ onDiseaseClick }: ActionCenterProps) {
                   Next Scouting Due
                 </p>
                 <p className="text-sm font-semibold text-gray-800">
-                  Tomorrow, 10 AM
+                  {nextScoutingDue}
                 </p>
               </div>
             </div>

@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import PageHeader from "@/components/layout/PageHeader";
+
 
 /**
  * Single-file Advisories UI for Next.js app router
@@ -204,7 +204,7 @@ export default function Page() {
     <main className="min-h-screen bg-[linear-gradient(90deg,#ecf9f2, #f6fff9)] p-6">
       <div className="max-w-7xl mx-auto">
         <header className="flex items-center justify-between gap-4 mb-6">
-          <PageHeader />
+          
           <div>
             <h1 className="text-3xl font-semibold text-slate-800">Advisories</h1>
             <p className="text-sm text-slate-600">

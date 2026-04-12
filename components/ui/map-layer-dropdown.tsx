@@ -1,21 +1,38 @@
 'use client';
 
 import React, { useState } from 'react';
-import { LayerKey } from '@/lib/types';
+import { LayerKey, LAYER_NAMES } from '@/lib/types';
 
 interface MapLayerDropdownProps {
   selectedLayer: LayerKey;
   onLayerChange: (layer: LayerKey) => void;
-  layers?: LayerKey[];
+  layers?: Record<LayerKey, string>;
+  dropdownOpen: boolean;
+  setDropdownOpen: (open: boolean) => void;
+  onClick?: () => void;
 }
 
 const MapLayerDropdown: React.FC<MapLayerDropdownProps> = ({
   selectedLayer,
   onLayerChange,
   layers,
+  dropdownOpen,
+  setDropdownOpen,
+  onClick,
 }) => {
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-
+  const layersToUse = layers || LAYER_NAMES;
+  const layerKeys: LayerKey[] = [
+    "todays_image",
+    "ndvi",
+    "ndwi",
+    "ndre",
+    "savi",
+    "evi",
+    "gndvi",
+    "sipi",
+    "ndmi",
+  ];
+  
   return (
     <div
       className="btn-group ml-2 my-2"
@@ -24,11 +41,11 @@ const MapLayerDropdown: React.FC<MapLayerDropdownProps> = ({
       <button
         type="button"
         className="btn dropdown-toggle relative my-2"
-        onClick={() => setDropdownOpen(!dropdownOpen)}
+        onClick={() => {  setDropdownOpen(!dropdownOpen); onClick?.();}}
         aria-expanded={dropdownOpen}
         style={{ backgroundColor: "#10B981", color: "white" }}
       >
-        {selectedLayer.toUpperCase()}
+        {LAYER_NAMES[selectedLayer]}
       </button>
       <ul
         className={`dropdown-menu ${dropdownOpen ? "show" : ""}`}
@@ -44,18 +61,18 @@ const MapLayerDropdown: React.FC<MapLayerDropdownProps> = ({
           padding: "8px",
         }}
       >
-        {layers?.map((layer) => (
-          <li key={layer}>
+            {layerKeys.map((layerKey) => (
+          <li key={layerKey}>
             <a
               className="dropdown-item"
               href="#"
               onClick={(e) => {
                 e.preventDefault();
-                onLayerChange(layer);
+                onLayerChange(layerKey);
                 setDropdownOpen(false);
               }}
             >
-              {layer.toUpperCase()}
+              {layersToUse[layerKey]}
             </a>
           </li>
         ))}

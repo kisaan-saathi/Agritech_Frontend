@@ -1,10 +1,26 @@
 "use client";
 
 import type { HoverInfo, LayerKey } from "@/lib/types";
+import { INDEX_COLOR_RAMPS } from "@/lib/constants";
 
 interface HoverTooltipProps {
   hoverInfo: HoverInfo | null;
   selectedLayer: LayerKey;
+}
+
+/**
+ * Resolve color from INDEX_COLOR_RAMPS
+ * (same logic used for polygon coloring)
+ */
+function getTooltipColor(layer: LayerKey, value: number): string {
+  const ramp = INDEX_COLOR_RAMPS[layer];
+  if (!ramp) return "#9ca3af";
+
+  const match = ramp.find(
+    (r) => value >= r.min && value < r.max
+  );
+
+  return match?.color ?? "#9ca3af";
 }
 
 export default function HoverTooltip({
@@ -25,7 +41,13 @@ export default function HoverTooltip({
       <div className="tooltip-value">
         {selectedLayer.toUpperCase()}: {hoverInfo.value.toFixed(2)}
       </div>
-      <div className="tooltip-label" style={{ color: hoverInfo.color }}>
+
+      <div
+        className="tooltip-label"
+        style={{
+          color: getTooltipColor(selectedLayer, hoverInfo.value),
+        }}
+      >
         {hoverInfo.label}
       </div>
 
@@ -33,7 +55,7 @@ export default function HoverTooltip({
         .hover-tooltip {
           position: absolute;
           background: rgba(10, 22, 40, 0.95);
-          color: #fff;
+          color: #ffffff;
           padding: 10px 14px;
           border-radius: 8px;
           font-size: 13px;

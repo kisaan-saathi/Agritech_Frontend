@@ -98,7 +98,8 @@ export default function Signup() {
 
   return (
     <AuthLayout title="Sign up">
-      <div className="col-lg-10 col-xl-7 mx-auto">
+      {(isOfficial) => (
+        <div className="col-lg-10 col-xl-7 mx-auto">
         <form onSubmit={handleSignup}>
           <FormField
             label="Name"
@@ -188,6 +189,7 @@ export default function Signup() {
           </a>
         </form>
       </div>
+      )}
     </AuthLayout>
   );
 }

@@ -2,7 +2,6 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import PageHeader from "@/components/layout/PageHeader";
 
 /**
  * Fields page (upper UI only)
@@ -37,7 +36,7 @@ export default function FieldsTopUI() {
       <div className="max-w-[1400px] mx-auto py-6 px-4 sm:px-6 lg:px-8">
         {/* Header row */}
         <div className="flex items-start justify-between gap-4 mb-6">
-          <PageHeader />
+ 
           <div>
             <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-gray-900">My Farms</h1>
             <p className="mt-1 text-sm text-gray-500">Overview of your registered fields and quick actions</p>
