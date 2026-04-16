@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic'; // Required for Leaflet
 import { ChevronDown, ArrowLeft, Plus, Minus } from 'lucide-react';
 import { handleLogout } from '../../lib/auth';
-import { fetchFarmScore, fetchLocationData, fetchSubDistricts } from '../../lib/api';
+import { fetchFarmScore, fetchLocationData, fetchDistricts, fetchDistrictSubDistricts } from '../../lib/api';
 import { LAYER_NAMES, LayerKey } from '../../lib/types';
 import {
   Chart as ChartJS,
@@ -274,12 +274,7 @@ export default function KVKDashboard() {
       router.push('/login');
     } else {
       setIsAuthorized(true);
-      fetchLocationData()
-        .then(setLocationData)
-        .catch((error) => {
-          console.error('Error fetching location data:', error);
-          setLocationData({});
-        });
+      fetchLocationData().then(setLocationData).catch(console.error);
     }
   }, [router]);
 useEffect(() => {
@@ -295,15 +290,10 @@ useEffect(() => {
       setSubDistrict('');
     }
 
-    fetchSubDistricts(newDistrict)
-      .then((data) => {
-        console.log("Auto load subdistricts:", data);
-        setSubDistricts(data);
-      })
-      .catch((error) => {
-        console.error('Error fetching sub-districts:', error);
-        setSubDistricts([]);
-      });
+    fetchDistrictSubDistricts(newDistrict).then((data) => {
+      console.log("Auto load subdistricts:", data);
+      setSubDistricts(data);
+    });
   } else {
     setDistrict('');
     setSubDistrict('');
@@ -419,19 +409,6 @@ useEffect(() => {
         }
       } catch (error) {
         console.error('Failed to fetch farm score:', error);
-        setStats({
-          extreme: [],
-          severe: [],
-          moderate: [],
-          mild: [],
-          normal: [],
-          total: [],
-        });
-        setChartData({
-          pie: [0, 0, 0, 0, 0],
-          hist: [],
-          histLabels: getParameterConfig(parameter).histLabels,
-        });
       }
       
       setLoading(false);
@@ -659,17 +636,13 @@ useEffect(() => {
                   const selected = e.target.value;
                   setDistrict(selected);
                   setSubDistrict(''); // 🔥 RESET HERE
-                  fetchSubDistricts(selected)
-                    .then(setSubDistricts)
-                    .catch((error) => {
-                      console.error('Error fetching sub-districts:', error);
-                      setSubDistricts([]);
-                    });
+                  fetchDistrictSubDistricts(selected).then(setSubDistricts);
                 }}
                 className={`${TAB_SELECT} ${level === 'State' ? 'cursor-not-allowed' : ''}`}
                 disabled={level === 'State'}
               >
                 {level === 'State' && <option>All Districts</option>}
+
                 {(locationData[state] || []).map((d) => (
                   <option key={d} value={d}>
                     {d}
@@ -694,10 +667,14 @@ useEffect(() => {
                 value={subDistrict}
                 onChange={(e) => setSubDistrict(e.target.value)}
                 className={`${TAB_SELECT} ${level !== 'Sub-District' ? 'cursor-not-allowed' : ''}`}
-                disabled={false}
+                disabled={level !== 'Sub-District'}
               >
                 <option value="">Select Sub-District</option>
-
+                {subDistricts.length === 0 && (
+                  <option disabled value="">
+                    {subDistricts ? 'No Sub-Districts Found' : 'Loading...'}
+                  </option>
+                )}
                 {subDistricts.map((sd) => (
                   <option key={sd} value={sd}>
                     {sd}

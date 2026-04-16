@@ -450,9 +450,9 @@ export function useMap({
  
       try {
         const geojson = await fetchFields();
-        const selectedField =
-          geojson.features?.find((f) => f.properties.is_selected) ??
-          geojson.features?.[0];
+        const selectedField = geojson.features?.find(
+          (f) => f.properties.is_selected
+        );
         if (selectedField) {
           const bbox = getBBox(selectedField.geometry);
           center = [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2];

@@ -1,6 +1,3 @@
-/**
- * API client functions for field operations
- */
 
 import axios from 'axios';
 import { apiCallWithRefresh } from './auth';
@@ -439,6 +436,9 @@ export async function fetchCommodities(pendingGeometry: any): Promise<any> {
         },
       });
     });
+    if (!res || !Array.isArray(res.data)) {
+      return [];
+    }
     return res.data.map((x: any) => x.crop_name);
   } catch (error: any) {
     console.log('Fetch commodities error', error);
@@ -548,11 +548,34 @@ export const fetchLocationData = async () => {
   }
 };
 
-export async function fetchSubDistricts(district: string): Promise<string[]> {
+
+  // Fetch all districts
+export async function fetchDistricts(): Promise<string[]> {
+  try {
+    const res = await apiCallWithRefresh(async () => {
+      return await makeApiCall(`${API_BASE}/api/v1/districts`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+        },
+      });
+    });
+    if (res?.statusCode === 200 && Array.isArray(res.data)) {
+      return res.data; // If backend returns array of strings
+    }
+    return [];
+  } catch (error) {
+    console.error('Error fetching districts', error);
+    return [];
+  }
+}
+
+// Fetch sub-districts for a given district
+export async function fetchDistrictSubDistricts(district: string): Promise<string[]> {
   try {
     const res = await apiCallWithRefresh(async () => {
       return await makeApiCall(
-        `${API_BASE}/api/v1/sub-districts?district=${district}`,
+        `${API_BASE}/api/v1/district-subdistricts?district=${encodeURIComponent(district)}`,
         {
           method: 'GET',
           headers: {
@@ -561,16 +584,14 @@ export async function fetchSubDistricts(district: string): Promise<string[]> {
         },
       );
     });
-
-    console.log("Subdistrict API response:", res);
-
-    if (res?.statusCode === 200 && Array.isArray(res.data)) {
-      return res.data.map((x: any) => x.sub_districts).flat();
+    if (res?.statusCode === 200 && res.data && Array.isArray(res.data.sub_districts)) {
+      return res.data.sub_districts;
     }
-
     return [];
   } catch (error) {
-    console.error('Error fetching sub-districts', error);
+    console.error('Error fetching district sub-districts', error);
     return [];
   }
-}
+};
+
+

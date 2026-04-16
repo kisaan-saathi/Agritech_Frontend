@@ -223,7 +223,7 @@ export default function DashboardClient() {
                 className="box shake-after-10s"
                 width="70"
                 src="/images/kissan_sathi_logo.png"
-                alt="Kisaan Sathi"
+                alt="Kissan Sathi"
               /> */}
             </div>
           </header>

@@ -26,7 +26,7 @@ import {
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import FarmMap from '@/components/ui/farm-map';
-import { fetchFieldById, fetchFields } from '@/lib/api';
+import { fetchFieldById } from '@/lib/api';
 import {
   fetchSoilData,
   fetchFertilizerRecommendation,
@@ -462,38 +462,12 @@ export default function SoilPage() {
   const cachedFieldIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const initializeSelectedField = async () => {
-      const snapshotRaw = localStorage.getItem('soilHealthCardSnapshot');
-      let snapshot: any = null;
-      try {
-        snapshot = snapshotRaw ? JSON.parse(snapshotRaw) : null;
-      } catch (snapshotErr) {
-        console.error('Invalid soilHealthCardSnapshot JSON, ignoring cache', snapshotErr);
-      }
-
-      let storedFieldId =
-        localStorage.getItem('selectedFieldId') || snapshot?.selectedFieldId || '';
-
-      if (!storedFieldId) {
-        try {
-          const fields = await fetchFields();
-          const selectedFeature =
-            fields?.features?.find((f: any) => f?.properties?.is_selected) ||
-            fields?.features?.[0];
-          storedFieldId = selectedFeature?.properties?.id || '';
-          if (storedFieldId) {
-            localStorage.setItem('selectedFieldId', storedFieldId);
-          }
-        } catch (fieldErr) {
-          console.error('Failed to auto-select field for soil page', fieldErr);
-        }
-      }
+    if (typeof window !== 'undefined') {
+      const storedFieldId = localStorage.getItem('selectedFieldId');
 
       if (storedFieldId) {
         setSelectedFieldId(storedFieldId);
-        console.log('Loaded fieldId from storage/api:', storedFieldId);
+        console.log('Loaded fieldId from localStorage:', storedFieldId);
 
         const cached = getCachedSoilResponse(storedFieldId);
         if (cached?.soilJson) {
@@ -503,15 +477,8 @@ export default function SoilPage() {
           setHasError(false);
           setLoadingSoil(false);
         }
-        return;
       }
-
-      setLoadingSoil(false);
-      setHasError(true);
-      setError('No field found. Please create/select a field first.');
-    };
-
-    initializeSelectedField();
+    }
   }, []);
 
   /* ---------- VALIDATION ---------- */
@@ -600,21 +567,6 @@ const normalizeMicroStatus = (s?: string) => {
 
   const applySoilOverviewResponse = (soilJson: any) => {
     const response = soilJson?.data || soilJson;
-    const responseFailed =
-      response?.success === false ||
-      (typeof response?.statusCode === 'number' && response.statusCode >= 400);
-
-    if (responseFailed) {
-      const backendMessage =
-        response?.message ||
-        'Unable to fetch soil data from backend. Backend is unavailable, please try again later.';
-      setError(backendMessage);
-      setHasError(true);
-      setSoil(null);
-      setData(null);
-      return null;
-    }
-
     const baseSoil = response?.data || response;
     setSoil(baseSoil);
     const properties =
@@ -716,54 +668,8 @@ const normalizeMicroStatus = (s?: string) => {
       pH:
         properties?.ph != null
           ? Number(properties.ph)
-          : properties?.pH != null
-            ? Number(properties.pH)
-            : properties?.PH != null
-              ? Number(properties.PH)
-              : response?.properties?.ph != null
-                ? Number(response.properties.ph)
-                : response?.properties?.pH != null
-                  ? Number(response.properties.pH)
-                  : response?.properties?.PH != null
-                    ? Number(response.properties.PH)
-                    : response?.data?.properties?.ph != null
-                      ? Number(response.data.properties.ph)
-                      : response?.data?.properties?.pH != null
-                        ? Number(response.data.properties.pH)
-                        : response?.data?.properties?.PH != null
-                          ? Number(response.data.properties.PH)
-                          : response?.modelPredictions?.pH != null
-                            ? Number(response.modelPredictions.pH)
-                            : response?.modelPredictions?.PH != null
-                              ? Number(response.modelPredictions.PH)
-                              : response?.stats?.pH?.value != null
-                                ? Number(response.stats.pH.value)
-                                : response?.stats?.PH?.value != null
-                                  ? Number(response.stats.PH.value)
-                                  : response?.stats?.ph?.value != null
-                                    ? Number(response.stats.ph.value)
-                                    : response?.pH != null
-                                      ? Number(response.pH)
-                                      : response?.PH != null
-                                        ? Number(response.PH)
-                                        : response?.ph != null
-                                          ? Number(response.ph)
-                                          : rawStats?.pH?.value != null
-                                            ? Number(rawStats.pH.value)
-                                            : rawStats?.PH?.value != null
-                                              ? Number(rawStats.PH.value)
-                                              : rawStats?.ph?.value != null
-                                                ? Number(rawStats.ph.value)
           : rawPredictions.pH?.value != null
             ? Number(rawPredictions.pH.value)
-            : rawPredictions.PH?.value != null
-              ? Number(rawPredictions.PH.value)
-              : rawPredictions.ph?.value != null
-                ? Number(rawPredictions.ph.value)
-                : (fieldData as any)?.pH_0_30 != null
-                  ? Number((fieldData as any).pH_0_30)
-                  : (fieldData as any)?.soil_feature?.pH_0_30 != null
-                    ? Number((fieldData as any).soil_feature.pH_0_30)
             : null,
       EC:
         properties?.ec?.value ??
@@ -1010,54 +916,8 @@ async function generateReportByDate() {
   pH:
     properties?.ph != null
       ? Number(properties.ph)
-      : properties?.pH != null
-        ? Number(properties.pH)
-        : properties?.PH != null
-          ? Number(properties.PH)
-          : response?.properties?.ph != null
-            ? Number(response.properties.ph)
-            : response?.properties?.pH != null
-              ? Number(response.properties.pH)
-              : response?.properties?.PH != null
-                ? Number(response.properties.PH)
-                : response?.data?.properties?.ph != null
-                  ? Number(response.data.properties.ph)
-                  : response?.data?.properties?.pH != null
-                    ? Number(response.data.properties.pH)
-                    : response?.data?.properties?.PH != null
-                      ? Number(response.data.properties.PH)
-                      : response?.modelPredictions?.pH != null
-                        ? Number(response.modelPredictions.pH)
-                        : response?.modelPredictions?.PH != null
-                          ? Number(response.modelPredictions.PH)
-                          : response?.stats?.pH?.value != null
-                            ? Number(response.stats.pH.value)
-                            : response?.stats?.PH?.value != null
-                              ? Number(response.stats.PH.value)
-                              : response?.stats?.ph?.value != null
-                                ? Number(response.stats.ph.value)
-                                : response?.pH != null
-                                  ? Number(response.pH)
-                                  : response?.PH != null
-                                    ? Number(response.PH)
-                                    : response?.ph != null
-                                      ? Number(response.ph)
-                                      : rawStats?.pH?.value != null
-                                        ? Number(rawStats.pH.value)
-                                        : rawStats?.PH?.value != null
-                                          ? Number(rawStats.PH.value)
-                                          : rawStats?.ph?.value != null
-                                            ? Number(rawStats.ph.value)
       : rawPredictions.pH?.value != null
         ? Number(rawPredictions.pH.value)
-        : rawPredictions.PH?.value != null
-          ? Number(rawPredictions.PH.value)
-          : rawPredictions.ph?.value != null
-            ? Number(rawPredictions.ph.value)
-            : (fieldData as any)?.pH_0_30 != null
-              ? Number((fieldData as any).pH_0_30)
-              : (fieldData as any)?.soil_feature?.pH_0_30 != null
-                ? Number((fieldData as any).soil_feature.pH_0_30)
         : null,
   EC:
     properties?.ec?.value ??
@@ -1172,6 +1032,7 @@ async function generateReportByDate() {
     if (!fieldDataId) return;
 
     if (lastPredictedFieldIdRef.current === fieldDataId) return;
+    if (cachedFieldIdRef.current === fieldDataId) return;
     lastPredictedFieldIdRef.current = fieldDataId;
 
     let isMounted = true;
@@ -1205,10 +1066,8 @@ async function generateReportByDate() {
           console.log('🔍 NO PREDICTION PROPERTIES TO MERGE');
         }
 
-        const adapted = applySoilOverviewResponse(soilJson);
-        if (adapted) {
-          setCachedSoilResponse(fieldDataId, soilJson);
-        }
+        applySoilOverviewResponse(soilJson);
+        setCachedSoilResponse(fieldDataId, soilJson);
       } catch (e: any) {
         if (!isMounted) return;
         console.error('Prediction failed:', e);
@@ -1248,18 +1107,9 @@ async function generateReportByDate() {
       const overviewFertilizer = data?.fertilizerRecommendation;
 
       if (overviewFertilizer) {
-        // Collect all possible fertilizer recommendation fields
-        const conditionerLines = [];
-        if (overviewFertilizer.fym) conditionerLines.push(`FYM: ${overviewFertilizer.fym}`);
-        if (overviewFertilizer.compost) conditionerLines.push(`Compost: ${overviewFertilizer.compost}`);
-        if (overviewFertilizer.vermicompost) conditionerLines.push(`Vermicompost: ${overviewFertilizer.vermicompost}`);
-        if (overviewFertilizer.oilCake) conditionerLines.push(`Oil Cake: ${overviewFertilizer.oilCake}`);
-        if (overviewFertilizer.bioFertilizer) conditionerLines.push(`Biofertilizer: ${overviewFertilizer.bioFertilizer}`);
-        const soilConditioner = conditionerLines.length > 0 ? conditionerLines.join('\n') : overviewFertilizer.fym || '—';
-
         const adaptedFromOverview = {
           crop: crop || overviewFertilizer?.crop || '',
-          soilConditioner,
+          soilConditioner: overviewFertilizer?.fym || '—',
           combo1: Array.isArray(overviewFertilizer?.combination_1)
             ? overviewFertilizer.combination_1
             : [],
@@ -1361,13 +1211,7 @@ async function generateReportByDate() {
       </div>
     );
   }
-  if (!soil) {
-    return (
-      <div className="h-screen flex items-center justify-center text-gray-500">
-        Fetching soil data from backend...
-      </div>
-    );
-  }
+  if (!soil) return null;
   // API data processing
 
   const ec =

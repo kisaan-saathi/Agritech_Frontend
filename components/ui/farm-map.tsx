@@ -450,10 +450,12 @@ const FarmMap: React.FC<FarmMapProps> = ({
           'Fetching commodities for geometry',
           geometry.coordinates[0][0],
         );
-        const data = await fetchCommodities(geometry.coordinates[0][0]);
-        if (data.length) {
-          setCommodities(data);
+        let data: any = await fetchCommodities(geometry.coordinates[0][0]);
+        // Robust null/undefined/invalid check
+        if (!Array.isArray(data)) {
+          data = [];
         }
+        setCommodities(data);
       }
       setEditFieldId(null);
       setShowDrawInstruction(false);
