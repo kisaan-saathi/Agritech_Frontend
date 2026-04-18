@@ -798,14 +798,15 @@ const FarmMap: React.FC<FarmMapProps> = ({
       if (mapRef.current) {
         if (selectedLayer === 'todays_image') {
           renderTodaysImage(mapRef.current, selectedFieldData);
-        } else if (selectedLayer !== 'todays_image') {
+        } else {
           if (!mapRef.current || !mapRef.current.isStyleLoaded()) return;
+
           await renderHeatmap(
             mapRef.current,
             selectedFieldData,
             selectedDate,
             selectedLayer,
-            true, // ✅ no zoom jump
+            true,
           );
         }
       }
@@ -903,7 +904,7 @@ const FarmMap: React.FC<FarmMapProps> = ({
       }
       if (!map.isStyleLoaded()) return;
       // Only call renderHeatmap for valid layers
-      if (selectedLayer !== 'todays_image') {
+      if (selectedLayer == 'todays_image' as LayerKey) {
         await renderHeatmap(map, selectedField, selectedDate, selectedLayer, true);
       }
     };
