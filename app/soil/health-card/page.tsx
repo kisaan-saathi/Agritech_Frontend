@@ -1643,6 +1643,12 @@ const normalizedOverview =
     </div>
   );
 }
+import { Suspense } from "react";
+
 export default function SoilHealthCardPage() {
-  return <SoilHealthCardContent />;
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SoilHealthCardContent />
+    </Suspense>
+  );
 }
