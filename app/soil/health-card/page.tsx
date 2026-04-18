@@ -166,7 +166,7 @@ function getRating(param: string, value: number | null) {
 }
 
 
-export default function SoilHealthCardPage() {
+function SoilHealthCardContent() {
   const [data, setData] = useState<HealthCardData>(INITIAL_DATA);
   const [soil, setSoil] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -1642,4 +1642,7 @@ const normalizedOverview =
       </div>
     </div>
   );
+}
+export default function SoilHealthCardPage() {
+  return <SoilHealthCardContent />;
 }
